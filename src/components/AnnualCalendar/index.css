@@ -1,0 +1,112 @@
+/* Arquivo: src/components/AnnualCalendar.css */
+
+.calendar-container {
+  display: flex;
+  flex-direction: column;
+  gap: 2rem;
+}
+
+.months-wrapper {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+  gap: 1.5rem;
+  align-items: start;
+}
+
+.month-block {
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  overflow: hidden;
+  background-color: white;
+}
+
+.month-header {
+  background-color: #f3f4f6;
+  padding: 0.5rem;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.month-title {
+  display: block;
+  margin-bottom: 0.5rem;
+  color: #374151;
+  font-size: 0.9rem;
+  font-weight: bold;
+}
+
+.days-header-grid {
+  display: grid;
+  gap: 2px;
+  text-align: center;
+  font-size: 0.75rem;
+  color: #6b7280;
+}
+
+.month-body {
+  padding: 0.5rem;
+  display: grid;
+  gap: 4px 2px;
+  background-color: white;
+}
+
+.day-separator {
+  border-right: 1px dashed #f3f4f6;
+}
+
+.event-line {
+  height: 4px;
+  align-self: center;
+  border-radius: 2px;
+  z-index: 10;
+  transition: opacity 0.2s, transform 0.2s;
+  cursor: pointer;
+}
+
+/* Um pequeno efeito visual quando o mouse passa por cima da linha */
+.event-line:hover {
+  filter: brightness(0.8);
+  transform: scaleY(1.5); 
+}
+
+.legend-container {
+  margin-top: 1rem;
+  padding: 1.5rem;
+  background-color: white;
+  border-radius: 8px;
+  border: 1px solid #e5e7eb;
+}
+
+.legend-title {
+  margin: 0 0 1rem 0;
+  color: #374151;
+  font-size: 1rem;
+}
+
+.legend-items {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1.5rem;
+}
+
+.empty-legend {
+  font-size: 0.85rem;
+  color: #9ca3af;
+}
+
+.legend-item {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.legend-circle {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+}
+
+.legend-name {
+  font-size: 0.9rem;
+  color: #4b5563;
+  font-weight: 500;
+}

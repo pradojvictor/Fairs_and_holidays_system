@@ -1,0 +1,92 @@
+/* Arquivo: src/pages/Dashboard.css */
+
+.dashboard-layout {
+  min-height: 100vh;
+  background-color: #f9fafb;
+  font-family: sans-serif;
+  display: flex;
+  flex-direction: column;
+}
+
+.dashboard-header {
+  padding: 1rem 2rem;
+  background-color: white;
+  border-bottom: 1px solid #e5e7eb;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.btn-menu {
+  padding: 0.5rem 1rem;
+  cursor: pointer;
+  background-color: #1f2937;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  font-weight: bold;
+  transition: background-color 0.2s;
+}
+
+.btn-menu:hover {
+  background-color: #374151;
+}
+
+.dashboard-title {
+  margin: 0;
+  font-size: 1.2rem;
+  color: #111827;
+}
+
+.btn-header-logout {
+  padding: 0.5rem 1rem;
+  cursor: pointer;
+  background-color: transparent;
+  color: #6b7280;
+  border: 1px solid #d1d5db;
+  border-radius: 4px;
+  transition: all 0.2s;
+}
+
+.btn-header-logout:hover {
+  background-color: #f3f4f6;
+  color: #111827;
+}
+
+.dashboard-main {
+  padding: 2rem;
+  flex-grow: 1;
+  overflow-x: auto;
+}
+
+.status-container {
+  text-align: center;
+  padding: 3rem;
+  color: #6b7280;
+}
+
+.status-container h2 {
+  margin-bottom: 1rem;
+}
+
+.status-error {
+  color: #ef4444;
+}
+
+.btn-retry {
+  padding: 0.5rem 1rem;
+  background-color: #ef4444;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-weight: bold;
+}
+
+.calendar-wrapper {
+  background-color: white;
+  padding: 1.5rem;
+  border-radius: 8px;
+  border: 1px solid #e5e7eb;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+}
