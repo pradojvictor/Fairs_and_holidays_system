@@ -161,3 +161,112 @@
 .btn-logout:hover {
   background-color: #b91c1c;
 }
+
+/* --- NOVO: Feedback Toast (Mensagens de Sucesso/Erro) --- */
+.feedback-toast {
+  margin-top: 1rem;
+  padding: 0.75rem;
+  border-radius: 6px;
+  font-size: 0.85rem;
+  text-align: center;
+  font-weight: 500;
+  animation: fadeIn 0.3s ease;
+}
+
+.feedback-toast.success {
+  background-color: rgba(16, 185, 129, 0.1);
+  color: #34d399;
+  border: 1px solid rgba(16, 185, 129, 0.2);
+}
+
+.feedback-toast.error {
+  background-color: rgba(239, 68, 68, 0.1);
+  color: #f87171;
+  border: 1px solid rgba(239, 68, 68, 0.2);
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(-5px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* --- NOVO: Modal de Confirmação --- */
+.modal-overlay-custom {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background-color: rgba(0, 0, 0, 0.7);
+  z-index: 9999; /* Fica acima de tudo, inclusive da Sidebar */
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.modal-container {
+  background-color: #1f2937;
+  padding: 2rem;
+  border-radius: 8px;
+  width: 90%;
+  max-width: 400px;
+  box-shadow: 0 10px 25px rgba(0,0,0,0.5);
+  border: 1px solid #374151;
+  color: #f9fafb;
+}
+
+.modal-container h3 {
+  margin: 0 0 1rem 0;
+  color: #ef4444; /* Vermelho para alerta */
+  font-size: 1.2rem;
+}
+
+.modal-container p {
+  margin: 0 0 0.5rem 0;
+  font-size: 0.95rem;
+  color: #d1d5db;
+}
+
+.modal-warning {
+  font-size: 0.85rem !important;
+  color: #9ca3af !important;
+  font-style: italic;
+  margin-bottom: 1.5rem !important;
+}
+
+.modal-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 1rem;
+  margin-top: 1.5rem;
+}
+
+.btn-modal-cancel {
+  padding: 0.5rem 1rem;
+  background-color: transparent;
+  color: #d1d5db;
+  border: 1px solid #4b5563;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.btn-modal-cancel:hover {
+  background-color: #374151;
+  color: white;
+}
+
+.btn-modal-confirm {
+  padding: 0.5rem 1rem;
+  background-color: #dc2626;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-weight: bold;
+  transition: background-color 0.2s;
+}
+
+.btn-modal-confirm:hover {
+  background-color: #b91c1c;
+}

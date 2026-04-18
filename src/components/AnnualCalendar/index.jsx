@@ -7,8 +7,10 @@ const meses = [
   'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'
 ];
 
-export default function AnnualCalendar({ professionals = [], events = [] }) {
+// OLHA ELE AQUI: o onEventClick precisa estar aqui dentro das chaves!
+export default function AnnualCalendar({ professionals = [], events = [], onEventClick }) {
   const currentYear = new Date().getFullYear();
+  
   const getDaysInMonth = (month, year) => new Date(year, month + 1, 0).getDate();
 
   const getEventSpan = (startDateStr, endDateStr, monthIndex, year) => {
@@ -33,7 +35,7 @@ export default function AnnualCalendar({ professionals = [], events = [] }) {
   return (
     <div className="calendar-container">
       
-      {/* 1. Grade de Meses */}
+      {/* Grade de Meses */}
       <div className="months-wrapper">
         {meses.map((nomeMes, indexMes) => {
           const daysCount = getDaysInMonth(indexMes, currentYear);
@@ -45,7 +47,6 @@ export default function AnnualCalendar({ professionals = [], events = [] }) {
               {/* Cabeçalho do Mês */}
               <div className="month-header">
                 <strong className="month-title">{nomeMes} {currentYear}</strong>
-                {/* Aqui mantemos o style porque o número de colunas (daysCount) é dinâmico */}
                 <div className="days-header-grid" style={{ gridTemplateColumns: `repeat(${daysCount}, 1fr)` }}>
                   {daysArray.map(day => (
                     <div key={day}>{day}</div>
@@ -53,7 +54,7 @@ export default function AnnualCalendar({ professionals = [], events = [] }) {
                 </div>
               </div>
 
-              {/* Corpo do Mês (Raias dos Profissionais) */}
+              {/* Corpo do Mês */}
               <div 
                 className="month-body" 
                 style={{ 
@@ -61,7 +62,7 @@ export default function AnnualCalendar({ professionals = [], events = [] }) {
                   gridTemplateRows: professionals.length > 0 ? `repeat(${professionals.length}, 16px)` : '16px'
                 }}
               >
-                {/* Linhas verticais de fundo */}
+                {/* Linhas de fundo */}
                 {daysArray.map(day => (
                   <div 
                     key={`bg-${day}`} 
@@ -70,20 +71,21 @@ export default function AnnualCalendar({ professionals = [], events = [] }) {
                   />
                 ))}
 
-                {/* Renderização das Linhas Finas (Eventos) */}
+                {/* Renderização dos Eventos */}
                 {events.map((event, i) => {
                   const span = getEventSpan(event.startDate, event.endDate, indexMes, currentYear);
                   if (!span) return null; 
 
                   const proIndex = professionals.findIndex(p => p.id === event.professionalId);
                   if (proIndex === -1) return null;
-
                   const pro = professionals[proIndex];
                   
                   return (
                     <div 
                       key={`${event.id}-${indexMes}-${i}`}
                       className="event-line"
+                      // A AÇÃO DE CLIQUE:
+                      onClick={() => onEventClick && onEventClick(event)}
                       style={{
                         gridColumn: `${span.startDay} / ${span.endDay + 1}`,
                         gridRow: proIndex + 1, 
@@ -100,7 +102,7 @@ export default function AnnualCalendar({ professionals = [], events = [] }) {
         })}
       </div>
 
-      {/* 2. Legenda Inferior de Profissionais */}
+      {/* Legenda */}
       <div className="legend-container">
         <h4 className="legend-title">Legenda da Equipe</h4>
         <div className="legend-items">
@@ -109,7 +111,6 @@ export default function AnnualCalendar({ professionals = [], events = [] }) {
           ) : (
             professionals.map(pro => (
               <div key={pro.id} className="legend-item">
-                {/* A cor da bolinha precisa continuar inline por ser uma variável do Gist */}
                 <div className="legend-circle" style={{ backgroundColor: pro.baseColor }}></div>
                 <span className="legend-name">{pro.name}</span>
               </div>
