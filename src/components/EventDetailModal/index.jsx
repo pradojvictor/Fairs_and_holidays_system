@@ -1,7 +1,7 @@
 // src/components/EventDetailModal.jsx
 import './index.css';
 
-export default function EventDetailModal({ isOpen, event, professional, onClose, onDelete }) {
+export default function EventDetailModal({ isOpen, event, professional, onClose, onDelete, onEdit }) {
   if (!isOpen || !event || !professional) return null;
 
   // Formata a data para algo mais amigável (DD/MM/AAAA)
@@ -48,6 +48,7 @@ export default function EventDetailModal({ isOpen, event, professional, onClose,
 
         <div className="detail-modal-footer">
           <button className="btn-close-detail" onClick={onClose}>Fechar</button>
+          <button className="btn-edit-event" onClick={() => onEdit(event)}>Editar</button>
           <button className="btn-delete-event" onClick={() => onDelete(event.id)}>
             Excluir Agendamento
           </button>

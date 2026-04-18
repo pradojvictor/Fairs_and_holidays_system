@@ -97,3 +97,19 @@
   border-radius: 6px;
   cursor: pointer;
 }
+
+.btn-edit-event {
+  flex: 1;
+  padding: 0.75rem;
+  background-color: #eff6ff;
+  color: #2563eb;
+  border: 1px solid #bfdbfe;
+  border-radius: 6px;
+  font-weight: bold;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.btn-edit-event:hover {
+  background-color: #dbeafe;
+}
