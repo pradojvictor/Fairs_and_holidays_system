@@ -8,6 +8,7 @@ import EventModal from '../../components/EventModal';
 import EventDetailModal from '../../components/EventDetailModal';
 import MonthlySummary from '../../components/MonthlySummary';
 import AdminProfileModal from '../../components/AdminProfileModal';
+import ConfirmModal from '../../components/ConfirmModal';
 import './index.css';
 
 export default function Dashboard() {
@@ -30,6 +31,8 @@ export default function Dashboard() {
   const [isAdminProfileOpen, setIsAdminProfileOpen] = useState(false);
   const [adminData, setAdminData] = useState({ username: 'Administrador', password: '' });
 
+  const [eventToDelete, setEventToDelete] = useState(null); // Guarda a ID do evento que queremos excluir
+
   const loadData = async () => {
     setIsLoading(true);
     try {
@@ -50,17 +53,30 @@ export default function Dashboard() {
     navigate('/login');
   };
 
-  const handleDeleteEvent = async (eventId) => {
-    if (!window.confirm("Tem certeza que deseja remover este agendamento?")) return;
+// Esta função agora apenas ABRIRÁ o nosso novo modal customizado
+  const handleDeleteEvent = (eventId) => {
+    setEventToDelete(eventId); 
+  };
+
+  // Esta é a função que o botão vermelho do Modal vai chamar
+  const executeDelete = async () => {
+    if (!eventToDelete) return;
+    
     setIsLoading(true);
     try {
       const currentData = await fetchGistData();
-      currentData.events = currentData.events.filter(e => e.id !== eventId);
-      await updateGistData(currentData);
-      setSelectedEvent(null);
+      const updatedEvents = (currentData.events || []).filter(e => String(e.id) !== String(eventToDelete));
+      const newData = { ...currentData, events: updatedEvents };
+      
+      await updateGistData(newData);
+      
+      setSelectedEvent(null); // Fecha o modal de detalhes
+      setEventToDelete(null); // Fecha o modal de confirmação
       await loadData();
+      
     } catch (err) {
-      alert("Erro ao remover evento.");
+      console.error("Falha ao deletar evento:", err);
+      alert("Erro ao remover o evento. Verifique sua conexão.");
     } finally {
       setIsLoading(false);
     }
@@ -135,6 +151,15 @@ export default function Dashboard() {
         onClose={() => setSelectedEvent(null)} 
         onDelete={handleDeleteEvent} 
         onEdit={handleEditEvent} /* <-- NOVO */
+      />
+
+      <ConfirmModal
+        isOpen={!!eventToDelete}
+        title="Excluir Agendamento"
+        message="Tem certeza que deseja remover esta ausência? Esta ação não poderá ser desfeita."
+        isLoading={isLoading}
+        onClose={() => setEventToDelete(null)}
+        onConfirm={executeDelete}
       />
 
       {/* NOVO LAYOUT DO MAIN: Flex column com Gap para separar as metades */}
