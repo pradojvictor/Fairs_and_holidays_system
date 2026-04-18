@@ -47,7 +47,7 @@ export default function AnnualCalendar({ professionals = [], events = [], onEven
               {/* Cabeçalho do Mês */}
               <div className="month-header">
                 <strong className="month-title">{nomeMes} {currentYear}</strong>
-                <div className="days-header-grid" style={{ gridTemplateColumns: `repeat(${daysCount}, 1fr)` }}>
+                <div className="days-header-grid" style={{ gridTemplateColumns: `repeat(${daysCount}, minmax(0, 1fr))` }}>
                   {daysArray.map(day => (
                     <div key={day}>{day}</div>
                   ))}
@@ -58,7 +58,7 @@ export default function AnnualCalendar({ professionals = [], events = [], onEven
               <div 
                 className="month-body" 
                 style={{ 
-                  gridTemplateColumns: `repeat(${daysCount}, 1fr)`, 
+                  gridTemplateColumns: `repeat(${daysCount}, minmax(0, 1fr))`,
                   gridTemplateRows: professionals.length > 0 ? `repeat(${professionals.length}, 16px)` : '16px'
                 }}
               >

@@ -36,21 +36,23 @@
 
 .days-header-grid {
   display: grid;
-  gap: 2px;
+  gap: 0; /* Removemos o gap horizontal para ganhar espaço */
   text-align: center;
-  font-size: 0.75rem;
+  font-size: 0.65rem; /* Fonte um pouquinho menor (aprox 10px) */
+  font-variant-numeric: tabular-nums; /* Força os números a terem a mesma largura */
   color: #6b7280;
 }
 
 .month-body {
   padding: 0.5rem;
   display: grid;
-  gap: 4px 2px;
+  gap: 4px 0; /* 4px de espaço vertical entre os funcionários, e ZERO espaço horizontal */
   background-color: white;
 }
 
 .day-separator {
-  border-right: 1px dashed #f3f4f6;
+  border-left: 1px dashed #f3f4f6; /* Troque de border-right para border-left */
+  margin-left: -1px; /* Puxa a linha para o limite exato da coluna */
 }
 
 .event-line {
