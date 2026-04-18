@@ -28,14 +28,14 @@ export default function Dashboard() {
   const [eventToEdit, setEventToEdit] = useState(null);
 
   const [isAdminProfileOpen, setIsAdminProfileOpen] = useState(false);
-  const [adminData, setAdminData] = useState({ name: 'Administrador', password: '' });
+  const [adminData, setAdminData] = useState({ username: 'Administrador', password: '' });
 
   const loadData = async () => {
     setIsLoading(true);
     try {
       const data = await fetchGistData();
       setDbData({ professionals: data.professionals || [], events: data.events || [] });
-      if (data.admin) setAdminData(data.admin);
+      if (data.auth) setAdminData(data.auth);
     } catch (err) {
       setError('Erro ao carregar os dados.');
     } finally {
@@ -93,7 +93,7 @@ export default function Dashboard() {
         onClose={() => setIsSidebarOpen(false)} 
         professionals={dbData.professionals} 
         onDataUpdated={loadData} 
-        adminName={adminData.name}
+        adminName={adminData.username}
         onOpenProfile={() => setIsAdminProfileOpen(true)}
       />
 
