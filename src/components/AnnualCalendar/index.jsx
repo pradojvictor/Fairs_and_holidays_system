@@ -1,5 +1,5 @@
 // Arquivo: src/components/AnnualCalendar.jsx
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import './index.css';
 
 const meses = [
@@ -7,10 +7,27 @@ const meses = [
   'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'
 ];
 
-// OLHA ELE AQUI: o onEventClick precisa estar aqui dentro das chaves!
 export default function AnnualCalendar({ professionals = [], events = [], onEventClick }) {
   const currentYear = new Date().getFullYear();
   
+  // NOVO: Estado para guardar os feriados da API
+  const [holidays, setHolidays] = useState([]);
+
+  // NOVO: Busca os feriados automaticamente ao abrir o calendário
+  useEffect(() => {
+    const fetchHolidays = async () => {
+      try {
+        const response = await fetch(`https://brasilapi.com.br/api/feriados/v1/${currentYear}`);
+        if (!response.ok) throw new Error('Erro na API de Feriados');
+        const data = await response.json();
+        setHolidays(data);
+      } catch (error) {
+        console.error("Não foi possível carregar os feriados:", error);
+      }
+    };
+    fetchHolidays();
+  }, [currentYear]);
+
   const getDaysInMonth = (month, year) => new Date(year, month + 1, 0).getDate();
 
   const getEventSpan = (startDateStr, endDateStr, monthIndex, year) => {
@@ -32,10 +49,19 @@ export default function AnnualCalendar({ professionals = [], events = [], onEven
     return { startDay, endDay };
   };
 
+  // NOVO: Função para descobrir se um dia específico é feriado
+  const getHolidayForDay = (monthIndex, day) => {
+    // Formata o mês e dia para ficar no padrão da API: "AAAA-MM-DD"
+    const m = String(monthIndex + 1).padStart(2, '0');
+    const d = String(day).padStart(2, '0');
+    const dateString = `${currentYear}-${m}-${d}`;
+    
+    return holidays.find(h => h.date === dateString);
+  };
+
   return (
     <div className="calendar-container">
       
-      {/* Grade de Meses */}
       <div className="months-wrapper">
         {meses.map((nomeMes, indexMes) => {
           const daysCount = getDaysInMonth(indexMes, currentYear);
@@ -44,25 +70,33 @@ export default function AnnualCalendar({ professionals = [], events = [], onEven
           return (
             <div key={nomeMes} className="month-block">
               
-              {/* Cabeçalho do Mês */}
               <div className="month-header">
                 <strong className="month-title">{nomeMes} {currentYear}</strong>
                 <div className="days-header-grid" style={{ gridTemplateColumns: `repeat(${daysCount}, minmax(0, 1fr))` }}>
-                  {daysArray.map(day => (
-                    <div key={day}>{day}</div>
-                  ))}
+                  {daysArray.map(day => {
+                    // Verifica se o dia atual do loop é um feriado
+                    const holiday = getHolidayForDay(indexMes, day);
+                    
+                    return (
+                      <div 
+                        key={day} 
+                        className={holiday ? 'holiday-day' : ''}
+                        title={holiday ? holiday.name : ''} // O tooltip com o nome do feriado
+                      >
+                        {day}
+                      </div>
+                    );
+                  })}
                 </div>
               </div>
 
-              {/* Corpo do Mês */}
               <div 
                 className="month-body" 
                 style={{ 
-                  gridTemplateColumns: `repeat(${daysCount}, minmax(0, 1fr))`,
+                  gridTemplateColumns: `repeat(${daysCount}, minmax(0, 1fr))`, 
                   gridTemplateRows: professionals.length > 0 ? `repeat(${professionals.length}, 16px)` : '16px'
                 }}
               >
-                {/* Linhas de fundo */}
                 {daysArray.map(day => (
                   <div 
                     key={`bg-${day}`} 
@@ -71,7 +105,6 @@ export default function AnnualCalendar({ professionals = [], events = [], onEven
                   />
                 ))}
 
-                {/* Renderização dos Eventos */}
                 {events.map((event, i) => {
                   const span = getEventSpan(event.startDate, event.endDate, indexMes, currentYear);
                   if (!span) return null; 
@@ -84,7 +117,6 @@ export default function AnnualCalendar({ professionals = [], events = [], onEven
                     <div 
                       key={`${event.id}-${indexMes}-${i}`}
                       className="event-line"
-                      // A AÇÃO DE CLIQUE:
                       onClick={() => onEventClick && onEventClick(event)}
                       style={{
                         gridColumn: `${span.startDay} / ${span.endDay + 1}`,
@@ -102,7 +134,6 @@ export default function AnnualCalendar({ professionals = [], events = [], onEven
         })}
       </div>
 
-      {/* Legenda */}
       <div className="legend-container">
         <h4 className="legend-title">Legenda da Equipe</h4>
         <div className="legend-items">
