@@ -3,7 +3,7 @@ import { useEffect, useState } from 'react';
 import { fetchGistData, updateGistData } from '../../services/githubApi';
 import './index.css';
 
-export default function EventModal({ isOpen, onClose, professionals, onDataUpdated, eventToEdit }) {
+export default function EventModal({ isOpen, onClose, professionals, events = [], onDataUpdated, eventToEdit }) {
   const [profId, setProfId] = useState('');
   const [type, setType] = useState('ferias');
   const [reason, setReason] = useState('');
@@ -38,6 +38,26 @@ export default function EventModal({ isOpen, onClose, professionals, onDataUpdat
 
     if (!profId) { setErrorMsg('Selecione um profissional.'); return; }
     if (startDate > endDate) { setErrorMsg('A data final não pode ser antes da inicial.'); return; }
+
+    // --- NOVA INTELIGÊNCIA: VERIFICAÇÃO DE CONFLITO ---
+    const hasConflict = events.some(existingEvent => {
+      // 1. Só verifica os eventos do MESMO funcionário que selecionamos
+      if (existingEvent.professionalId !== profId) return false;
+
+      // 2. Se estamos EDITANDO, o código deve ignorar o próprio evento na checagem
+      if (eventToEdit && existingEvent.id === eventToEdit.id) return false;
+
+      // 3. A matemática da Colisão: 
+      // Se o Novo INÍCIO encosta ou vem antes do Antigo FIM
+      // E o Novo FIM encosta ou vem depois do Antigo INÍCIO = CONFLITO!
+      return (startDate <= existingEvent.endDate) && (endDate >= existingEvent.startDate);
+    });
+
+    if (hasConflict) {
+      setErrorMsg('Atenção: Este funcionário já possui uma ausência marcada neste período!');
+      return; // O return para a execução e impede de salvar no Gist
+    }
+    // --- FIM DA VERIFICAÇÃO ---
 
     setLoading(true);
 

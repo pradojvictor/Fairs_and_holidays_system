@@ -100,7 +100,8 @@ export default function Dashboard() {
       <EventModal 
         isOpen={isEventModalOpen} 
         onClose={() => setIsEventModalOpen(false)} 
-        professionals={dbData.professionals} 
+        professionals={dbData.professionals}
+        events={dbData.events}
         onDataUpdated={loadData} 
         eventToEdit={eventToEdit} /* <-- NOVO */
       />
