@@ -4,7 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import { fetchGistData, updateGistData } from '../../services/githubApi';
 import './index.css';
 
-export default function Sidebar({ isOpen, onClose, onDataUpdated, professionals = [] }) {
+export default function Sidebar({ isOpen, onClose, onDataUpdated, professionals = [], adminName, onOpenProfile }) {
   const navigate = useNavigate();
   
   const [name, setName] = useState('');
@@ -117,9 +117,27 @@ export default function Sidebar({ isOpen, onClose, onDataUpdated, professionals 
       
       <div className={`sidebar-container ${isOpen ? 'open' : ''}`}>
         
+        {/* 2. SUBSTITUA A DIV DO SIDEBAR-HEADER POR ESTA: */}
         <div className="sidebar-header">
           <h2>Painel Administrativo</h2>
-          <p>Logado como: <strong>admin</strong></p>
+          
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '0.5rem' }}>
+            <p style={{ margin: 0 }}>Logado como: <strong>{adminName || 'admin'}</strong></p>
+            
+            <button 
+              onClick={onOpenProfile}
+              title="Editar Perfil"
+              style={{ 
+                background: 'transparent', border: '1px solid #4b5563', color: '#9ca3af', 
+                padding: '0.2rem 0.5rem', borderRadius: '4px', cursor: 'pointer', fontSize: '0.75rem',
+                transition: 'all 0.2s'
+              }}
+              onMouseOver={(e) => { e.currentTarget.style.color = 'white'; e.currentTarget.style.borderColor = '#9ca3af'; }}
+              onMouseOut={(e) => { e.currentTarget.style.color = '#9ca3af'; e.currentTarget.style.borderColor = '#4b5563'; }}
+            >
+              ✏️ Editar
+            </button>
+          </div>
         </div>
 
         <div className="sidebar-body">

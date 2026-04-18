@@ -7,6 +7,7 @@ import { fetchGistData } from '../../services/githubApi';
 import EventModal from '../../components/EventModal';
 import EventDetailModal from '../../components/EventDetailModal';
 import MonthlySummary from '../../components/MonthlySummary';
+import AdminProfileModal from '../../components/AdminProfileModal';
 import './index.css';
 
 export default function Dashboard() {
@@ -26,11 +27,15 @@ export default function Dashboard() {
 
   const [eventToEdit, setEventToEdit] = useState(null);
 
+  const [isAdminProfileOpen, setIsAdminProfileOpen] = useState(false);
+  const [adminData, setAdminData] = useState({ name: 'Administrador', password: '' });
+
   const loadData = async () => {
     setIsLoading(true);
     try {
       const data = await fetchGistData();
       setDbData({ professionals: data.professionals || [], events: data.events || [] });
+      if (data.admin) setAdminData(data.admin);
     } catch (err) {
       setError('Erro ao carregar os dados.');
     } finally {
@@ -82,8 +87,24 @@ export default function Dashboard() {
 
   return (
     <div className="dashboard-layout">
-      <Sidebar isOpen={isSidebarOpen} onClose={() => setIsSidebarOpen(false)} professionals={dbData.professionals} onDataUpdated={loadData} />
       
+      <Sidebar
+        isOpen={isSidebarOpen} 
+        onClose={() => setIsSidebarOpen(false)} 
+        professionals={dbData.professionals} 
+        onDataUpdated={loadData} 
+        adminName={adminData.name}
+        onOpenProfile={() => setIsAdminProfileOpen(true)}
+      />
+
+      {/* RENDERIZE O NOVO MODAL (Pode colocar logo abaixo da chamada da Sidebar) */}
+      <AdminProfileModal 
+        isOpen={isAdminProfileOpen}
+        onClose={() => setIsAdminProfileOpen(false)}
+        currentAdmin={adminData}
+        onDataUpdated={loadData}
+      />
+
       <header className="dashboard-header">
         <div style={{ display: 'flex', gap: '1rem', alignItems: 'center' }}>
           <button className="btn-menu" onClick={() => setIsSidebarOpen(true)}>☰ Menu</button>
