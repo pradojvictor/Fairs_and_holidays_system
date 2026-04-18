@@ -14,7 +14,7 @@ export default function AdminProfileModal({ isOpen, onClose, currentAdmin, onDat
   // Preenche o formulário quando o modal abre
   useEffect(() => {
     if (isOpen) {
-      setName(currentAdmin?.name || 'Administrador');
+      setName(currentAdmin?.username || 'Administrador');
       setPassword(currentAdmin?.password || '');
       setFeedback({ type: '', message: '' });
     }
