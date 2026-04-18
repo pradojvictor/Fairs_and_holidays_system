@@ -3,7 +3,7 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Sidebar from '../../components/Sidebar';
 import AnnualCalendar from '../../components/AnnualCalendar';
-import { fetchGistData } from '../../services/githubApi';
+import { fetchGistData, updateGistData } from '../../services/githubApi';
 import EventModal from '../../components/EventModal';
 import EventDetailModal from '../../components/EventDetailModal';
 import MonthlySummary from '../../components/MonthlySummary';
