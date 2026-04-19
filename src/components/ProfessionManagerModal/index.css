@@ -1,0 +1,83 @@
+/* =========================================
+   MODAL DE GERENCIAR CARGOS (PROFISSÕES)
+   ========================================= */
+
+/* Limita a largura do modal */
+.modal-sm {
+  max-width: 400px !important;
+}
+
+/* Formulário de adicionar cargo */
+.prof-manager-form {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 10px;
+}
+
+.btn-add-prof {
+  width: auto !important;
+  padding: 0 20px !important;
+  transition: all 0.2s;
+}
+
+/* Mensagens de Sucesso / Erro (Feedback) */
+.feedback-toast-inline {
+  margin-bottom: 15px;
+  padding: 8px 12px;
+  border-radius: 6px;
+  font-size: 0.85rem;
+  text-align: center;
+  font-weight: bold;
+  animation: fadeIn 0.3s ease-out;
+}
+
+.feedback-toast-inline.success {
+  background-color: #d1fae5;
+  color: #065f46;
+  border: 1px solid #34d399;
+}
+
+.feedback-toast-inline.error {
+  background-color: #fee2e2;
+  color: #991b1b;
+  border: 1px solid #f87171;
+}
+
+/* Lista de Cargos Cadastrados */
+.prof-list-container-modal {
+  background-color: #f9fafb;
+  border-radius: 8px;
+  padding: 15px;
+  max-height: 250px;
+  overflow-y: auto;
+}
+
+.prof-list-title {
+  margin: 0 0 10px 0;
+  font-size: 0.9rem;
+  color: #6b7280;
+}
+
+.prof-list-ul {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.prof-list-empty {
+  font-size: 0.9rem;
+  color: #9ca3af;
+  font-style: italic;
+}
+
+.prof-list-item {
+  background-color: white;
+  padding: 8px 12px;
+  border-radius: 4px;
+  border: 1px solid #e5e7eb;
+  font-size: 0.95rem;
+  color: #374151;
+}

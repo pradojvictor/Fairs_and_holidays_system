@@ -10,6 +10,7 @@ import MonthlySummary from '../../components/MonthlySummary';
 import AdminProfileModal from '../../components/AdminProfileModal';
 import ConfirmModal from '../../components/ConfirmModal';
 import ProfessionalList from '../../components/ProfessionalList';
+import ProfessionManagerModal from '../../components/ProfessionManagerModal';
 import './index.css';
 
 export default function Dashboard() {
@@ -21,7 +22,8 @@ export default function Dashboard() {
   
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState('');
-  const [dbData, setDbData] = useState({ professionals: [], events: [] });
+  const [isProfManagerOpen, setIsProfManagerOpen] = useState(false); // NOVO
+  const [dbData, setDbData] = useState({ professionals: [], events: [], professions: [] }); // ADICIONADO professions
 
   // ESTADOS PARA OS FILTROS
   const [filterProf, setFilterProf] = useState('');
@@ -38,7 +40,7 @@ export default function Dashboard() {
     setIsLoading(true);
     try {
       const data = await fetchGistData();
-      setDbData({ professionals: data.professionals || [], events: data.events || [] });
+      setDbData({ professionals: data.professionals || [], events: data.events || [], professions: data.professions || [] });
       if (data.auth) setAdminData(data.auth);
     } catch (err) {
       setError('Erro ao carregar os dados.');
@@ -109,10 +111,11 @@ export default function Dashboard() {
   return (
     <div className="dashboard-layout">
       
-      <Sidebar
+<Sidebar
         isOpen={isSidebarOpen} 
         onClose={() => setIsSidebarOpen(false)} 
         professionals={dbData.professionals} 
+        professions={dbData.professions} /* <-- NOVO */
         onDataUpdated={loadData} 
         adminName={adminData.username}
         onOpenProfile={() => setIsAdminProfileOpen(true)}
@@ -132,10 +135,12 @@ export default function Dashboard() {
           <h2 className="dashboard-title">Calendário de Ausências</h2>
         </div>
         
-        <div style={{ display: 'flex', gap: '1rem' }}>
-          <button onClick={handleOpenNewEvent} style={{ padding: '0.5rem 1rem', backgroundColor: '#3b82f6', color: 'white', border: 'none', borderRadius: '4px', fontWeight: 'bold', cursor: 'pointer' }}>+ Nova Ausência</button>
-          <button className="btn-header-logout" onClick={handleLogout}>Sair</button>
-        </div>
+<div style={{ display: 'flex', gap: '1rem' }}>
+         {/* NOVO BOTÃO DE CARGOS */}
+         <button onClick={() => setIsProfManagerOpen(true)} style={{ padding: '0.5rem 1rem', backgroundColor: '#4b5563', color: 'white', border: 'none', borderRadius: '4px', fontWeight: 'bold', cursor: 'pointer' }}>⚙️ Cargos</button>
+         <button onClick={handleOpenNewEvent} style={{ padding: '0.5rem 1rem', backgroundColor: '#3b82f6', color: 'white', border: 'none', borderRadius: '4px', fontWeight: 'bold', cursor: 'pointer' }}>+ Nova Ausência</button>
+         <button className="btn-header-logout" onClick={handleLogout}>Sair</button>
+      </div>
       </header>
 
      {/* Passe a prop eventToEdit para o form */}
@@ -211,6 +216,12 @@ export default function Dashboard() {
       <ProfessionalList 
         professionals={filteredProfessionals} 
         events={filteredEvents} 
+      />
+      <ProfessionManagerModal
+        isOpen={isProfManagerOpen} 
+        onClose={() => setIsProfManagerOpen(false)} 
+        professions={dbData.professions} 
+        onDataUpdated={loadData} 
       />
     </div>
   );

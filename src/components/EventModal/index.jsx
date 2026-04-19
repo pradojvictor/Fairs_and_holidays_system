@@ -3,7 +3,7 @@ import { useEffect, useState } from 'react';
 import { fetchGistData, updateGistData } from '../../services/githubApi';
 import './index.css';
 
-export default function EventModal({ isOpen, onClose, professionals, events = [], onDataUpdated, eventToEdit }) {
+export default function EventModal({ isOpen, onClose, professionals = [], events = [], onDataUpdated, eventToEdit }) {
   const [profId, setProfId] = useState('');
   const [type, setType] = useState('ferias');
   const [reason, setReason] = useState('');

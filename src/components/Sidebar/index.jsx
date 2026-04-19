@@ -4,11 +4,14 @@ import { useNavigate } from 'react-router-dom';
 import { fetchGistData, updateGistData } from '../../services/githubApi';
 import './index.css';
 
-export default function Sidebar({ isOpen, onClose, onDataUpdated, professionals = [], adminName, onOpenProfile }) {
+export default function Sidebar({ isOpen, onClose, onDataUpdated, professionals = [], professions = [], adminName, onOpenProfile }) {
   const navigate = useNavigate();
   
   const [name, setName] = useState('');
   const [color, setColor] = useState('#3b82f6');
+  const [professionId, setProfessionId] = useState('');
+  const [shift, setShift] = useState('dia_todo');
+
   const [editingId, setEditingId] = useState(null);
   
   const [loading, setLoading] = useState(false);
@@ -22,10 +25,12 @@ export default function Sidebar({ isOpen, onClose, onDataUpdated, professionals 
     navigate('/login');
   };
 
-  const handleEditClick = (pro) => {
+const handleEditClick = (pro) => {
     setEditingId(pro.id);
     setName(pro.name);
     setColor(pro.baseColor);
+    setProfessionId(pro.professionId || ''); // NOVO
+    setShift(pro.shift || 'dia_todo'); // NOVO
     setFeedback({ type: '', message: '' });
   };
 
@@ -33,6 +38,8 @@ export default function Sidebar({ isOpen, onClose, onDataUpdated, professionals 
     setEditingId(null);
     setName('');
     setColor('#3b82f6');
+    setProfessionId(''); // NOVO
+    setShift('dia_todo'); // NOVO
     setFeedback({ type: '', message: '' });
   };
 
@@ -45,16 +52,18 @@ export default function Sidebar({ isOpen, onClose, onDataUpdated, professionals 
       const currentData = await fetchGistData();
       let successMessage = '';
       
-      if (editingId) {
+if (editingId) {
         currentData.professionals = currentData.professionals.map(p => 
-          p.id === editingId ? { ...p, name: name.trim(), baseColor: color } : p
+          p.id === editingId ? { ...p, name: name.trim(), baseColor: color, professionId, shift } : p // ADICIONADO professionId, shift
         );
         successMessage = 'Profissional atualizado com sucesso!';
       } else {
         const newProfessional = {
           id: `p_${Date.now()}`,
           name: name.trim(),
-          baseColor: color
+          baseColor: color,
+          professionId, // NOVO
+          shift // NOVO
         };
         currentData.professionals = [...(currentData.professionals || []), newProfessional];
         successMessage = 'Novo profissional cadastrado!';
@@ -155,6 +164,19 @@ export default function Sidebar({ isOpen, onClose, onDataUpdated, professionals 
               required
               className="sidebar-input"
             />
+
+            <label>Cargo / Profissão</label>
+            <select value={professionId} onChange={(e) => setProfessionId(e.target.value)} required className="sidebar-input">
+              <option value="">-- Selecione o Cargo --</option>
+              {professions.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
+            </select>
+
+            <label>Turno de Trabalho</label>
+            <select value={shift} onChange={(e) => setShift(e.target.value)} required className="sidebar-input">
+              <option value="manhã">Manhã</option>
+              <option value="tarde">Tarde</option>
+              <option value="dia_todo">Dia Todo (Ambos)</option>
+            </select>
 
             <label>Cor no Calendário</label>
             <div className="color-picker-wrapper">
