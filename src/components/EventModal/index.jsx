@@ -12,8 +12,8 @@ export default function EventModal({ isOpen, onClose, professionals = [], events
   
   const [loading, setLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
+  const [conflictWarning, setConflictWarning] = useState(null); // Estado para o alerta amarelo
 
-  // A MÁGICA: Preenche o form se for modo de edição, ou limpa se for novo evento
   useEffect(() => {
     if (eventToEdit) {
       setProfId(eventToEdit.professionalId);
@@ -28,44 +28,66 @@ export default function EventModal({ isOpen, onClose, professionals = [], events
       setStartDate('');
       setEndDate('');
     }
+    setConflictWarning(null);
+    setErrorMsg('');
   }, [eventToEdit, isOpen]);
 
   if (!isOpen) return null;
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
+  const handleSubmit = async (e, forceSave = false) => {
+    if (e) e.preventDefault();
     setErrorMsg('');
 
     if (!profId) { setErrorMsg('Selecione um profissional.'); return; }
     if (startDate > endDate) { setErrorMsg('A data final não pode ser antes da inicial.'); return; }
 
-    // --- NOVA INTELIGÊNCIA: VERIFICAÇÃO DE CONFLITO ---
-    const hasConflict = events.some(existingEvent => {
-      // 1. Só verifica os eventos do MESMO funcionário que selecionamos
+    // 1. VERIFICAÇÃO RÍGIDA: Mesma pessoa (Erro Vermelho)
+    const hasPersonalConflict = events.some(existingEvent => {
       if (existingEvent.professionalId !== profId) return false;
-
-      // 2. Se estamos EDITANDO, o código deve ignorar o próprio evento na checagem
       if (eventToEdit && existingEvent.id === eventToEdit.id) return false;
-
-      // 3. A matemática da Colisão: 
-      // Se o Novo INÍCIO encosta ou vem antes do Antigo FIM
-      // E o Novo FIM encosta ou vem depois do Antigo INÍCIO = CONFLITO!
       return (startDate <= existingEvent.endDate) && (endDate >= existingEvent.startDate);
     });
 
-    if (hasConflict) {
+    if (hasPersonalConflict) {
       setErrorMsg('Atenção: Este funcionário já possui uma ausência marcada neste período!');
-      return; // O return para a execução e impede de salvar no Gist
+      return; 
     }
-    // --- FIM DA VERIFICAÇÃO ---
 
+    // 2. VERIFICAÇÃO DE CARGO: Setor Descoberto (Aviso Amarelo)
+    if (!forceSave) {
+      const currentPro = professionals.find(p => String(p.id) === String(profId));
+      const currentCargoId = currentPro?.professionId;
+
+      if (currentCargoId) {
+        const conflictingEvent = events.find(ev => {
+          if (eventToEdit && ev.id === eventToEdit.id) return false;
+          if (String(ev.professionalId) === String(profId)) return false; 
+          
+          const isOverlapping = (startDate <= ev.endDate) && (endDate >= ev.startDate);
+
+          if (isOverlapping) {
+             const otherPro = professionals.find(p => String(p.id) === String(ev.professionalId));
+             return otherPro?.professionId === currentCargoId;
+          }
+          return false;
+        });
+
+        if (conflictingEvent) {
+           const outroPro = professionals.find(p => String(p.id) === String(conflictingEvent.professionalId));
+           setConflictWarning(`Aviso: ${outroPro.name} (mesmo cargo) já possui ${conflictingEvent.type} neste período. Deseja confirmar mesmo assim?`);
+           return; 
+        }
+      }
+    }
+
+    setConflictWarning(null);
     setLoading(true);
 
     try {
       const currentData = await fetchGistData();
       
       const savedEvent = {
-        id: eventToEdit ? eventToEdit.id : `evt_${Date.now()}`, // Mantém a ID se for edição
+        id: eventToEdit ? eventToEdit.id : `evt_${Date.now()}`,
         professionalId: profId,
         type: type,
         reason: type === 'folga' ? reason.trim() : '',
@@ -74,10 +96,8 @@ export default function EventModal({ isOpen, onClose, professionals = [], events
       };
 
       if (eventToEdit) {
-        // MODO EDIÇÃO: Substitui o antigo
         currentData.events = currentData.events.map(e => e.id === eventToEdit.id ? savedEvent : e);
       } else {
-        // MODO CRIAÇÃO: Adiciona na lista
         currentData.events = [...(currentData.events || []), savedEvent];
       }
 
@@ -96,12 +116,13 @@ export default function EventModal({ isOpen, onClose, professionals = [], events
     <div className="event-modal-overlay">
       <div className="event-modal-container">
         <div className="event-modal-header">
-          {/* Título muda de acordo com o modo */}
           <h3>{eventToEdit ? 'Editar Ausência' : 'Nova Ausência'}</h3>
           <button onClick={onClose} className="btn-close-modal">&times;</button>
         </div>
 
         <form onSubmit={handleSubmit}>
+          {/* ... Seus campos Select, Type Selector, Reason Input e Date Row continuam iguais ... */}
+          
           <div className="form-group">
             <label>Profissional</label>
             <select className="form-select" value={profId} onChange={(e) => setProfId(e.target.value)}>
@@ -121,7 +142,7 @@ export default function EventModal({ isOpen, onClose, professionals = [], events
           {type === 'folga' && (
             <div className="form-group">
               <label>Motivo da Folga (Opcional)</label>
-              <input type="text" className="form-input" placeholder="Ex: Consulta médica, Banco de horas..." value={reason} onChange={(e) => setReason(e.target.value)} />
+              <input type="text" className="form-input" placeholder="Ex: Consulta médica..." value={reason} onChange={(e) => setReason(e.target.value)} />
             </div>
           )}
 
@@ -136,11 +157,24 @@ export default function EventModal({ isOpen, onClose, professionals = [], events
             </div>
           </div>
 
-          {errorMsg && <p style={{ color: '#ef4444', fontSize: '0.85rem', textAlign: 'center', margin: '0.5rem 0' }}>{errorMsg}</p>}
+          {errorMsg && <p className="error-msg-modal">{errorMsg}</p>}
 
-          <button type="submit" className="btn-submit-event" disabled={loading}>
-            {loading ? 'Salvando...' : (eventToEdit ? 'Atualizar Agendamento' : 'Confirmar Agendamento')}
-          </button>
+          {/* CAIXA DE AVISO AMARELA */}
+          {conflictWarning && (
+            <div className="conflict-warning-box">
+              <p>⚠️ {conflictWarning}</p>
+              <div className="conflict-actions">
+                <button type="button" onClick={() => handleSubmit(null, true)} className="btn-force-save">Salvar mesmo assim</button>
+                <button type="button" onClick={() => setConflictWarning(null)} className="btn-cancel-warning">Revisar</button>
+              </div>
+            </div>
+          )}
+
+          {!conflictWarning && (
+            <button type="submit" className="btn-submit-event" disabled={loading}>
+              {loading ? 'Salvando...' : (eventToEdit ? 'Atualizar Agendamento' : 'Confirmar Agendamento')}
+            </button>
+          )}
         </form>
       </div>
     </div>
