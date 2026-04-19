@@ -94,7 +94,7 @@ export default function AnnualCalendar({ professionals = [], events = [], onEven
                 className="month-body" 
                 style={{ 
                   gridTemplateColumns: `repeat(${daysCount}, minmax(0, 1fr))`, 
-                  gridTemplateRows: professionals.length > 0 ? `repeat(${professionals.length}, 16px)` : '16px'
+                  gridTemplateRows: professionals.length > 0 ? `repeat(${professionals.length}, 5px)` : '5px'
                 }}
               >
                 {daysArray.map(day => (

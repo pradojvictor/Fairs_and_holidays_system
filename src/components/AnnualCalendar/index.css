@@ -69,6 +69,7 @@
   z-index: 10;
   transition: opacity 0.2s, transform 0.2s;
   cursor: pointer;
+  align-self: center;
 }
 
 /* Um pequeno efeito visual quando o mouse passa por cima da linha */
