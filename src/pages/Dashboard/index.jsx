@@ -9,6 +9,7 @@ import EventDetailModal from '../../components/EventDetailModal';
 import MonthlySummary from '../../components/MonthlySummary';
 import AdminProfileModal from '../../components/AdminProfileModal';
 import ConfirmModal from '../../components/ConfirmModal';
+import ProfessionalList from '../../components/ProfessionalList';
 import './index.css';
 
 export default function Dashboard() {
@@ -87,6 +88,10 @@ export default function Dashboard() {
     const matchProf = filterProf ? event.professionalId === filterProf : true;
     const matchType = filterType ? event.type === filterType : true;
     return matchProf && matchType;
+  });
+
+  const filteredProfessionals = dbData.professionals.filter(pro => {
+    return filterProf ? pro.id === filterProf : true;
   });
 
   // Logo antes do 'return'
@@ -203,6 +208,10 @@ export default function Dashboard() {
           </>
         )}
       </main>
+      <ProfessionalList 
+        professionals={filteredProfessionals} 
+        events={filteredEvents} 
+      />
     </div>
   );
 }
