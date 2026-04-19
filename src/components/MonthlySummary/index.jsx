@@ -3,7 +3,6 @@ import React, { useState } from 'react';
 import './index.css';
 
 export default function MonthlySummary({ professionals = [], events = [] }) {
-  // A MÁGICA: Agora a data base é um estado mutável, começando no dia atual
   const [baseDate, setBaseDate] = useState(new Date());
 
   const currentYear = baseDate.getFullYear();
@@ -34,9 +33,42 @@ export default function MonthlySummary({ professionals = [], events = [] }) {
   const days = Array.from({ length: daysInMonth }, (_, i) => i + 1);
   const weekDays = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'];
 
-  // Para saber se o quadradinho é o dia de "hoje" real
   const realToday = new Date();
   const isRealCurrentMonth = realToday.getFullYear() === currentYear && realToday.getMonth() === currentMonth;
+
+  // === NOVA FUNÇÃO DE EXPORTAÇÃO PARA CSV/EXCEL ===
+  const exportToCSV = () => {
+    if (currentMonthEvents.length === 0) {
+      alert("Não há ausências para exportar neste mês.");
+      return;
+    }
+
+    // Cabeçalho das colunas no Excel
+    let csvContent = "Profissional;Tipo;Data Inicio;Data Fim;Motivo\n";
+
+    currentMonthEvents.forEach(e => {
+      const pro = professionals.find(p => p.id === e.professionalId);
+      // Pega o nome (remove ponto e vírgula se houver para não quebrar a planilha)
+      const name = pro ? pro.name.replace(/;/g, ",") : 'Desconhecido';
+      const type = e.type === 'folga' ? 'Folga' : 'Férias';
+      
+      const start = new Date(`${e.startDate}T12:00:00`).toLocaleDateString('pt-BR');
+      const end = new Date(`${e.endDate}T12:00:00`).toLocaleDateString('pt-BR');
+      const reason = e.reason ? e.reason.replace(/;/g, ",") : '-';
+
+      csvContent += `${name};${type};${start};${end};${reason}\n`;
+    });
+
+    // \uFEFF força o Excel a reconhecer acentos (UTF-8)
+    const blob = new Blob(["\uFEFF" + csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.setAttribute("download", `Ausencias_${monthName}_${currentYear}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
 
   return (
     <div className="summary-container">
@@ -44,7 +76,6 @@ export default function MonthlySummary({ professionals = [], events = [] }) {
       {/* LADO ESQUERDO: Calendário Mensal */}
       <div className="mini-calendar-card">
         
-        {/* CONTROLES DE NAVEGAÇÃO */}
         <div className="month-navigation">
           <button onClick={handlePrevMonth} className="btn-nav-month" title="Mês Anterior">&lt;</button>
           
@@ -60,7 +91,6 @@ export default function MonthlySummary({ professionals = [], events = [] }) {
         
         <div className="mini-calendar-grid">
           {weekDays.map(d => <div key={d} className="mini-day-name">{d}</div>)}
-          
           {blanks.map(b => <div key={`blank-${b}`} className="mini-day-cell empty"></div>)}
           
           {days.map(day => {
@@ -89,11 +119,22 @@ export default function MonthlySummary({ professionals = [], events = [] }) {
         </div>
       </div>
 
-      {/* LADO DIREITO: Indicadores do Mês (Atualizam automaticamente!) */}
+      {/* LADO DIREITO: Indicadores do Mês */}
       <div className="indicators-card">
-        <h3 style={{ margin: 0, color: '#111827', fontSize: '1.2rem', textTransform: 'capitalize' }}>
-          Resumo de {monthName}
-        </h3>
+        
+        {/* NOVO: Cabeçalho com o botão de exportar alinhado à direita */}
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
+          <h3 style={{ margin: 0, color: '#111827', fontSize: '1.2rem', textTransform: 'capitalize' }}>
+            Resumo de {monthName}
+          </h3>
+          <button 
+            onClick={exportToCSV}
+            style={{ backgroundColor: '#10b981', color: 'white', border: 'none', padding: '6px 12px', borderRadius: '6px', cursor: 'pointer', fontSize: '0.85rem', fontWeight: 'bold', display: 'flex', gap: '5px', alignItems: 'center' }}
+            title="Baixar planilha do mês"
+          >
+            ⬇️ Exportar CSV
+          </button>
+        </div>
         
         <div className="indicator-row">
           <div className="indicator-box ferias">
@@ -116,27 +157,19 @@ export default function MonthlySummary({ professionals = [], events = [] }) {
                 const pro = professionals.find(p => p.id === e.professionalId);
                 return (
                   <li key={e.id} style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                    
-                    {/* AQUI ESTÁ A BOLINHA COLORIDA */}
                     <span 
                       style={{ 
-                        width: '12px', 
-                        height: '12px', 
-                        borderRadius: '50%', 
-                        backgroundColor: pro?.baseColor || '#ccc',
-                        flexShrink: 0,
+                        width: '12px', height: '12px', borderRadius: '50%', 
+                        backgroundColor: pro?.baseColor || '#ccc', flexShrink: 0,
                         boxShadow: '0 1px 2px rgba(0,0,0,0.1)'
                       }} 
                     />
-                    
-                    {/* NOME E TIPO DE AUSÊNCIA */}
                     <span>
                       <strong>{pro?.name || 'Desconhecido'}</strong> 
                       <span style={{ color: '#9ca3af', fontSize: '0.8rem', marginLeft: '0.5rem' }}>
                         ({e.type === 'folga' ? 'Folga' : 'Férias'})
                       </span>
                     </span>
-                    
                   </li>
                 );
               })}
