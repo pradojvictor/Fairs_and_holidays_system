@@ -111,15 +111,32 @@ export default function MonthlySummary({ professionals = [], events = [] }) {
           {currentMonthEvents.length === 0 ? (
             <p style={{ fontSize: '0.85rem', color: '#6b7280' }}>Nenhuma ausência registrada para {monthName}.</p>
           ) : (
-            <ul style={{ paddingLeft: '1.2rem', margin: 0, fontSize: '0.9rem', color: '#4b5563', display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+            <ul style={{ paddingLeft: '0', margin: 0, fontSize: '0.9rem', color: '#4b5563', display: 'flex', flexDirection: 'column', gap: '0.6rem', listStyle: 'none' }}>
               {currentMonthEvents.map(e => {
                 const pro = professionals.find(p => p.id === e.professionalId);
                 return (
-                  <li key={e.id}>
-                    <strong>{pro?.name || 'Desconhecido'}</strong> 
-                    <span style={{ color: '#9ca3af', fontSize: '0.8rem', marginLeft: '0.5rem' }}>
-                      ({e.type === 'folga' ? 'Folga' : 'Férias'})
+                  <li key={e.id} style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    
+                    {/* AQUI ESTÁ A BOLINHA COLORIDA */}
+                    <span 
+                      style={{ 
+                        width: '12px', 
+                        height: '12px', 
+                        borderRadius: '50%', 
+                        backgroundColor: pro?.baseColor || '#ccc',
+                        flexShrink: 0,
+                        boxShadow: '0 1px 2px rgba(0,0,0,0.1)'
+                      }} 
+                    />
+                    
+                    {/* NOME E TIPO DE AUSÊNCIA */}
+                    <span>
+                      <strong>{pro?.name || 'Desconhecido'}</strong> 
+                      <span style={{ color: '#9ca3af', fontSize: '0.8rem', marginLeft: '0.5rem' }}>
+                        ({e.type === 'folga' ? 'Folga' : 'Férias'})
+                      </span>
                     </span>
+                    
                   </li>
                 );
               })}
