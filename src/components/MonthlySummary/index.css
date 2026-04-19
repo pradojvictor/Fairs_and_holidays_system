@@ -4,6 +4,7 @@
   display: grid;
   grid-template-columns: 1fr 1fr; /* Divide meio a meio */
   gap: 2rem;
+  padding-bottom: 4rem;
 }
 
 /* LADO ESQUERDO: Calendário do Mês */
