@@ -244,7 +244,7 @@ const handleShare = async () => {
             </div>
 
             {/* PARTE INFERIOR: Resumo do Mês (Calendário Menor + Cards) */}
-            <MonthlySummary professionals={dbData.professionals} events={dbData.events} />
+            <MonthlySummary professionals={dbData.professionals} events={dbData.events} professions={dbData.professions} />
           </>
         )}
       </main>

@@ -95,3 +95,6 @@ export default function PublicDashboard() {
     </div>
   );
 }
+
+
+//quero mudar para ser naturalmente responsivo em mobile!
