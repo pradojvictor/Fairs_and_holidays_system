@@ -8,10 +8,11 @@ export default function Sidebar({ isOpen, onClose, onDataUpdated, professionals 
   const navigate = useNavigate();
   
   const [name, setName] = useState('');
-  const [matricula, setMatricula] = useState(''); // NOVO: Estado da matrícula
+  const [matricula, setMatricula] = useState('');
   const [color, setColor] = useState('#3b82f6');
   const [professionId, setProfessionId] = useState('');
   const [shift, setShift] = useState('dia_todo');
+  const [isSupervisor, setIsSupervisor] = useState(false); // NOVO: Estado de Supervisor
 
   const [editingId, setEditingId] = useState(null);
   
@@ -28,20 +29,22 @@ export default function Sidebar({ isOpen, onClose, onDataUpdated, professionals 
   const handleEditClick = (pro) => {
     setEditingId(pro.id);
     setName(pro.name);
-    setMatricula(pro.matricula || ''); // NOVO
+    setMatricula(pro.matricula || '');
     setColor(pro.baseColor);
     setProfessionId(pro.professionId || '');
     setShift(pro.shift || 'dia_todo');
+    setIsSupervisor(pro.isSupervisor || false); // NOVO
     setFeedback({ type: '', message: '' });
   };
 
   const cancelEdit = () => {
     setEditingId(null);
     setName('');
-    setMatricula(''); // NOVO
+    setMatricula('');
     setColor('#3b82f6');
     setProfessionId('');
     setShift('dia_todo');
+    setIsSupervisor(false); // NOVO
     setFeedback({ type: '', message: '' });
   };
 
@@ -55,12 +58,19 @@ export default function Sidebar({ isOpen, onClose, onDataUpdated, professionals 
       let successMessage = '';
       
       if (editingId) {
+        // Validação: Evitar matrículas duplicadas ao editar (ignorando a própria matrícula)
+        const matriculaExiste = currentData.professionals?.some(p => p.matricula === matricula.trim() && p.id !== editingId);
+        if (matriculaExiste) {
+          setFeedback({ type: 'error', message: 'Esta matrícula já está em uso por outro!' });
+          setLoading(false);
+          return;
+        }
+
         currentData.professionals = currentData.professionals.map(p => 
-          p.id === editingId ? { ...p, name: name.trim(), matricula: matricula.trim(), baseColor: color, professionId, shift } : p
+          p.id === editingId ? { ...p, name: name.trim(), matricula: matricula.trim(), baseColor: color, professionId, shift, isSupervisor } : p
         );
         successMessage = 'Profissional atualizado com sucesso!';
       } else {
-        // Validação: Evitar matrículas duplicadas
         const matriculaExiste = currentData.professionals?.some(p => p.matricula === matricula.trim());
         if (matriculaExiste) {
           setFeedback({ type: 'error', message: 'Esta matrícula já está em uso!' });
@@ -71,10 +81,11 @@ export default function Sidebar({ isOpen, onClose, onDataUpdated, professionals 
         const newProfessional = {
           id: `p_${Date.now()}`,
           name: name.trim(),
-          matricula: matricula.trim(), // NOVO
+          matricula: matricula.trim(),
           baseColor: color,
           professionId,
-          shift
+          shift,
+          isSupervisor // NOVO
         };
         currentData.professionals = [...(currentData.professionals || []), newProfessional];
         successMessage = 'Novo profissional cadastrado!';
@@ -105,10 +116,8 @@ export default function Sidebar({ isOpen, onClose, onDataUpdated, professionals 
     
     try {
       const currentData = await fetchGistData();
-      
       currentData.professionals = currentData.professionals.filter(p => p.id !== id);
       currentData.events = (currentData.events || []).filter(e => e.professionalId !== id);
-
       await updateGistData(currentData);
       
       if (editingId === id) cancelEdit(); 
@@ -117,9 +126,7 @@ export default function Sidebar({ isOpen, onClose, onDataUpdated, professionals 
       setDeleteModal({ isOpen: false, pro: null });
       setFeedback({ type: 'success', message: 'Profissional e eventos excluídos!' });
       setTimeout(() => setFeedback({ type: '', message: '' }), 4000);
-      
     } catch (error) {
-      console.error("Erro ao deletar:", error);
       setDeleteModal({ isOpen: false, pro: null });
       setFeedback({ type: 'error', message: 'Erro ao tentar excluir.' });
     } finally {
@@ -140,11 +147,7 @@ export default function Sidebar({ isOpen, onClose, onDataUpdated, professionals 
             <button 
               onClick={onOpenProfile}
               title="Editar Perfil"
-              style={{ 
-                background: 'transparent', border: '1px solid #4b5563', color: '#9ca3af', 
-                padding: '0.2rem 0.5rem', borderRadius: '4px', cursor: 'pointer', fontSize: '0.75rem',
-                transition: 'all 0.2s'
-              }}
+              style={{ background: 'transparent', border: '1px solid #4b5563', color: '#9ca3af', padding: '0.2rem 0.5rem', borderRadius: '4px', cursor: 'pointer', fontSize: '0.75rem', transition: 'all 0.2s' }}
               onMouseOver={(e) => { e.currentTarget.style.color = 'white'; e.currentTarget.style.borderColor = '#9ca3af'; }}
               onMouseOut={(e) => { e.currentTarget.style.color = '#9ca3af'; e.currentTarget.style.borderColor = '#4b5563'; }}
             >
@@ -160,25 +163,25 @@ export default function Sidebar({ isOpen, onClose, onDataUpdated, professionals 
 
           <form onSubmit={handleSaveProfessional} className="sidebar-form">
             <label>Nome do Funcionário</label>
-            <input 
-              type="text" 
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              placeholder="Ex: João Silva"
-              required
-              className="sidebar-input"
-            />
+            <input type="text" value={name} onChange={(e) => setName(e.target.value)} placeholder="Ex: João Silva" required className="sidebar-input" />
 
-            {/* NOVO: CAMPO DE MATRÍCULA */}
             <label>Matrícula (Senha de Acesso)</label>
-            <input 
-              type="text" 
-              value={matricula}
-              onChange={(e) => setMatricula(e.target.value)}
-              placeholder="Ex: 12345"
-              required
-              className="sidebar-input"
-            />
+            <input type="text" value={matricula} onChange={(e) => setMatricula(e.target.value)} placeholder="Ex: 12345" required className="sidebar-input" />
+
+            {/* NOVO: CHECKBOX DE SUPERVISOR */}
+            <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '15px', backgroundColor: '#f3f4f6', padding: '10px', borderRadius: '8px', borderLeft: '4px solid #8b5cf6' }}>
+              <input 
+                type="checkbox" 
+                id="isSupervisor" 
+                checked={isSupervisor} 
+                onChange={(e) => setIsSupervisor(e.target.checked)} 
+                style={{ width: '18px', height: '18px', cursor: 'pointer' }}
+              />
+              <label htmlFor="isSupervisor" style={{ margin: 0, fontSize: '0.85rem', color: '#4b5563', cursor: 'pointer' }}>
+                <strong>Privilégio de Supervisor</strong><br/>
+                <span style={{ fontSize: '0.75rem' }}>Pode ver a escala de toda a equipe.</span>
+              </label>
+            </div>
 
             <label>Cargo / Profissão</label>
             <select value={professionId} onChange={(e) => setProfessionId(e.target.value)} required className="sidebar-input">
@@ -195,11 +198,7 @@ export default function Sidebar({ isOpen, onClose, onDataUpdated, professionals 
 
             <label>Cor no Calendário</label>
             <div className="color-picker-wrapper">
-              <input 
-                type="color" 
-                value={color}
-                onChange={(e) => setColor(e.target.value)}
-              />
+              <input type="color" value={color} onChange={(e) => setColor(e.target.value)} />
               <span>{color}</span>
             </div>
 
@@ -208,15 +207,11 @@ export default function Sidebar({ isOpen, onClose, onDataUpdated, professionals 
             </button>
 
             {editingId && (
-              <button type="button" onClick={cancelEdit} className="btn-cancel" disabled={loading}>
-                Cancelar Edição
-              </button>
+              <button type="button" onClick={cancelEdit} className="btn-cancel" disabled={loading}>Cancelar Edição</button>
             )}
 
             {feedback.message && (
-              <div className={`feedback-toast ${feedback.type}`}>
-                {feedback.message}
-              </div>
+              <div className={`feedback-toast ${feedback.type}`}>{feedback.message}</div>
             )}
           </form>
 
@@ -231,8 +226,10 @@ export default function Sidebar({ isOpen, onClose, onDataUpdated, professionals 
                     <div className="pro-info">
                       <div className="pro-color" style={{ backgroundColor: pro.baseColor }}></div>
                       <div style={{display: 'flex', flexDirection: 'column'}}>
-                         <span className="pro-name">{pro.name}</span>
-                         {/* NOVO: Mostra a matrícula na lista pro admin ver */}
+                         <span className="pro-name">
+                           {pro.name} 
+                           {pro.isSupervisor && <span title="Supervisor" style={{marginLeft:'5px'}}>👑</span>}
+                         </span>
                          <span style={{fontSize: '0.7rem', color: '#6b7280'}}>Mat: {pro.matricula || 'Sem senha'}</span>
                       </div>
                     </div>
@@ -255,16 +252,10 @@ export default function Sidebar({ isOpen, onClose, onDataUpdated, professionals 
           <div className="modal-container">
             <h3>Confirmar Exclusão</h3>
             <p>Você tem certeza que deseja excluir <strong>{deleteModal.pro?.name}</strong>?</p>
-            <p className="modal-warning">
-              Aviso: Todas as férias e folgas deste funcionário desaparecerão do calendário permanentemente.
-            </p>
+            <p className="modal-warning">Aviso: Todas as férias e folgas deste funcionário desaparecerão do calendário permanentemente.</p>
             <div className="modal-actions">
-              <button className="btn-modal-cancel" onClick={() => setDeleteModal({ isOpen: false, pro: null })} disabled={loading}>
-                Cancelar
-              </button>
-              <button className="btn-modal-confirm" onClick={confirmDelete} disabled={loading}>
-                {loading ? 'Excluindo...' : 'Sim, Excluir'}
-              </button>
+              <button className="btn-modal-cancel" onClick={() => setDeleteModal({ isOpen: false, pro: null })} disabled={loading}>Cancelar</button>
+              <button className="btn-modal-confirm" onClick={confirmDelete} disabled={loading}>{loading ? 'Excluindo...' : 'Sim, Excluir'}</button>
             </div>
           </div>
         </div>
