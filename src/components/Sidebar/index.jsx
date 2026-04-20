@@ -8,6 +8,7 @@ export default function Sidebar({ isOpen, onClose, onDataUpdated, professionals 
   const navigate = useNavigate();
   
   const [name, setName] = useState('');
+  const [matricula, setMatricula] = useState(''); // NOVO: Estado da matrícula
   const [color, setColor] = useState('#3b82f6');
   const [professionId, setProfessionId] = useState('');
   const [shift, setShift] = useState('dia_todo');
@@ -17,7 +18,6 @@ export default function Sidebar({ isOpen, onClose, onDataUpdated, professionals 
   const [loading, setLoading] = useState(false);
   const [feedback, setFeedback] = useState({ type: '', message: '' });
   
-  // NOVO: Estado para controlar o Modal de Exclusão
   const [deleteModal, setDeleteModal] = useState({ isOpen: false, pro: null });
 
   const handleLogout = () => {
@@ -25,21 +25,23 @@ export default function Sidebar({ isOpen, onClose, onDataUpdated, professionals 
     navigate('/login');
   };
 
-const handleEditClick = (pro) => {
+  const handleEditClick = (pro) => {
     setEditingId(pro.id);
     setName(pro.name);
+    setMatricula(pro.matricula || ''); // NOVO
     setColor(pro.baseColor);
-    setProfessionId(pro.professionId || ''); // NOVO
-    setShift(pro.shift || 'dia_todo'); // NOVO
+    setProfessionId(pro.professionId || '');
+    setShift(pro.shift || 'dia_todo');
     setFeedback({ type: '', message: '' });
   };
 
   const cancelEdit = () => {
     setEditingId(null);
     setName('');
+    setMatricula(''); // NOVO
     setColor('#3b82f6');
-    setProfessionId(''); // NOVO
-    setShift('dia_todo'); // NOVO
+    setProfessionId('');
+    setShift('dia_todo');
     setFeedback({ type: '', message: '' });
   };
 
@@ -52,18 +54,27 @@ const handleEditClick = (pro) => {
       const currentData = await fetchGistData();
       let successMessage = '';
       
-if (editingId) {
+      if (editingId) {
         currentData.professionals = currentData.professionals.map(p => 
-          p.id === editingId ? { ...p, name: name.trim(), baseColor: color, professionId, shift } : p // ADICIONADO professionId, shift
+          p.id === editingId ? { ...p, name: name.trim(), matricula: matricula.trim(), baseColor: color, professionId, shift } : p
         );
         successMessage = 'Profissional atualizado com sucesso!';
       } else {
+        // Validação: Evitar matrículas duplicadas
+        const matriculaExiste = currentData.professionals?.some(p => p.matricula === matricula.trim());
+        if (matriculaExiste) {
+          setFeedback({ type: 'error', message: 'Esta matrícula já está em uso!' });
+          setLoading(false);
+          return;
+        }
+
         const newProfessional = {
           id: `p_${Date.now()}`,
           name: name.trim(),
+          matricula: matricula.trim(), // NOVO
           baseColor: color,
-          professionId, // NOVO
-          shift // NOVO
+          professionId,
+          shift
         };
         currentData.professionals = [...(currentData.professionals || []), newProfessional];
         successMessage = 'Novo profissional cadastrado!';
@@ -84,12 +95,10 @@ if (editingId) {
     }
   };
 
-  // NOVO: Apenas abre o modal e guarda quem queremos apagar
   const requestDelete = (pro) => {
     setDeleteModal({ isOpen: true, pro: pro });
   };
 
-  // NOVO: Função que realmente vai no Gist e deleta, chamada pelo botão do Modal
   const confirmDelete = async () => {
     const id = deleteModal.pro.id;
     setLoading(true);
@@ -105,7 +114,6 @@ if (editingId) {
       if (editingId === id) cancelEdit(); 
       if (onDataUpdated) onDataUpdated();
       
-      // Fecha o modal e mostra sucesso
       setDeleteModal({ isOpen: false, pro: null });
       setFeedback({ type: 'success', message: 'Profissional e eventos excluídos!' });
       setTimeout(() => setFeedback({ type: '', message: '' }), 4000);
@@ -121,18 +129,14 @@ if (editingId) {
 
   return (
     <>
-      {/* Overlay da Sidebar */}
       <div className={`sidebar-overlay ${isOpen ? 'open' : ''}`} onClick={onClose} />
       
       <div className={`sidebar-container ${isOpen ? 'open' : ''}`}>
         
-        {/* 2. SUBSTITUA A DIV DO SIDEBAR-HEADER POR ESTA: */}
         <div className="sidebar-header">
           <h2>Painel Administrativo</h2>
-          
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '0.5rem' }}>
             <p style={{ margin: 0 }}>Logado como: <strong>{adminName || 'admin'}</strong></p>
-            
             <button 
               onClick={onOpenProfile}
               title="Editar Perfil"
@@ -161,6 +165,17 @@ if (editingId) {
               value={name}
               onChange={(e) => setName(e.target.value)}
               placeholder="Ex: João Silva"
+              required
+              className="sidebar-input"
+            />
+
+            {/* NOVO: CAMPO DE MATRÍCULA */}
+            <label>Matrícula (Senha de Acesso)</label>
+            <input 
+              type="text" 
+              value={matricula}
+              onChange={(e) => setMatricula(e.target.value)}
+              placeholder="Ex: 12345"
               required
               className="sidebar-input"
             />
@@ -198,7 +213,6 @@ if (editingId) {
               </button>
             )}
 
-            {/* NOVO: Feedback Toast estilizado */}
             {feedback.message && (
               <div className={`feedback-toast ${feedback.type}`}>
                 {feedback.message}
@@ -216,11 +230,14 @@ if (editingId) {
                   <div key={pro.id} className="pro-item">
                     <div className="pro-info">
                       <div className="pro-color" style={{ backgroundColor: pro.baseColor }}></div>
-                      <span className="pro-name">{pro.name}</span>
+                      <div style={{display: 'flex', flexDirection: 'column'}}>
+                         <span className="pro-name">{pro.name}</span>
+                         {/* NOVO: Mostra a matrícula na lista pro admin ver */}
+                         <span style={{fontSize: '0.7rem', color: '#6b7280'}}>Mat: {pro.matricula || 'Sem senha'}</span>
+                      </div>
                     </div>
                     <div className="pro-actions">
                       <button onClick={() => handleEditClick(pro)} className="btn-icon edit" title="Editar">✏️</button>
-                      {/* O botão da lixeira agora chama o requestDelete */}
                       <button onClick={() => requestDelete(pro)} className="btn-icon delete" title="Excluir">🗑️</button>
                     </div>
                   </div>
@@ -230,12 +247,9 @@ if (editingId) {
           </div>
         </div>
 
-        <button onClick={handleLogout} className="btn-logout">
-          Sair do Sistema
-        </button>
+        <button onClick={handleLogout} className="btn-logout">Sair do Sistema</button>
       </div>
 
-      {/* NOVO: Modal de Confirmação de Exclusão */}
       {deleteModal.isOpen && (
         <div className="modal-overlay-custom">
           <div className="modal-container">
@@ -244,20 +258,11 @@ if (editingId) {
             <p className="modal-warning">
               Aviso: Todas as férias e folgas deste funcionário desaparecerão do calendário permanentemente.
             </p>
-            
             <div className="modal-actions">
-              <button 
-                className="btn-modal-cancel"
-                onClick={() => setDeleteModal({ isOpen: false, pro: null })}
-                disabled={loading}
-              >
+              <button className="btn-modal-cancel" onClick={() => setDeleteModal({ isOpen: false, pro: null })} disabled={loading}>
                 Cancelar
               </button>
-              <button 
-                className="btn-modal-confirm"
-                onClick={confirmDelete}
-                disabled={loading}
-              >
+              <button className="btn-modal-confirm" onClick={confirmDelete} disabled={loading}>
                 {loading ? 'Excluindo...' : 'Sim, Excluir'}
               </button>
             </div>

@@ -6,9 +6,15 @@ import './index.css';
 export default function PublicDashboard() {
   const [isLoading, setIsLoading] = useState(true);
   const [dbData, setDbData] = useState({ professionals: [], events: [], professions: [] });
+  
+  // === NOVOS ESTADOS DE LOGIN ===
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [loggedInUser, setLoggedInUser] = useState(null);
+  const [inputMatricula, setInputMatricula] = useState('');
+  const [loginError, setLoginError] = useState('');
+
   const [currentDate, setCurrentDate] = useState(new Date());
   const [selectedDay, setSelectedDay] = useState(new Date().getDate());
-  
   const [isExpanded, setIsExpanded] = useState(false);
 
   useEffect(() => {
@@ -27,6 +33,26 @@ export default function PublicDashboard() {
     loadData();
   }, []);
 
+  // === LÓGICA DE LOGIN ===
+  const handleLogin = (e) => {
+    e.preventDefault();
+    const user = dbData.professionals.find(p => p.matricula === inputMatricula.trim());
+    
+    if (user) {
+      setLoggedInUser(user);
+      setIsLoggedIn(true);
+      setLoginError('');
+    } else {
+      setLoginError('Matrícula não encontrada. Verifique com o RH.');
+    }
+  };
+
+  const handleLogout = () => {
+    setIsLoggedIn(false);
+    setLoggedInUser(null);
+    setInputMatricula('');
+  };
+
   const year = currentDate.getFullYear();
   const month = currentDate.getMonth();
   const monthName = currentDate.toLocaleString('pt-BR', { month: 'long' });
@@ -37,10 +63,13 @@ export default function PublicDashboard() {
   const blanks = Array.from({ length: firstDayIndex }, (_, i) => i);
   const days = Array.from({ length: daysInMonth }, (_, i) => i + 1);
 
-  // 1. Pega os eventos só do dia selecionado
+  // === A MÁGICA DO FILTRO PRIVADO ===
+  // Agora o sistema SÓ olha para as férias/folgas do usuário que fez login!
+  const myEvents = dbData.events.filter(e => e.professionalId === loggedInUser?.id);
+
   const getEventsForDay = (day) => {
     const target = new Date(year, month, day, 12, 0, 0);
-    return dbData.events.filter(e => {
+    return myEvents.filter(e => {
       const start = new Date(`${e.startDate}T12:00:00`);
       const end = new Date(`${e.endDate}T12:00:00`);
       return target >= start && target <= end;
@@ -49,8 +78,7 @@ export default function PublicDashboard() {
 
   const selectedDayEvents = selectedDay ? getEventsForDay(selectedDay) : [];
 
-  // 2. NOVA LÓGICA: Pega os eventos do mês INTEIRO
-  const currentMonthEvents = dbData.events.filter(e => {
+  const currentMonthEvents = myEvents.filter(e => {
     const start = new Date(`${e.startDate}T12:00:00`);
     const end = new Date(`${e.endDate}T12:00:00`);
     const mStart = new Date(year, month, 1);
@@ -58,42 +86,81 @@ export default function PublicDashboard() {
     return start <= mEnd && end >= mStart;
   });
 
-  // Ordena os eventos do mês por data de início
   currentMonthEvents.sort((a, b) => new Date(a.startDate) - new Date(b.startDate));
 
-  // Função para formatar a data (Ex: de "2024-05-15" para "15/05")
- // Função inteligente para formatar o texto da ausência
   const formatPeriod = (startStr, endStr) => {
     if (!startStr || !endStr) return '';
-    
     const start = new Date(`${startStr}T12:00:00`);
     const end = new Date(`${endStr}T12:00:00`);
-    
     const sDay = String(start.getDate()).padStart(2, '0');
     const sMonth = String(start.getMonth() + 1).padStart(2, '0');
     const eDay = String(end.getDate()).padStart(2, '0');
     const eMonth = String(end.getMonth() + 1).padStart(2, '0');
 
-    // 1. É apenas um dia único de folga?
-    if (startStr === endStr) {
-      return `Apenas dia ${sDay}/${sMonth}`;
-    }
-
-    // 2. A ausência cobre o mês inteiro que estamos visualizando?
+    if (startStr === endStr) return `Apenas dia ${sDay}/${sMonth}`;
+    
     const firstDayOfMonth = new Date(year, month, 1, 12, 0, 0);
     const lastDayOfMonth = new Date(year, month + 1, 0, 12, 0, 0);
+    if (start <= firstDayOfMonth && end >= lastDayOfMonth) return "O Mês Todo";
     
-    if (start <= firstDayOfMonth && end >= lastDayOfMonth) {
-      return "O Mês Todo";
-    }
-
-    // 3. É um período quebrado? (Ex: tirou 15 dias)
     return `De ${sDay}/${sMonth} até ${eDay}/${eMonth}`;
   };
 
+  // === TELA DE CARREGAMENTO ===
+  if (isLoading) {
+    return <div className="mobile-dash-container" style={{justifyContent: 'center', alignItems: 'center'}}>Carregando...</div>;
+  }
+
+  // === TELA DE LOGIN (Se não estiver logado) ===
+  if (!isLoggedIn) {
+    return (
+      <div className="mobile-dash-container login-screen" style={{ justifyContent: 'center', padding: '20px' }}>
+        <div style={{ backgroundColor: 'white', padding: '30px', borderRadius: '20px', color: '#111827', textAlign: 'center', boxShadow: '0 10px 25px rgba(0,0,0,0.2)' }}>
+          <h2 style={{ margin: '0 0 10px 0', fontSize: '1.5rem' }}>Portal do Colaborador</h2>
+          <p style={{ color: '#6b7280', fontSize: '0.9rem', marginBottom: '25px' }}>Digite sua matrícula para ver sua escala.</p>
+          
+          <form onSubmit={handleLogin} style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
+            <input 
+              type="text" 
+              placeholder="Número da Matrícula" 
+              value={inputMatricula}
+              onChange={(e) => setInputMatricula(e.target.value)}
+              required
+              style={{ padding: '12px', borderRadius: '8px', border: '1px solid #d1d5db', fontSize: '1rem', textAlign: 'center' }}
+            />
+            
+            {loginError && <p style={{ color: '#ef4444', fontSize: '0.85rem', margin: '0' }}>{loginError}</p>}
+            
+            <button type="submit" style={{ backgroundColor: '#ff2d95', color: 'white', border: 'none', padding: '12px', borderRadius: '8px', fontWeight: 'bold', fontSize: '1rem', cursor: 'pointer' }}>
+              Acessar Minha Escala
+            </button>
+          </form>
+        </div>
+      </div>
+    );
+  }
+
+  // === TELA DO DASHBOARD (Quando Logado) ===
   return (
     <div className="mobile-dash-container">
-      <div className="mobile-dash-header">
+      
+      {/* NOVO HEADER COM NOME E BOTÃO DE SAIR */}
+      <div style={{ display: 'flex', justifyContent: 'space-between', padding: '20px 20px 0 20px', alignItems: 'center' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+          <div style={{ width: '35px', height: '35px', borderRadius: '50%', backgroundColor: loggedInUser.baseColor, display: 'flex', justifyContent: 'center', alignItems: 'center', fontWeight: 'bold', color: 'white', fontSize: '1.2rem' }}>
+            {loggedInUser.name.charAt(0).toUpperCase()}
+          </div>
+          <div style={{ display: 'flex', flexDirection: 'column' }}>
+            <span style={{ fontSize: '0.75rem', opacity: 0.7 }}>Olá,</span>
+            <span style={{ fontWeight: 'bold', fontSize: '1rem' }}>{loggedInUser.name.split(' ')[0]}</span>
+          </div>
+        </div>
+        <button onClick={handleLogout} style={{ background: 'rgba(255,255,255,0.1)', border: 'none', color: 'white', padding: '5px 12px', borderRadius: '20px', fontSize: '0.8rem', cursor: 'pointer' }}>
+          Sair
+        </button>
+      </div>
+
+      <div className="mobile-dash-header" style={{ paddingTop: '15px' }}>
         <button onClick={() => setCurrentDate(new Date(year, month - 1, 1))}>&lt;</button>
         <div className="mobile-header-title">
             <span className="month">{monthName.toUpperCase()}</span>
@@ -120,10 +187,9 @@ export default function PublicDashboard() {
               >
                 <span>{day}</span>
                 <div className="day-dots-container">
-                  {eventsToday.slice(0, 3).map((e, i) => {
-                    const pro = dbData.professionals.find(p => p.id === e.professionalId);
-                    return <div key={i} className="dot" style={{ backgroundColor: pro?.baseColor }} />
-                  })}
+                  {eventsToday.slice(0, 3).map((e, i) => (
+                    <div key={i} className="dot" style={{ backgroundColor: loggedInUser.baseColor }} />
+                  ))}
                 </div>
               </div>
             );
@@ -144,38 +210,35 @@ export default function PublicDashboard() {
           {!isExpanded && (
              <p className="drawer-summary">
                {selectedDayEvents.length === 0 
-                 ? 'Ninguém de folga hoje. Equipe completa!' 
-                 : `${selectedDayEvents.length} ausência(s) registrada(s) neste dia.`}
+                 ? 'Você tem expediente normal hoje.' 
+                 : `Você tem ${selectedDayEvents[0].type.toUpperCase()} registrada hoje!`}
              </p>
           )}
         </div>
 
-        {/* CONTEÚDO EXPANDIDO */}
         {isExpanded && (
           <div className="drawer-content">
             
-            {/* SEÇÃO 1: DIA SELECIONADO */}
             <h4 style={{ fontSize: '0.9rem', color: '#6b7280', textTransform: 'uppercase', margin: '0 0 10px 0', borderBottom: '1px solid #e5e7eb', paddingBottom: '5px' }}>
               Neste dia ({selectedDay}):
             </h4>
             
             <div className="compact-event-list" style={{ marginBottom: '25px' }}>
               {selectedDayEvents.length === 0 ? (
-                <p className="empty-msg" style={{ margin: 0 }}>Nenhuma ausência agendada para hoje.</p>
+                <p className="empty-msg" style={{ margin: 0 }}>Sem ausências agendadas. Dia normal de trabalho.</p>
               ) : (
                 selectedDayEvents.map(ev => {
-                  const pro = dbData.professionals.find(p => p.id === ev.professionalId);
-                  const cargo = dbData.professions.find(p => p.id === pro?.professionId)?.name || 'Geral';
+                  const cargo = dbData.professions.find(p => p.id === loggedInUser.professionId)?.name || 'Geral';
                   return (
                     <div key={ev.id} className="compact-row">
-                      <div className="pro-color-bar" style={{ backgroundColor: pro?.baseColor }}></div>
+                      <div className="pro-color-bar" style={{ backgroundColor: loggedInUser.baseColor }}></div>
                       <div className="pro-info-box">
                           <div className="pro-main-line">
-                              <span className="pro-name">{pro?.name}</span>
+                              <span className="pro-name">Sua Escala</span>
                               <span className={`type-tag ${ev.type}`}>{ev.type === 'ferias' ? 'FÉRIAS' : 'FOLGA'}</span>
                           </div>
                           <div className="pro-sub-line">
-                              {cargo} • {pro?.shift === 'dia_todo' ? 'Dia Todo' : pro?.shift}
+                              {cargo} • {loggedInUser.shift === 'dia_todo' ? 'Dia Todo' : loggedInUser.shift}
                           </div>
                       </div>
                     </div>
@@ -184,36 +247,28 @@ export default function PublicDashboard() {
               )}
             </div>
 
-            {/* SEÇÃO 2: MÊS INTEIRO */}
             <h4 style={{ fontSize: '0.9rem', color: '#6b7280', textTransform: 'uppercase', margin: '0 0 10px 0', borderBottom: '1px solid #e5e7eb', paddingBottom: '5px' }}>
-              Visão Geral do Mês:
+              Minha Visão Geral de {monthNameCapitalized}:
             </h4>
             
             <div className="compact-event-list">
               {currentMonthEvents.length === 0 ? (
-                <p className="empty-msg" style={{ margin: 0 }}>Ninguém de folga ou férias neste mês.</p>
+                <p className="empty-msg" style={{ margin: 0 }}>Você não tem folgas ou férias programadas para este mês.</p>
               ) : (
-                currentMonthEvents.map(ev => {
-                  const pro = dbData.professionals.find(p => p.id === ev.professionalId);
-                  const cargo = dbData.professions.find(p => p.id === pro?.professionId)?.name || 'Geral';
-                  return (
-                    <div key={`month-${ev.id}`} className="compact-row">
-                      <div className="pro-color-bar" style={{ backgroundColor: pro?.baseColor }}></div>
-                      <div className="pro-info-box">
-                          <div className="pro-main-line">
-                              <span className="pro-name">{pro?.name}</span>
-                              <span className={`type-tag ${ev.type}`}>{ev.type === 'ferias' ? 'FÉRIAS' : 'FOLGA'}</span>
-                          </div>
-                          <div className="pro-sub-line" style={{ fontWeight: 'bold', color: '#4b5563' }}>
-                              {formatPeriod(ev.startDate, ev.endDate)}
-                          </div>
-                          <div className="pro-sub-line" style={{ fontSize: '0.75rem' }}>
-                              {cargo} • {pro?.shift === 'dia_todo' ? 'Dia Todo' : pro?.shift}
-                          </div>
-                      </div>
+                currentMonthEvents.map(ev => (
+                  <div key={`month-${ev.id}`} className="compact-row">
+                    <div className="pro-color-bar" style={{ backgroundColor: loggedInUser.baseColor }}></div>
+                    <div className="pro-info-box">
+                        <div className="pro-main-line">
+                            <span className="pro-name">Ausência Agendada</span>
+                            <span className={`type-tag ${ev.type}`}>{ev.type === 'ferias' ? 'FÉRIAS' : 'FOLGA'}</span>
+                        </div>
+                        <div className="pro-sub-line" style={{ fontWeight: 'bold', color: '#4b5563' }}>
+                            {formatPeriod(ev.startDate, ev.endDate)}
+                        </div>
                     </div>
-                  );
-                })
+                  </div>
+                ))
               )}
             </div>
 

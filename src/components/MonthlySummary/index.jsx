@@ -2,13 +2,13 @@
 import React, { useState } from 'react';
 import './index.css';
 
-// ATENÇÃO: Adicionamos "professions" aqui nos parâmetros!
 export default function MonthlySummary({ professionals = [], events = [], professions = [] }) {
   const [baseDate, setBaseDate] = useState(new Date());
 
   const currentYear = baseDate.getFullYear();
   const currentMonth = baseDate.getMonth();
   const monthName = baseDate.toLocaleString('pt-BR', { month: 'long' });
+  const monthNameCapitalized = monthName.charAt(0).toUpperCase() + monthName.slice(1);
   
   const daysInMonth = new Date(currentYear, currentMonth + 1, 0).getDate();
   const firstDayIndex = new Date(currentYear, currentMonth, 1).getDay();
@@ -17,12 +17,27 @@ export default function MonthlySummary({ professionals = [], events = [], profes
   const handleNextMonth = () => setBaseDate(new Date(currentYear, currentMonth + 1, 1));
   const handleToday = () => setBaseDate(new Date());
 
+  const realToday = new Date();
+  const isRealCurrentMonth = realToday.getFullYear() === currentYear && realToday.getMonth() === currentMonth;
+
+  // 1. EVENTOS DO MÊS ATUAL
   const currentMonthEvents = events.filter(e => {
     const start = new Date(`${e.startDate}T12:00:00`);
     const end = new Date(`${e.endDate}T12:00:00`);
     const mStart = new Date(currentYear, currentMonth, 1);
     const mEnd = new Date(currentYear, currentMonth + 1, 0, 23, 59, 59);
     return start <= mEnd && end >= mStart;
+  });
+
+  // Ordena por data de início
+  currentMonthEvents.sort((a, b) => new Date(a.startDate) - new Date(b.startDate));
+
+  // 2. EVENTOS ESPECÍFICOS DE "HOJE"
+  const todayTarget = new Date(realToday.getFullYear(), realToday.getMonth(), realToday.getDate(), 12, 0, 0);
+  const todayEvents = events.filter(e => {
+    const start = new Date(`${e.startDate}T12:00:00`);
+    const end = new Date(`${e.endDate}T12:00:00`);
+    return todayTarget >= start && todayTarget <= end;
   });
 
   const feriasCount = currentMonthEvents.filter(e => e.type === 'ferias').length;
@@ -32,66 +47,69 @@ export default function MonthlySummary({ professionals = [], events = [], profes
   const days = Array.from({ length: daysInMonth }, (_, i) => i + 1);
   const weekDays = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'];
 
-  const realToday = new Date();
-  const isRealCurrentMonth = realToday.getFullYear() === currentYear && realToday.getMonth() === currentMonth;
+  // Função Inteligente de Datas
+  const formatPeriod = (startStr, endStr) => {
+    if (!startStr || !endStr) return '';
+    const start = new Date(`${startStr}T12:00:00`);
+    const end = new Date(`${endStr}T12:00:00`);
+    
+    const sDay = String(start.getDate()).padStart(2, '0');
+    const sMonth = String(start.getMonth() + 1).padStart(2, '0');
+    const eDay = String(end.getDate()).padStart(2, '0');
+    const eMonth = String(end.getMonth() + 1).padStart(2, '0');
 
-  // === NOVO: ANÁLISE DE IMPACTO OPERACIONAL ===
+    if (startStr === endStr) return `Apenas dia ${sDay}/${sMonth}`;
+    
+    const firstDayOfMonth = new Date(currentYear, currentMonth, 1, 12, 0, 0);
+    const lastDayOfMonth = new Date(currentYear, currentMonth + 1, 0, 12, 0, 0);
+    
+    if (start <= firstDayOfMonth && end >= lastDayOfMonth) return "O Mês Todo";
+    return `De ${sDay}/${sMonth} até ${eDay}/${eMonth}`;
+  };
+
+  // Análise de Impacto Operacional
   const generateImpactReport = () => {
     const report = {};
-
     currentMonthEvents.forEach(e => {
       const pro = professionals.find(p => p.id === e.professionalId);
       if (!pro) return;
-
       const cargo = professions.find(p => p.id === pro.professionId)?.name || 'Sem Cargo Definido';
       
-      // Formata o turno para ficar bonito
       let turnoFormatado = pro.shift;
       if (turnoFormatado === 'dia_todo') turnoFormatado = 'Dia Todo';
       if (turnoFormatado === 'manhã' || turnoFormatado === 'manha') turnoFormatado = 'Manhã';
       if (turnoFormatado === 'tarde') turnoFormatado = 'Tarde';
 
       const key = `${cargo} | Turno: ${turnoFormatado}`;
-
-      if (!report[key]) {
-        report[key] = { total: 0, ferias: 0, folgas: 0 };
-      }
-
+      if (!report[key]) report[key] = { total: 0, ferias: 0, folgas: 0 };
+      
       report[key].total += 1;
       if (e.type === 'ferias') report[key].ferias += 1;
       if (e.type === 'folga') report[key].folgas += 1;
     });
-
     return report;
   };
 
   const impactReport = generateImpactReport();
   const impactKeys = Object.keys(impactReport);
 
-  // === ATUALIZADO: Exportação para Excel agora tem Cargo e Turno ===
   const exportToCSV = () => {
     if (currentMonthEvents.length === 0) {
       alert("Não há ausências para exportar neste mês.");
       return;
     }
-
     let csvContent = "Profissional;Cargo;Turno;Tipo;Data Inicio;Data Fim;Motivo\n";
-
     currentMonthEvents.forEach(e => {
       const pro = professionals.find(p => p.id === e.professionalId);
       const name = pro ? pro.name.replace(/;/g, ",") : 'Desconhecido';
-      
       const cargo = professions.find(p => p.id === pro?.professionId)?.name || '-';
       const shift = pro?.shift === 'dia_todo' ? 'Dia Todo' : (pro?.shift || '-');
-      
       const type = e.type === 'folga' ? 'Folga' : 'Férias';
       const start = new Date(`${e.startDate}T12:00:00`).toLocaleDateString('pt-BR');
       const end = new Date(`${e.endDate}T12:00:00`).toLocaleDateString('pt-BR');
       const reason = e.reason ? e.reason.replace(/;/g, ",") : '-';
-
       csvContent += `${name};${cargo};${shift};${type};${start};${end};${reason}\n`;
     });
-
     const blob = new Blob(["\uFEFF" + csvContent], { type: 'text/csv;charset=utf-8;' });
     const url = URL.createObjectURL(blob);
     const link = document.createElement("a");
@@ -121,7 +139,6 @@ export default function MonthlySummary({ professionals = [], events = [], profes
         <div className="mini-calendar-grid">
           {weekDays.map(d => <div key={d} className="mini-day-name">{d}</div>)}
           {blanks.map(b => <div key={`blank-${b}`} className="mini-day-cell empty"></div>)}
-          
           {days.map(day => {
             const isToday = isRealCurrentMonth && day === realToday.getDate();
             const eventsToday = currentMonthEvents.filter(e => {
@@ -130,7 +147,6 @@ export default function MonthlySummary({ professionals = [], events = [], profes
               const current = new Date(currentYear, currentMonth, day, 12, 0, 0);
               return current >= start && current <= end;
             });
-
             return (
               <div key={day} className={`mini-day-cell ${isToday ? 'today' : ''}`}>
                 <span>{day}</span>
@@ -156,12 +172,7 @@ export default function MonthlySummary({ professionals = [], events = [], profes
             <h3 style={{ margin: 0, color: '#111827', fontSize: '1.2rem', textTransform: 'capitalize' }}>
               Resumo de {monthName}
             </h3>
-            <button 
-              onClick={exportToCSV}
-              style={{ backgroundColor: '#10b981', color: 'white', border: 'none', padding: '6px 12px', borderRadius: '6px', cursor: 'pointer', fontSize: '0.85rem', fontWeight: 'bold', display: 'flex', gap: '5px', alignItems: 'center' }}
-            >
-              ⬇️ Exportar CSV
-            </button>
+            <button onClick={exportToCSV} className="btn-export">⬇️ Exportar CSV</button>
           </div>
           
           <div className="indicator-row">
@@ -176,76 +187,96 @@ export default function MonthlySummary({ professionals = [], events = [], profes
           </div>
         </div>
 
-        {/* LISTA DE PROFISSIONAIS (AGORA COM CARGO E TURNO) */}
-        <div className="absent-list">
-          <h4 style={{ borderBottom: '1px solid #e5e7eb', paddingBottom: '8px', marginBottom: '10px' }}>Ausências da Equipe:</h4>
-          {currentMonthEvents.length === 0 ? (
-            <p style={{ fontSize: '0.85rem', color: '#6b7280' }}>Nenhuma ausência neste mês.</p>
-          ) : (
-            <ul style={{ paddingLeft: '0', margin: 0, fontSize: '0.9rem', color: '#4b5563', display: 'flex', flexDirection: 'column', gap: '0.8rem', listStyle: 'none' }}>
-              {currentMonthEvents.map(e => {
-                const pro = professionals.find(p => p.id === e.professionalId);
-                const cargo = professions.find(p => p.id === pro?.professionId)?.name || 'Sem cargo';
-                
-                let turnoBadge = pro?.shift || 'Dia Todo';
-                if(turnoBadge === 'dia_todo') turnoBadge = 'Dia Todo';
-
-                return (
-                  <li key={e.id} style={{ display: 'flex', alignItems: 'flex-start', gap: '10px' }}>
-                    <span style={{ width: '12px', height: '12px', borderRadius: '50%', backgroundColor: pro?.baseColor || '#ccc', flexShrink: 0, marginTop: '4px' }} />
-                    <div style={{ display: 'flex', flexDirection: 'column' }}>
-                      <span>
-                        <strong>{pro?.name || 'Desconhecido'}</strong> 
-                        <span style={{ color: e.type === 'folga' ? '#ef4444' : '#3b82f6', fontSize: '0.8rem', marginLeft: '0.5rem', fontWeight: 'bold' }}>
-                          ({e.type === 'folga' ? 'Folga' : 'Férias'})
-                        </span>
-                      </span>
-                      <span style={{ fontSize: '0.8rem', color: '#9ca3af' }}>
-                        {cargo} • {turnoBadge}
-                      </span>
+        {/* LISTAS INTELIGENTES */}
+        <div className="absent-list" style={{ display: 'flex', flexDirection: 'column', gap: '2rem' }}>
+          
+          {/* SEÇÃO 1: HOJE */}
+          <div>
+            <h4 className="section-header">📅 Hoje ({realToday.toLocaleDateString('pt-BR').slice(0, 5)})</h4>
+            <div className="compact-event-list">
+              {todayEvents.length === 0 ? (
+                <p className="empty-msg-admin">Equipe completa hoje! Nenhuma ausência.</p>
+              ) : (
+                todayEvents.map(e => {
+                  const pro = professionals.find(p => p.id === e.professionalId);
+                  const cargo = professions.find(p => p.id === pro?.professionId)?.name || 'Sem cargo';
+                  const shift = pro?.shift === 'dia_todo' ? 'Dia Todo' : (pro?.shift || '-');
+                  return (
+                    <div key={`today-${e.id}`} className="admin-compact-row">
+                      <div className="admin-pro-color" style={{ backgroundColor: pro?.baseColor || '#ccc' }}></div>
+                      <div className="admin-pro-info">
+                        <div className="admin-pro-main">
+                          <span className="admin-pro-name">{pro?.name || 'Desconhecido'}</span>
+                          <span className={`admin-tag ${e.type}`}>{e.type === 'ferias' ? 'FÉRIAS' : 'FOLGA'}</span>
+                        </div>
+                        <div className="admin-pro-sub">{cargo} • {shift}</div>
+                      </div>
                     </div>
-                  </li>
-                );
-              })}
-            </ul>
-          )}
+                  );
+                })
+              )}
+            </div>
+          </div>
+
+          {/* SEÇÃO 2: VISÃO GERAL DO MÊS */}
+          <div>
+            <h4 className="section-header">🗓️ Visão Geral de {monthNameCapitalized}</h4>
+            <div className="compact-event-list">
+              {currentMonthEvents.length === 0 ? (
+                <p className="empty-msg-admin">Nenhuma ausência agendada para este mês.</p>
+              ) : (
+                currentMonthEvents.map(e => {
+                  const pro = professionals.find(p => p.id === e.professionalId);
+                  const cargo = professions.find(p => p.id === pro?.professionId)?.name || 'Sem cargo';
+                  const shift = pro?.shift === 'dia_todo' ? 'Dia Todo' : (pro?.shift || '-');
+                  return (
+                    <div key={`month-${e.id}`} className="admin-compact-row">
+                      <div className="admin-pro-color" style={{ backgroundColor: pro?.baseColor || '#ccc' }}></div>
+                      <div className="admin-pro-info">
+                        <div className="admin-pro-main">
+                          <span className="admin-pro-name">{pro?.name || 'Desconhecido'}</span>
+                          <span className={`admin-tag ${e.type}`}>{e.type === 'ferias' ? 'FÉRIAS' : 'FOLGA'}</span>
+                        </div>
+                        <div className="admin-pro-sub" style={{ fontWeight: 'bold', color: '#374151', marginBottom: '2px' }}>
+                          {formatPeriod(e.startDate, e.endDate)}
+                        </div>
+                        <div className="admin-pro-sub" style={{ fontSize: '0.75rem' }}>{cargo} • {shift}</div>
+                      </div>
+                    </div>
+                  );
+                })
+              )}
+            </div>
+          </div>
+
         </div>
 
-        {/* === A NOVA IDEIA: IMPACTO OPERACIONAL === */}
+        {/* IMPACTO OPERACIONAL (Fica no final) */}
         {impactKeys.length > 0 && (
-          <div style={{ backgroundColor: '#f9fafb', padding: '15px', borderRadius: '8px', border: '1px solid #e5e7eb' }}>
-            <h4 style={{ margin: '0 0 10px 0', color: '#374151', fontSize: '0.95rem' }}>📊 Impacto Operacional</h4>
+          <div className="impact-box">
+            <h4 style={{ margin: '0 0 10px 0', color: '#374151', fontSize: '0.95rem' }}>📊 Impacto Operacional no Mês</h4>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-              
               {impactKeys.map(key => {
                 const data = impactReport[key];
-                // Se um setor tiver 2 ou mais ausências no mês, ganha um alerta!
                 const isWarning = data.total >= 2; 
-
                 return (
-                  <div key={key} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', backgroundColor: 'white', padding: '8px 12px', borderRadius: '6px', borderLeft: `4px solid ${isWarning ? '#f59e0b' : '#10b981'}`, boxShadow: '0 1px 2px rgba(0,0,0,0.05)' }}>
+                  <div key={key} className="impact-row" style={{ borderLeftColor: isWarning ? '#f59e0b' : '#10b981' }}>
                     <div style={{ display: 'flex', flexDirection: 'column' }}>
-                      <span style={{ fontSize: '0.85rem', fontWeight: 'bold', color: '#4b5563' }}>
-                        {isWarning && <span title="Atenção: Múltiplas ausências neste setor">⚠️ </span>}
-                        {key.split('|')[0]} {/* Nome do Cargo */}
+                      <span className="impact-title">
+                        {isWarning && <span title="Atenção">⚠️ </span>}
+                        {key.split('|')[0]}
                       </span>
-                      <span style={{ fontSize: '0.75rem', color: '#9ca3af' }}>
-                        {key.split('|')[1]} {/* Turno */}
-                      </span>
+                      <span className="impact-shift">{key.split('|')[1]}</span>
                     </div>
-                    
                     <div style={{ textAlign: 'right' }}>
-                      <span style={{ fontSize: '0.9rem', fontWeight: 'bold', color: isWarning ? '#b45309' : '#047857' }}>
+                      <span className="impact-total" style={{ color: isWarning ? '#b45309' : '#047857' }}>
                         {data.total} ausência{data.total > 1 ? 's' : ''}
                       </span>
-                      <div style={{ fontSize: '0.7rem', color: '#6b7280' }}>
-                        ({data.ferias} Férias, {data.folgas} Folgas)
-                      </div>
+                      <div className="impact-details">({data.ferias} Férias, {data.folgas} Folgas)</div>
                     </div>
                   </div>
                 );
               })}
-
             </div>
           </div>
         )}

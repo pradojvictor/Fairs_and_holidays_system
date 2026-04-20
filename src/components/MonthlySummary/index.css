@@ -187,3 +187,109 @@
   border-bottom: 1px solid #e5e7eb;
   padding-bottom: 0.5rem;
 }
+
+/* =========================================
+   ESTILOS DA LISTA COMPACTA (ADMIN)
+   ========================================= */
+.section-header {
+  margin: 0 0 10px 0;
+  color: #374151;
+  font-size: 0.95rem;
+  border-bottom: 1px solid #e5e7eb;
+  padding-bottom: 5px;
+}
+
+.empty-msg-admin {
+  font-size: 0.85rem;
+  color: #6b7280;
+  margin: 0;
+}
+
+.compact-event-list {
+  display: flex;
+  flex-direction: column;
+}
+
+.admin-compact-row {
+  display: flex;
+  align-items: center;
+  background: #f8f9fa;
+  margin-bottom: 10px;
+  border-radius: 8px;
+  overflow: hidden;
+  border: 1px solid #e5e7eb;
+  min-height: 50px;
+}
+
+.admin-pro-color {
+  width: 6px;
+  align-self: stretch;
+}
+
+.admin-pro-info {
+  padding: 8px 12px;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.admin-pro-main {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.admin-pro-name {
+  font-weight: bold;
+  font-size: 0.95rem;
+  color: #111827;
+}
+
+.admin-tag {
+  font-size: 0.65rem;
+  font-weight: 800;
+  padding: 2px 6px;
+  border-radius: 4px;
+}
+
+.admin-tag.ferias { background: #e3f2fd; color: #1d4ed8; }
+.admin-tag.folga { background: #fef2f2; color: #b91c1c; }
+
+.admin-pro-sub {
+  font-size: 0.8rem;
+  color: #6b7280;
+}
+
+/* Ajustes Extras */
+.btn-export {
+  background-color: #10b981; 
+  color: white; 
+  border: none; 
+  padding: 6px 12px; 
+  border-radius: 6px; 
+  cursor: pointer; 
+  font-size: 0.85rem; 
+  font-weight: bold;
+}
+.impact-box {
+  background-color: #f9fafb; 
+  padding: 15px; 
+  border-radius: 8px; 
+  border: 1px solid #e5e7eb;
+}
+.impact-row {
+  display: flex; 
+  justify-content: space-between; 
+  align-items: center; 
+  background-color: white; 
+  padding: 8px 12px; 
+  border-radius: 6px; 
+  border-left-width: 4px;
+  border-left-style: solid;
+  box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+}
+.impact-title { font-size: 0.85rem; font-weight: bold; color: #4b5563; }
+.impact-shift { font-size: 0.75rem; color: #9ca3af; }
+.impact-total { font-size: 0.9rem; font-weight: bold; }
+.impact-details { font-size: 0.7rem; color: #6b7280; }
