@@ -50,24 +50,25 @@ export default function PublicDashboard() {
 
   const selectedDayEvents = selectedDay ? getEventsForDay(selectedDay) : [];
 
-  // === LÓGICA DE PUXAR A GAVETA ===
+// === LÓGICA DE PUXAR A GAVETA ===
   const handleTouchStart = (e) => {
     setTouchStartY(e.touches[0].clientY);
   };
 
-  const handleTouchMove = (e) => {
+  // Usamos TouchEnd no lugar de TouchMove para a animação ficar suave!
+  const handleTouchEnd = (e) => {
     if (!touchStartY) return;
     
-    const currentY = e.touches[0].clientY;
-    const diff = touchStartY - currentY; // Positivo = puxou pra cima / Negativo = puxou pra baixo
+    const endY = e.changedTouches[0].clientY;
+    const diff = touchStartY - endY; // Positivo = cima / Negativo = baixo
 
-    if (diff > 50) {
-      setIsExpanded(true); // Expande se puxar pra cima
-      setTouchStartY(null);
-    } else if (diff < -50) {
-      setIsExpanded(false); // Recolhe se puxar pra baixo
-      setTouchStartY(null);
+    if (diff > 40) {
+      setIsExpanded(true); // Puxou pra cima
+    } else if (diff < -40) {
+      setIsExpanded(false); // Puxou pra baixo
     }
+    
+    setTouchStartY(null);
   };
 
   const toggleDrawer = () => {
@@ -87,7 +88,8 @@ export default function PublicDashboard() {
 
       <div className="mobile-calendar-section">
         <div className="mobile-calendar-grid">
-          {['D','S','T','Q','Q','S','S'].map(d => <div key={d} className="mobile-weekday">{d}</div>)}
+          {/* Substitua a linha antiga por esta aqui: */}
+{['D','S','T','Q','Q','S','S'].map((d, index) => <div key={`day-${index}`} className="mobile-weekday">{d}</div>)}
           {blanks.map(b => <div key={`b-${b}`} className="mobile-day empty"></div>)}
           {days.map(day => {
             const eventsToday = getEventsForDay(day);
@@ -114,20 +116,25 @@ export default function PublicDashboard() {
         </div>
       </div>
 
-      {/* GAVETA COM EVENTOS DE TOQUE */}
-      <div 
-        className={`mobile-half-drawer ${isExpanded ? 'expanded' : ''}`}
-        onTouchStart={handleTouchStart}
-        onTouchMove={handleTouchMove}
-      >
-        {/* O risquinho agora também pode ser clicado */}
-        <div className="drawer-handle-wrapper" onClick={toggleDrawer}>
-          <div className="drawer-handle"></div>
+{/* GAVETA DE METADE DA TELA */}
+      <div className={`mobile-half-drawer ${isExpanded ? 'expanded' : ''}`}>
+        
+        {/* ZONA DE ARRASTAR (Apenas o topo responde ao toque de puxar) */}
+        <div 
+          className="drawer-drag-zone" 
+          onClick={toggleDrawer}
+          onTouchStart={handleTouchStart}
+          onTouchEnd={handleTouchEnd}
+          style={{ cursor: 'pointer', paddingBottom: '10px' }}
+        >
+          <div className="drawer-handle-wrapper" style={{ padding: '0 0 15px 0' }}>
+            <div className="drawer-handle"></div>
+          </div>
+          <h3 className="drawer-date-title" style={{ margin: '0' }}>{selectedDay} de {monthName}</h3>
         </div>
-
-        <div className="drawer-content">
-          <h3 className="drawer-date-title">{selectedDay} de {monthName}</h3>
-          
+        
+        {/* LISTA (Rola livremente sem puxar a gaveta) */}
+        <div className="drawer-content" style={{ display: 'flex', flexDirection: 'column', flex: 1, marginTop: '20px', overflow: 'hidden' }}>
           <div className="compact-event-list">
             {selectedDayEvents.length === 0 ? (
               <p className="empty-msg">Ninguém de folga ou férias hoje.</p>
