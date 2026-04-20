@@ -144,3 +144,187 @@
 .type-tag.folga { background: #fff3e0; color: #f57c00; }
 
 .pro-sub-line { font-size: 0.8rem; color: #777; }
+
+/* =========================================
+   📱 PUBLIC DASHBOARD - LOGIN E USUÁRIO
+   ========================================= */
+
+/* Tela de Loading centralizada */
+.loading-screen {
+  justify-content: center;
+  align-items: center;
+}
+
+/* Centraliza o box de login na tela */
+.login-screen-container {
+  justify-content: center;
+  padding: 20px;
+}
+
+/* O cartão branco do Login */
+.login-card {
+  background-color: white;
+  padding: 30px;
+  border-radius: 20px;
+  color: #111827;
+  text-align: center;
+  box-shadow: 0 10px 25px rgba(0,0,0,0.2);
+}
+
+.login-title {
+  margin: 0 0 10px 0;
+  font-size: 1.5rem;
+}
+
+.login-subtitle {
+  color: #6b7280;
+  font-size: 0.9rem;
+  margin-bottom: 25px;
+}
+
+.login-form {
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+}
+
+.login-input {
+  padding: 12px;
+  border-radius: 8px;
+  border: 1px solid #d1d5db;
+  font-size: 1rem;
+  text-align: center;
+}
+
+.login-error {
+  color: #ef4444;
+  font-size: 0.85rem;
+  margin: 0;
+}
+
+.login-btn {
+  background-color: #ff2d95;
+  color: white;
+  border: none;
+  padding: 12px;
+  border-radius: 8px;
+  font-weight: bold;
+  font-size: 1rem;
+  cursor: pointer;
+}
+
+/* =========================================
+   CABEÇALHO DO USUÁRIO LOGADO
+   ========================================= */
+.user-profile-header {
+  display: flex;
+  justify-content: space-between;
+  padding: 20px 20px 0 20px;
+  align-items: center;
+}
+
+.user-info-wrapper {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.user-avatar {
+  width: 35px;
+  height: 35px;
+  border-radius: 50%;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  font-weight: bold;
+  color: white;
+  font-size: 1.2rem;
+}
+
+.user-text-info {
+  display: flex;
+  flex-direction: column;
+}
+
+.user-greeting {
+  font-size: 0.75rem;
+  opacity: 0.7;
+}
+
+.user-firstname {
+  font-weight: bold;
+  font-size: 1rem;
+}
+
+.btn-logout-mobile {
+  background: rgba(255,255,255,0.1);
+  border: none;
+  color: white;
+  padding: 5px 12px;
+  border-radius: 20px;
+  font-size: 0.8rem;
+  cursor: pointer;
+}
+
+/* =========================================
+   GAVETA: TÍTULOS E LISTAS
+   ========================================= */
+.drawer-section-title {
+  font-size: 0.9rem;
+  color: #6b7280;
+  text-transform: uppercase;
+  margin: 0 0 10px 0;
+  border-bottom: 1px solid #e5e7eb;
+  padding-bottom: 5px;
+}
+
+.compact-event-list-spaced {
+  display: flex;
+  flex-direction: column;
+  margin-bottom: 25px;
+}
+
+.empty-msg-drawer {
+  margin: 0;
+  color: #6b7280;
+  font-size: 0.9rem;
+}
+
+/* =========================================
+   COMPACT ROW (AJUSTES AUTOMÁTICOS DE ALTURA)
+   ========================================= */
+
+/* (Se você já tiver uma classe .compact-row, apenas certifique-se 
+    que ela NÃO tem "height: 60px" travado, use "min-height: 60px") */
+.compact-row.dynamic-height {
+  height: auto;
+  min-height: 60px;
+  padding: 10px 0;
+}
+
+.bold-dark {
+  font-weight: bold;
+  color: #4b5563;
+}
+
+/* Efeito para eventos do passado */
+.past-event {
+  opacity: 0.55;
+  transition: opacity 0.2s ease-in-out;
+}
+
+/* O texto do motivo da folga */
+.pro-reason-text {
+  font-style: italic;
+  font-size: 0.8rem;
+  color: #6b7280;
+  margin-top: 4px;
+}
+
+/* Aquele bolinha minúscula "+" quando passa de 3 eventos */
+.dot-more {
+  color: white;
+  font-size: 8px;
+  font-weight: bold;
+  line-height: 1;
+}

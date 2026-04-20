@@ -61,10 +61,8 @@ export default function PublicDashboard() {
   const blanks = Array.from({ length: firstDayIndex }, (_, i) => i);
   const days = Array.from({ length: daysInMonth }, (_, i) => i + 1);
 
-  // === NOVO: VERIFICADOR DE SUPERVISOR ===
   const isSuper = loggedInUser?.isSupervisor === true;
   
-  // Se for supervisor, vê tudo. Se não, vê só o dele.
   const myEvents = isSuper 
     ? dbData.events 
     : dbData.events.filter(e => e.professionalId === loggedInUser?.id);
@@ -87,8 +85,14 @@ export default function PublicDashboard() {
     const mEnd = new Date(year, month + 1, 0, 23, 59, 59);
     return start <= mEnd && end >= mStart;
   });
-
   currentMonthEvents.sort((a, b) => new Date(a.startDate) - new Date(b.startDate));
+
+  const currentYearEvents = myEvents.filter(e => {
+    const startYear = new Date(`${e.startDate}T12:00:00`).getFullYear();
+    const endYear = new Date(`${e.endDate}T12:00:00`).getFullYear();
+    return startYear === year || endYear === year;
+  });
+  currentYearEvents.sort((a, b) => new Date(a.startDate) - new Date(b.startDate));
 
   const formatPeriod = (startStr, endStr) => {
     if (!startStr || !endStr) return '';
@@ -106,18 +110,38 @@ export default function PublicDashboard() {
     return `De ${sDay}/${sMonth} até ${eDay}/${eMonth}`;
   };
 
-  if (isLoading) return <div className="mobile-dash-container" style={{justifyContent: 'center', alignItems: 'center'}}>Carregando...</div>;
+  const formatAnnualPeriod = (startStr, endStr) => {
+    if (!startStr || !endStr) return '';
+    const start = new Date(`${startStr}T12:00:00`);
+    const end = new Date(`${endStr}T12:00:00`);
+    const sDay = String(start.getDate()).padStart(2, '0');
+    const sMonth = String(start.getMonth() + 1).padStart(2, '0');
+    const eDay = String(end.getDate()).padStart(2, '0');
+    const eMonth = String(end.getMonth() + 1).padStart(2, '0');
+
+    if (startStr === endStr) return `Dia ${sDay}/${sMonth}`;
+    return `De ${sDay}/${sMonth} até ${eDay}/${eMonth}`;
+  };
+
+  if (isLoading) return <div className="mobile-dash-container loading-screen">Carregando...</div>;
 
   if (!isLoggedIn) {
     return (
-      <div className="mobile-dash-container login-screen" style={{ justifyContent: 'center', padding: '20px' }}>
-        <div style={{ backgroundColor: 'white', padding: '30px', borderRadius: '20px', color: '#111827', textAlign: 'center', boxShadow: '0 10px 25px rgba(0,0,0,0.2)' }}>
-          <h2 style={{ margin: '0 0 10px 0', fontSize: '1.5rem' }}>Portal do Colaborador</h2>
-          <p style={{ color: '#6b7280', fontSize: '0.9rem', marginBottom: '25px' }}>Digite sua matrícula para ver sua escala.</p>
-          <form onSubmit={handleLogin} style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
-            <input type="text" placeholder="Número da Matrícula" value={inputMatricula} onChange={(e) => setInputMatricula(e.target.value)} required style={{ padding: '12px', borderRadius: '8px', border: '1px solid #d1d5db', fontSize: '1rem', textAlign: 'center' }} />
-            {loginError && <p style={{ color: '#ef4444', fontSize: '0.85rem', margin: '0' }}>{loginError}</p>}
-            <button type="submit" style={{ backgroundColor: '#ff2d95', color: 'white', border: 'none', padding: '12px', borderRadius: '8px', fontWeight: 'bold', fontSize: '1rem', cursor: 'pointer' }}>
+      <div className="mobile-dash-container login-screen-container">
+        <div className="login-card">
+          <h2 className="login-title">Portal do Colaborador</h2>
+          <p className="login-subtitle">Digite sua matrícula para ver sua escala.</p>
+          <form onSubmit={handleLogin} className="login-form">
+            <input 
+              type="text" 
+              placeholder="Número da Matrícula" 
+              value={inputMatricula} 
+              onChange={(e) => setInputMatricula(e.target.value)} 
+              required 
+              className="login-input" 
+            />
+            {loginError && <p className="login-error">{loginError}</p>}
+            <button type="submit" className="login-btn">
               Acessar Escala
             </button>
           </form>
@@ -128,22 +152,21 @@ export default function PublicDashboard() {
 
   return (
     <div className="mobile-dash-container">
-      <div style={{ display: 'flex', justifyContent: 'space-between', padding: '20px 20px 0 20px', alignItems: 'center' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-          <div style={{ width: '35px', height: '35px', borderRadius: '50%', backgroundColor: loggedInUser.baseColor, display: 'flex', justifyContent: 'center', alignItems: 'center', fontWeight: 'bold', color: 'white', fontSize: '1.2rem' }}>
+      
+      <div className="user-profile-header">
+        <div className="user-info-wrapper">
+          <div className="user-avatar" style={{ backgroundColor: loggedInUser.baseColor }}>
             {loggedInUser.name.charAt(0).toUpperCase()}
           </div>
-          <div style={{ display: 'flex', flexDirection: 'column' }}>
-            <span style={{ fontSize: '0.75rem', opacity: 0.7 }}>Olá, {isSuper && "👑 Supervisor"}</span>
-            <span style={{ fontWeight: 'bold', fontSize: '1rem' }}>{loggedInUser.name.split(' ')[0]}</span>
+          <div className="user-text-info">
+            <span className="user-greeting">Olá, {isSuper && "👑 Supervisor"}</span>
+            <span className="user-firstname">{loggedInUser.name.split(' ')[0]}</span>
           </div>
         </div>
-        <button onClick={handleLogout} style={{ background: 'rgba(255,255,255,0.1)', border: 'none', color: 'white', padding: '5px 12px', borderRadius: '20px', fontSize: '0.8rem', cursor: 'pointer' }}>
-          Sair
-        </button>
+        <button onClick={handleLogout} className="btn-logout-mobile">Sair</button>
       </div>
 
-      <div className="mobile-dash-header" style={{ paddingTop: '15px' }}>
+      <div className="mobile-dash-header">
         <button onClick={() => setCurrentDate(new Date(year, month - 1, 1))}>&lt;</button>
         <div className="mobile-header-title">
             <span className="month">{monthName.toUpperCase()}</span>
@@ -167,13 +190,12 @@ export default function PublicDashboard() {
               >
                 <span>{day}</span>
                 <div className="day-dots-container">
-                  {/* Se for supervisor, mostra as cores de cada um. Se não, mostra só a cor dele */}
                   {eventsToday.slice(0, 3).map((e, i) => {
                     const pro = dbData.professionals.find(p => p.id === e.professionalId);
                     const dotColor = isSuper ? (pro?.baseColor || '#fff') : loggedInUser.baseColor;
                     return <div key={i} className="dot" style={{ backgroundColor: dotColor }} />
                   })}
-                  {eventsToday.length > 3 && isSuper && <div className="dot-more" style={{fontSize: '8px'}}>+</div>}
+                  {eventsToday.length > 3 && isSuper && <div className="dot-more">+</div>}
                 </div>
               </div>
             );
@@ -202,25 +224,20 @@ export default function PublicDashboard() {
         {isExpanded && (
           <div className="drawer-content">
             
-            <h4 style={{ fontSize: '0.9rem', color: '#6b7280', textTransform: 'uppercase', margin: '0 0 10px 0', borderBottom: '1px solid #e5e7eb', paddingBottom: '5px' }}>
-              Neste dia ({selectedDay}):
-            </h4>
-            
-            <div className="compact-event-list" style={{ marginBottom: '25px' }}>
+            {/* --- SEÇÃO 1: DIA SELECIONADO --- */}
+            <h4 className="drawer-section-title">Neste dia ({selectedDay}):</h4>
+            <div className="compact-event-list-spaced">
               {selectedDayEvents.length === 0 ? (
-                <p className="empty-msg" style={{ margin: 0 }}>{isSuper ? 'Equipe completa.' : 'Sem ausências agendadas. Dia normal de trabalho.'}</p>
+                <p className="empty-msg-drawer">{isSuper ? 'Equipe completa.' : 'Sem ausências agendadas. Dia normal de trabalho.'}</p>
               ) : (
                 selectedDayEvents.map(ev => {
-                  // Aqui a mágica acontece: Puxa os dados reais de quem está de folga
                   const pro = dbData.professionals.find(p => p.id === ev.professionalId) || loggedInUser;
                   const cargo = dbData.professions.find(p => p.id === pro.professionId)?.name || 'Geral';
-                  
                   return (
-                    <div key={ev.id} className="compact-row">
+                    <div key={ev.id} className="compact-row dynamic-height">
                       <div className="pro-color-bar" style={{ backgroundColor: pro.baseColor }}></div>
                       <div className="pro-info-box">
                           <div className="pro-main-line">
-                              {/* Mostra o nome se for supervisor, ou "Sua Escala" se for funcionário comum */}
                               <span className="pro-name">{isSuper ? pro.name : "Sua Escala"}</span>
                               <span className={`type-tag ${ev.type}`}>{ev.type === 'ferias' ? 'FÉRIAS' : 'FOLGA'}</span>
                           </div>
@@ -234,28 +251,60 @@ export default function PublicDashboard() {
               )}
             </div>
 
-            <h4 style={{ fontSize: '0.9rem', color: '#6b7280', textTransform: 'uppercase', margin: '0 0 10px 0', borderBottom: '1px solid #e5e7eb', paddingBottom: '5px' }}>
-              {isSuper ? `Visão Geral da Equipe - ${monthNameCapitalized}` : `Minha Visão Geral de ${monthNameCapitalized}:`}
-            </h4>
-            
-            <div className="compact-event-list">
+            {/* --- SEÇÃO 2: MÊS INTEIRO --- */}
+            <h4 className="drawer-section-title">{isSuper ? `Visão da Equipe - ${monthNameCapitalized}` : `Minha Visão de ${monthNameCapitalized}:`}</h4>
+            <div className="compact-event-list-spaced">
               {currentMonthEvents.length === 0 ? (
-                <p className="empty-msg" style={{ margin: 0 }}>Nenhuma folga ou férias programada para este mês.</p>
+                <p className="empty-msg-drawer">Nenhuma folga ou férias programada para este mês.</p>
               ) : (
                 currentMonthEvents.map(ev => {
                   const pro = dbData.professionals.find(p => p.id === ev.professionalId) || loggedInUser;
-                  
                   return (
-                    <div key={`month-${ev.id}`} className="compact-row">
+                    <div key={`month-${ev.id}`} className="compact-row dynamic-height">
                       <div className="pro-color-bar" style={{ backgroundColor: pro.baseColor }}></div>
                       <div className="pro-info-box">
                           <div className="pro-main-line">
                               <span className="pro-name">{isSuper ? pro.name : "Ausência Agendada"}</span>
                               <span className={`type-tag ${ev.type}`}>{ev.type === 'ferias' ? 'FÉRIAS' : 'FOLGA'}</span>
                           </div>
-                          <div className="pro-sub-line" style={{ fontWeight: 'bold', color: '#4b5563' }}>
+                          <div className="pro-sub-line bold-dark">
                               {formatPeriod(ev.startDate, ev.endDate)}
                           </div>
+                      </div>
+                    </div>
+                  );
+                })
+              )}
+            </div>
+
+            {/* --- SEÇÃO 3: ANO INTEIRO --- */}
+            <h4 className="drawer-section-title">{isSuper ? `Histórico Anual da Equipe (${year})` : `Meu Histórico Anual (${year}):`}</h4>
+            <div className="compact-event-list">
+              {currentYearEvents.length === 0 ? (
+                <p className="empty-msg-drawer">Nenhum registro encontrado para este ano.</p>
+              ) : (
+                currentYearEvents.map(ev => {
+                  const pro = dbData.professionals.find(p => p.id === ev.professionalId) || loggedInUser;
+                  const isPast = new Date(`${ev.endDate}T23:59:59`) < new Date();
+                  
+                  return (
+                    <div key={`year-${ev.id}`} className={`compact-row dynamic-height ${isPast ? 'past-event' : ''}`}>
+                      <div className="pro-color-bar" style={{ backgroundColor: pro.baseColor }}></div>
+                      <div className="pro-info-box">
+                          <div className="pro-main-line">
+                              <span className="pro-name">{isSuper ? pro.name : "Ausência"}</span>
+                              <span className={`type-tag ${ev.type}`}>{ev.type === 'ferias' ? 'FÉRIAS' : 'FOLGA'}</span>
+                          </div>
+                          
+                          <div className="pro-sub-line bold-dark">
+                              {formatAnnualPeriod(ev.startDate, ev.endDate)}
+                          </div>
+                          
+                          {ev.type === 'folga' && ev.reason && (
+                              <div className="pro-reason-text">
+                                  Motivo: {ev.reason}
+                              </div>
+                          )}
                       </div>
                     </div>
                   );
