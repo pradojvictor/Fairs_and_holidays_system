@@ -1,10 +1,10 @@
 .mobile-dash-container {
   background-color: #1a154d;
-  height: 100vh;
+  min-height: 100vh; /* Alterado de 'height' para 'min-height'. A página agora cresce naturalmente! */
   display: flex;
   flex-direction: column;
-  overflow: hidden;
   color: white;
+  /* overflow: hidden; <-- APAGADO: Agora a página pode rolar! */
 }
 
 .mobile-dash-header {
@@ -52,15 +52,12 @@
 /* GAVETA DE METADE DA TELA */
 .mobile-half-drawer {
   background-color: white;
-  height: 50vh; /* Altura normal */
   margin-top: auto;
   border-radius: 30px 30px 0 0;
   color: #333;
-  padding: 10px 20px 20px;
-  display: flex;
-  flex-direction: column;
-  transition: height 0.4s cubic-bezier(0.25, 0.8, 0.25, 1); /* Animação suave parecida com iOS */
+  padding: 15px 20px 30px;
   box-shadow: 0 -5px 25px rgba(0,0,0,0.2);
+  /* Alturas fixas e animações malucas APAGADAS */
 }
 
 .mobile-half-drawer.expanded {
@@ -74,17 +71,58 @@
   justify-content: center;
 }
 
+.drawer-header-clickable {
+  cursor: pointer;
+  padding-bottom: 10px;
+}
+
 .drawer-handle {
   width: 50px; 
   height: 6px; 
   background: #d1d5db; 
   border-radius: 10px;
+  margin: 0 auto 15px;
 }
 
-.drawer-date-title { font-size: 1.2rem; margin-bottom: 20px; color: #111; }
+.drawer-title-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
 
-.compact-event-list { overflow-y: auto; flex: 1; }
+.drawer-date-title { 
+  font-size: 1.2rem; 
+  margin: 0; 
+  color: #111; 
+}
 
+.btn-expand-drawer {
+  background: none;
+  border: none;
+  color: #ff2d95; /* Cor rosa combinando com a seleção */
+  font-weight: bold;
+  font-size: 0.85rem;
+  cursor: pointer;
+  padding: 5px 0;
+}
+
+.drawer-summary {
+  font-size: 0.9rem;
+  color: #6b7280;
+  margin: 8px 0 0 0;
+}
+
+.drawer-content {
+  margin-top: 20px;
+  animation: fadeIn 0.3s ease-out; /* Dá um efeitinho suave ao abrir */
+}
+
+.compact-event-list { 
+  display: flex;
+  flex-direction: column;
+}
+
+/* Os estilos da compact-row continuam os mesmos... */
 .compact-row {
   display: flex;
   align-items: center;

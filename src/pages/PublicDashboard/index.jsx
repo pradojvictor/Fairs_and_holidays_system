@@ -9,9 +9,7 @@ export default function PublicDashboard() {
   const [currentDate, setCurrentDate] = useState(new Date());
   const [selectedDay, setSelectedDay] = useState(new Date().getDate());
   
-  // === NOVOS ESTADOS PARA A GAVETA ===
   const [isExpanded, setIsExpanded] = useState(false);
-  const [touchStartY, setTouchStartY] = useState(null);
 
   useEffect(() => {
     const loadData = async () => {
@@ -39,6 +37,7 @@ export default function PublicDashboard() {
   const blanks = Array.from({ length: firstDayIndex }, (_, i) => i);
   const days = Array.from({ length: daysInMonth }, (_, i) => i + 1);
 
+  // 1. Pega os eventos só do dia selecionado
   const getEventsForDay = (day) => {
     const target = new Date(year, month, day, 12, 0, 0);
     return dbData.events.filter(e => {
@@ -50,29 +49,46 @@ export default function PublicDashboard() {
 
   const selectedDayEvents = selectedDay ? getEventsForDay(selectedDay) : [];
 
-// === LÓGICA DE PUXAR A GAVETA ===
-  const handleTouchStart = (e) => {
-    setTouchStartY(e.touches[0].clientY);
-  };
+  // 2. NOVA LÓGICA: Pega os eventos do mês INTEIRO
+  const currentMonthEvents = dbData.events.filter(e => {
+    const start = new Date(`${e.startDate}T12:00:00`);
+    const end = new Date(`${e.endDate}T12:00:00`);
+    const mStart = new Date(year, month, 1);
+    const mEnd = new Date(year, month + 1, 0, 23, 59, 59);
+    return start <= mEnd && end >= mStart;
+  });
 
-  // Usamos TouchEnd no lugar de TouchMove para a animação ficar suave!
-  const handleTouchEnd = (e) => {
-    if (!touchStartY) return;
+  // Ordena os eventos do mês por data de início
+  currentMonthEvents.sort((a, b) => new Date(a.startDate) - new Date(b.startDate));
+
+  // Função para formatar a data (Ex: de "2024-05-15" para "15/05")
+ // Função inteligente para formatar o texto da ausência
+  const formatPeriod = (startStr, endStr) => {
+    if (!startStr || !endStr) return '';
     
-    const endY = e.changedTouches[0].clientY;
-    const diff = touchStartY - endY; // Positivo = cima / Negativo = baixo
+    const start = new Date(`${startStr}T12:00:00`);
+    const end = new Date(`${endStr}T12:00:00`);
+    
+    const sDay = String(start.getDate()).padStart(2, '0');
+    const sMonth = String(start.getMonth() + 1).padStart(2, '0');
+    const eDay = String(end.getDate()).padStart(2, '0');
+    const eMonth = String(end.getMonth() + 1).padStart(2, '0');
 
-    if (diff > 40) {
-      setIsExpanded(true); // Puxou pra cima
-    } else if (diff < -40) {
-      setIsExpanded(false); // Puxou pra baixo
+    // 1. É apenas um dia único de folga?
+    if (startStr === endStr) {
+      return `Apenas dia ${sDay}/${sMonth}`;
     }
-    
-    setTouchStartY(null);
-  };
 
-  const toggleDrawer = () => {
-    setIsExpanded(!isExpanded);
+    // 2. A ausência cobre o mês inteiro que estamos visualizando?
+    const firstDayOfMonth = new Date(year, month, 1, 12, 0, 0);
+    const lastDayOfMonth = new Date(year, month + 1, 0, 12, 0, 0);
+    
+    if (start <= firstDayOfMonth && end >= lastDayOfMonth) {
+      return "O Mês Todo";
+    }
+
+    // 3. É um período quebrado? (Ex: tirou 15 dias)
+    return `De ${sDay}/${sMonth} até ${eDay}/${eMonth}`;
   };
 
   return (
@@ -88,8 +104,7 @@ export default function PublicDashboard() {
 
       <div className="mobile-calendar-section">
         <div className="mobile-calendar-grid">
-          {/* Substitua a linha antiga por esta aqui: */}
-{['D','S','T','Q','Q','S','S'].map((d, index) => <div key={`day-${index}`} className="mobile-weekday">{d}</div>)}
+          {['D','S','T','Q','Q','S','S'].map((d, index) => <div key={`day-${index}`} className="mobile-weekday">{d}</div>)}
           {blanks.map(b => <div key={`b-${b}`} className="mobile-day empty"></div>)}
           {days.map(day => {
             const eventsToday = getEventsForDay(day);
@@ -100,7 +115,7 @@ export default function PublicDashboard() {
                 className={`mobile-day ${isSelected ? 'selected' : ''}`} 
                 onClick={() => {
                   setSelectedDay(day);
-                  setIsExpanded(false); // Sempre recolhe a gaveta ao trocar de dia para ver o calendário
+                  setIsExpanded(false);
                 }}
               >
                 <span>{day}</span>
@@ -116,50 +131,94 @@ export default function PublicDashboard() {
         </div>
       </div>
 
-{/* GAVETA DE METADE DA TELA */}
-      <div className={`mobile-half-drawer ${isExpanded ? 'expanded' : ''}`}>
-        
-        {/* ZONA DE ARRASTAR (Apenas o topo responde ao toque de puxar) */}
-        <div 
-          className="drawer-drag-zone" 
-          onClick={toggleDrawer}
-          onTouchStart={handleTouchStart}
-          onTouchEnd={handleTouchEnd}
-          style={{ cursor: 'pointer', paddingBottom: '10px' }}
-        >
-          <div className="drawer-handle-wrapper" style={{ padding: '0 0 15px 0' }}>
-            <div className="drawer-handle"></div>
+      {/* GAVETA (CONTROLE POR BOTÃO) */}
+      <div className="mobile-half-drawer">
+        <div className="drawer-header-clickable" onClick={() => setIsExpanded(!isExpanded)}>
+          <div className="drawer-handle"></div>
+          <div className="drawer-title-row">
+            <h3 className="drawer-date-title">{selectedDay} de {monthName}</h3>
+            <button className="btn-expand-drawer">
+              {isExpanded ? 'Ocultar ▲' : 'Ver Detalhes ▼'}
+            </button>
           </div>
-          <h3 className="drawer-date-title" style={{ margin: '0' }}>{selectedDay} de {monthName}</h3>
+          {!isExpanded && (
+             <p className="drawer-summary">
+               {selectedDayEvents.length === 0 
+                 ? 'Ninguém de folga hoje. Equipe completa!' 
+                 : `${selectedDayEvents.length} ausência(s) registrada(s) neste dia.`}
+             </p>
+          )}
         </div>
-        
-        {/* LISTA (Rola livremente sem puxar a gaveta) */}
-        <div className="drawer-content" style={{ display: 'flex', flexDirection: 'column', flex: 1, marginTop: '20px', overflow: 'hidden' }}>
-          <div className="compact-event-list">
-            {selectedDayEvents.length === 0 ? (
-              <p className="empty-msg">Ninguém de folga ou férias hoje.</p>
-            ) : (
-              selectedDayEvents.map(ev => {
-                const pro = dbData.professionals.find(p => p.id === ev.professionalId);
-                const cargo = dbData.professions.find(p => p.id === pro?.professionId)?.name || 'Geral';
-                return (
-                  <div key={ev.id} className="compact-row">
-                    <div className="pro-color-bar" style={{ backgroundColor: pro?.baseColor }}></div>
-                    <div className="pro-info-box">
-                        <div className="pro-main-line">
-                            <span className="pro-name">{pro?.name}</span>
-                            <span className={`type-tag ${ev.type}`}>{ev.type === 'ferias' ? 'FÉRIAS' : 'FOLGA'}</span>
-                        </div>
-                        <div className="pro-sub-line">
-                            {cargo} • {pro?.shift === 'dia_todo' ? 'Dia Todo' : pro?.shift}
-                        </div>
+
+        {/* CONTEÚDO EXPANDIDO */}
+        {isExpanded && (
+          <div className="drawer-content">
+            
+            {/* SEÇÃO 1: DIA SELECIONADO */}
+            <h4 style={{ fontSize: '0.9rem', color: '#6b7280', textTransform: 'uppercase', margin: '0 0 10px 0', borderBottom: '1px solid #e5e7eb', paddingBottom: '5px' }}>
+              Neste dia ({selectedDay}):
+            </h4>
+            
+            <div className="compact-event-list" style={{ marginBottom: '25px' }}>
+              {selectedDayEvents.length === 0 ? (
+                <p className="empty-msg" style={{ margin: 0 }}>Nenhuma ausência agendada para hoje.</p>
+              ) : (
+                selectedDayEvents.map(ev => {
+                  const pro = dbData.professionals.find(p => p.id === ev.professionalId);
+                  const cargo = dbData.professions.find(p => p.id === pro?.professionId)?.name || 'Geral';
+                  return (
+                    <div key={ev.id} className="compact-row">
+                      <div className="pro-color-bar" style={{ backgroundColor: pro?.baseColor }}></div>
+                      <div className="pro-info-box">
+                          <div className="pro-main-line">
+                              <span className="pro-name">{pro?.name}</span>
+                              <span className={`type-tag ${ev.type}`}>{ev.type === 'ferias' ? 'FÉRIAS' : 'FOLGA'}</span>
+                          </div>
+                          <div className="pro-sub-line">
+                              {cargo} • {pro?.shift === 'dia_todo' ? 'Dia Todo' : pro?.shift}
+                          </div>
+                      </div>
                     </div>
-                  </div>
-                );
-              })
-            )}
+                  );
+                })
+              )}
+            </div>
+
+            {/* SEÇÃO 2: MÊS INTEIRO */}
+            <h4 style={{ fontSize: '0.9rem', color: '#6b7280', textTransform: 'uppercase', margin: '0 0 10px 0', borderBottom: '1px solid #e5e7eb', paddingBottom: '5px' }}>
+              Visão Geral do Mês:
+            </h4>
+            
+            <div className="compact-event-list">
+              {currentMonthEvents.length === 0 ? (
+                <p className="empty-msg" style={{ margin: 0 }}>Ninguém de folga ou férias neste mês.</p>
+              ) : (
+                currentMonthEvents.map(ev => {
+                  const pro = dbData.professionals.find(p => p.id === ev.professionalId);
+                  const cargo = dbData.professions.find(p => p.id === pro?.professionId)?.name || 'Geral';
+                  return (
+                    <div key={`month-${ev.id}`} className="compact-row">
+                      <div className="pro-color-bar" style={{ backgroundColor: pro?.baseColor }}></div>
+                      <div className="pro-info-box">
+                          <div className="pro-main-line">
+                              <span className="pro-name">{pro?.name}</span>
+                              <span className={`type-tag ${ev.type}`}>{ev.type === 'ferias' ? 'FÉRIAS' : 'FOLGA'}</span>
+                          </div>
+                          <div className="pro-sub-line" style={{ fontWeight: 'bold', color: '#4b5563' }}>
+                              {formatPeriod(ev.startDate, ev.endDate)}
+                          </div>
+                          <div className="pro-sub-line" style={{ fontSize: '0.75rem' }}>
+                              {cargo} • {pro?.shift === 'dia_todo' ? 'Dia Todo' : pro?.shift}
+                          </div>
+                      </div>
+                    </div>
+                  );
+                })
+              )}
+            </div>
+
           </div>
-        </div>
+        )}
       </div>
     </div>
   );
