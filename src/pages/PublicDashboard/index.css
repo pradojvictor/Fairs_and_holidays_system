@@ -1,0 +1,108 @@
+.mobile-dash-container {
+  background-color: #1a154d;
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  color: white;
+}
+
+.mobile-dash-header {
+  display: flex;
+  justify-content: space-between;
+  padding: 30px 20px 10px;
+  align-items: center;
+}
+
+.mobile-header-title {
+    display: flex;
+    flex-direction: column;
+    text-align: center;
+}
+
+.mobile-header-title .month { font-size: 1.4rem; font-weight: 800; }
+.mobile-header-title .year { font-size: 0.9rem; opacity: 0.6; }
+
+.mobile-calendar-section { padding: 10px 20px; }
+
+.mobile-calendar-grid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 10px;
+  text-align: center;
+}
+
+.mobile-weekday { font-size: 0.7rem; opacity: 0.5; font-weight: bold; }
+
+.mobile-day {
+  height: 45px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  border-radius: 12px;
+  position: relative;
+}
+
+.mobile-day.selected { background-color: #ff2d95; box-shadow: 0 4px 15px rgba(255, 45, 149, 0.4); }
+
+.day-dots-container { display: flex; gap: 2px; margin-top: 4px; }
+.day-dots-container .dot { width: 4px; height: 4px; border-radius: 50%; }
+
+/* GAVETA DE METADE DA TELA */
+.mobile-half-drawer {
+  background-color: white;
+  height: 50vh; /* Altura normal */
+  margin-top: auto;
+  border-radius: 30px 30px 0 0;
+  color: #333;
+  padding: 10px 20px 20px;
+  display: flex;
+  flex-direction: column;
+  transition: height 0.4s cubic-bezier(0.25, 0.8, 0.25, 1); /* Animação suave parecida com iOS */
+  box-shadow: 0 -5px 25px rgba(0,0,0,0.2);
+}
+
+.mobile-half-drawer.expanded {
+  height: 85vh; /* Ocupa quase a tela inteira */
+}
+
+.drawer-handle-wrapper {
+  padding: 10px 0 15px 0;
+  cursor: pointer;
+  display: flex;
+  justify-content: center;
+}
+
+.drawer-handle {
+  width: 50px; 
+  height: 6px; 
+  background: #d1d5db; 
+  border-radius: 10px;
+}
+
+.drawer-date-title { font-size: 1.2rem; margin-bottom: 20px; color: #111; }
+
+.compact-event-list { overflow-y: auto; flex: 1; }
+
+.compact-row {
+  display: flex;
+  align-items: center;
+  background: #f8f9fa;
+  margin-bottom: 10px;
+  border-radius: 10px;
+  overflow: hidden;
+  height: 60px;
+}
+
+.pro-color-bar { width: 6px; height: 100%; }
+.pro-info-box { padding: 0 15px; flex: 1; display: flex; flex-direction: column; gap: 2px; }
+
+.pro-main-line { display: flex; justify-content: space-between; align-items: center; }
+.pro-name { font-weight: bold; font-size: 1rem; color: #222; }
+
+.type-tag { font-size: 0.65rem; font-weight: 800; padding: 2px 6px; border-radius: 4px; }
+.type-tag.ferias { background: #e3f2fd; color: #1976d2; }
+.type-tag.folga { background: #fff3e0; color: #f57c00; }
+
+.pro-sub-line { font-size: 0.8rem; color: #777; }
