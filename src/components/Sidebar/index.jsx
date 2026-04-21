@@ -48,10 +48,20 @@ export default function Sidebar({ isOpen, onClose, onDataUpdated, professionals 
     setFeedback({ type: '', message: '' });
   };
 
-  const handleSaveProfessional = async (e) => {
+const handleSaveProfessional = async (e) => {
     e.preventDefault();
     setLoading(true);
     setFeedback({ type: '', message: '' });
+
+    const matriculaLimpa = matricula.trim();
+    const nomeLimpo = name.trim();
+
+    // 1. Validação extra de segurança: Impede matrícula vazia
+    if (!matriculaLimpa) {
+      setFeedback({ type: 'error', message: 'A matrícula não pode ficar em branco!' });
+      setLoading(false);
+      return;
+    }
 
     try {
       const currentData = await fetchGistData();
@@ -59,33 +69,34 @@ export default function Sidebar({ isOpen, onClose, onDataUpdated, professionals 
       
       if (editingId) {
         // Validação: Evitar matrículas duplicadas ao editar (ignorando a própria matrícula)
-        const matriculaExiste = currentData.professionals?.some(p => p.matricula === matricula.trim() && p.id !== editingId);
+        const matriculaExiste = currentData.professionals?.some(p => p.matricula === matriculaLimpa && p.id !== editingId);
         if (matriculaExiste) {
-          setFeedback({ type: 'error', message: 'Esta matrícula já está em uso por outro!' });
+          setFeedback({ type: 'error', message: 'Esta matrícula já está sendo usada por outro funcionário!' });
           setLoading(false);
           return;
         }
 
         currentData.professionals = currentData.professionals.map(p => 
-          p.id === editingId ? { ...p, name: name.trim(), matricula: matricula.trim(), baseColor: color, professionId, shift, isSupervisor } : p
+          p.id === editingId ? { ...p, name: nomeLimpo, matricula: matriculaLimpa, baseColor: color, professionId, shift, isSupervisor } : p
         );
         successMessage = 'Profissional atualizado com sucesso!';
       } else {
-        const matriculaExiste = currentData.professionals?.some(p => p.matricula === matricula.trim());
+        // Validação: Evitar matrículas duplicadas ao criar novo
+        const matriculaExiste = currentData.professionals?.some(p => p.matricula === matriculaLimpa);
         if (matriculaExiste) {
-          setFeedback({ type: 'error', message: 'Esta matrícula já está em uso!' });
+          setFeedback({ type: 'error', message: 'Erro: Já existe um funcionário com esta matrícula!' });
           setLoading(false);
           return;
         }
 
         const newProfessional = {
           id: `p_${Date.now()}`,
-          name: name.trim(),
-          matricula: matricula.trim(),
+          name: nomeLimpo,
+          matricula: matriculaLimpa,
           baseColor: color,
           professionId,
           shift,
-          isSupervisor // NOVO
+          isSupervisor
         };
         currentData.professionals = [...(currentData.professionals || []), newProfessional];
         successMessage = 'Novo profissional cadastrado!';
