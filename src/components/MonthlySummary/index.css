@@ -5,6 +5,11 @@
   grid-template-columns: 1fr 1fr;
   gap: 2rem;
   padding-bottom: 4rem;
+  
+  /* NOVAS REGRAS: Trava a largura em telas gigantes e centraliza */
+  max-width: 1920px; 
+  width: 100%;
+  margin: 0 auto; 
 }
 
 /* LADO ESQUERDO: Calendário do Mês */
@@ -16,7 +21,7 @@
   border: 1px solid #e5e7eb;
   box-shadow: 0 1px 3px rgba(0,0,0,0.05);
   
-  height: 850px; /* Altura de Ouro: cabe o calendário perfeitamente */
+  height: 900px; /* Altura de Ouro: cabe o calendário perfeitamente */
   display: flex;
   flex-direction: column;
   box-sizing: border-box;
@@ -89,6 +94,10 @@
   grid-template-columns: repeat(7, 1fr);
   gap: 4px;
   text-align: center;
+  
+  /* NOVAS REGRAS: Limita o tamanho máximo dos quadrados e centraliza no cartão */
+  /* max-width: 550px;
+  margin: 0 auto; */
 }
 
 .mini-day-name {
