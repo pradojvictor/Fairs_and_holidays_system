@@ -2,18 +2,24 @@
 
 .summary-container {
   display: grid;
-  grid-template-columns: 1fr 1fr; /* Divide meio a meio */
+  grid-template-columns: 1fr 1fr;
   gap: 2rem;
   padding-bottom: 4rem;
 }
 
 /* LADO ESQUERDO: Calendário do Mês */
-.mini-calendar-card {
+.mini-calendar-card, 
+.indicators-card {
   background-color: white;
   padding: 1.5rem;
   border-radius: 8px;
   border: 1px solid #e5e7eb;
   box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+  
+  height: 850px; /* Altura de Ouro: cabe o calendário perfeitamente */
+  display: flex;
+  flex-direction: column;
+  box-sizing: border-box;
 }
 
 /* Adicione no topo do MonthlySummary.css */
@@ -132,18 +138,6 @@
   border-radius: 50%;
 }
 
-/* LADO DIREITO: Indicadores */
-.indicators-card {
-  background-color: white;
-  padding: 1.5rem;
-  border-radius: 8px;
-  border: 1px solid #e5e7eb;
-  box-shadow: 0 1px 3px rgba(0,0,0,0.05);
-  display: flex;
-  flex-direction: column;
-  gap: 1rem;
-}
-
 .indicator-row {
   display: flex;
   gap: 1rem;
@@ -174,10 +168,13 @@
   text-transform: uppercase;
 }
 
+/* 2. O conteúdo da lista rola dentro do limite de 620px */
 .absent-list {
-  margin-top: 1rem;
   flex-grow: 1;
   overflow-y: auto;
+  padding-right: 10px;
+  margin: 0;
+  padding-bottom: 10px;
 }
 
 .absent-list h4 {
@@ -293,3 +290,22 @@
 .impact-shift { font-size: 0.75rem; color: #9ca3af; }
 .impact-total { font-size: 0.9rem; font-weight: bold; }
 .impact-details { font-size: 0.7rem; color: #6b7280; }
+
+/* Barra de rolagem moderna para a lista */
+.absent-list::-webkit-scrollbar { width: 6px; }
+.absent-list::-webkit-scrollbar-track { background: transparent; }
+.absent-list::-webkit-scrollbar-thumb { background-color: #d1d5db; border-radius: 10px; }
+.absent-list::-webkit-scrollbar-thumb:hover { background-color: #9ca3af; }
+
+/* 3. RESPONSIVIDADE (Celular) */
+/* No celular, tira a altura fixa para não espremer a tela */
+@media (max-width: 768px) {
+  .summary-container {
+    grid-template-columns: 1fr; /* Empilha: Calendário em cima, Info embaixo */
+  }
+  .mini-calendar-card, 
+  .indicators-card {
+    height: auto; 
+    max-height: 700px; /* Mantém a rolagem, mas permite crescer um pouco mais */
+  }
+}

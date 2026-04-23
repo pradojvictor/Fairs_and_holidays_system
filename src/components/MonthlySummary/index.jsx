@@ -29,7 +29,6 @@ export default function MonthlySummary({ professionals = [], events = [], profes
     return start <= mEnd && end >= mStart;
   });
 
-  // Ordena por data de início
   currentMonthEvents.sort((a, b) => new Date(a.startDate) - new Date(b.startDate));
 
   // 2. EVENTOS ESPECÍFICOS DE "HOJE"
@@ -164,10 +163,12 @@ export default function MonthlySummary({ professionals = [], events = [], profes
       </div>
 
       {/* LADO DIREITO: Indicadores e Listas */}
-      <div className="indicators-card" style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+      <div className="indicators-card" style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
         
-        {/* CABEÇALHO E NÚMEROS */}
-        <div>
+        {/* ==============================================================
+            ÁREA FIXA (NÃO ROLA): CABEÇALHO E CONTADORES
+            ============================================================== */}
+        <div style={{ paddingBottom: '10px', borderBottom: '1px solid #e5e7eb' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
             <h3 style={{ margin: 0, color: '#111827', fontSize: '1.2rem', textTransform: 'capitalize' }}>
               Resumo de {monthName}
@@ -187,8 +188,10 @@ export default function MonthlySummary({ professionals = [], events = [], profes
           </div>
         </div>
 
-        {/* LISTAS INTELIGENTES */}
-        <div className="absent-list" style={{ display: 'flex', flexDirection: 'column', gap: '2rem' }}>
+        {/* ==============================================================
+            ÁREA DE ROLAGEM: LISTAS E IMPACTO OPERACIONAL
+            ============================================================== */}
+        <div className="absent-list" style={{ display: 'flex', flexDirection: 'column', gap: '2rem', margin: 0, paddingBottom: '20px' }}>
           
           {/* SEÇÃO 1: HOJE */}
           <div>
@@ -249,38 +252,37 @@ export default function MonthlySummary({ professionals = [], events = [], profes
             </div>
           </div>
 
-        </div>
-
-        {/* IMPACTO OPERACIONAL (Fica no final) */}
-        {impactKeys.length > 0 && (
-          <div className="impact-box">
-            <h4 style={{ margin: '0 0 10px 0', color: '#374151', fontSize: '0.95rem' }}>📊 Impacto Operacional no Mês</h4>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-              {impactKeys.map(key => {
-                const data = impactReport[key];
-                const isWarning = data.total >= 2; 
-                return (
-                  <div key={key} className="impact-row" style={{ borderLeftColor: isWarning ? '#f59e0b' : '#10b981' }}>
-                    <div style={{ display: 'flex', flexDirection: 'column' }}>
-                      <span className="impact-title">
-                        {isWarning && <span title="Atenção">⚠️ </span>}
-                        {key.split('|')[0]}
-                      </span>
-                      <span className="impact-shift">{key.split('|')[1]}</span>
+          {/* SEÇÃO 3: IMPACTO OPERACIONAL (Movido para dentro da rolagem) */}
+          {impactKeys.length > 0 && (
+            <div className="impact-box" style={{ margin: 0 }}>
+              <h4 style={{ margin: '0 0 10px 0', color: '#374151', fontSize: '0.95rem' }}>📊 Impacto Operacional no Mês</h4>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                {impactKeys.map(key => {
+                  const data = impactReport[key];
+                  const isWarning = data.total >= 2; 
+                  return (
+                    <div key={key} className="impact-row" style={{ borderLeftColor: isWarning ? '#f59e0b' : '#10b981' }}>
+                      <div style={{ display: 'flex', flexDirection: 'column' }}>
+                        <span className="impact-title">
+                          {isWarning && <span title="Atenção">⚠️ </span>}
+                          {key.split('|')[0]}
+                        </span>
+                        <span className="impact-shift">{key.split('|')[1]}</span>
+                      </div>
+                      <div style={{ textAlign: 'right' }}>
+                        <span className="impact-total" style={{ color: isWarning ? '#b45309' : '#047857' }}>
+                          {data.total} ausência{data.total > 1 ? 's' : ''}
+                        </span>
+                        <div className="impact-details">({data.ferias} Férias, {data.folgas} Folgas)</div>
+                      </div>
                     </div>
-                    <div style={{ textAlign: 'right' }}>
-                      <span className="impact-total" style={{ color: isWarning ? '#b45309' : '#047857' }}>
-                        {data.total} ausência{data.total > 1 ? 's' : ''}
-                      </span>
-                      <div className="impact-details">({data.ferias} Férias, {data.folgas} Folgas)</div>
-                    </div>
-                  </div>
-                );
-              })}
+                  );
+                })}
+              </div>
             </div>
-          </div>
-        )}
+          )}
 
+        </div>
       </div>
     </div>
   );
