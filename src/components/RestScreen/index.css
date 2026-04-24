@@ -1,0 +1,59 @@
+/* =========================================
+   TELA DE DESCANSO (SCREENSAVER)
+   ========================================= */
+
+/* A tela fica fixa, ocupando 100% do espaço, mas escondida lá no teto (-100%) */
+.rest-screen-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background-color: #1a154d; /* Roxo escuro elegante */
+  color: white;
+  z-index: 99999; /* Fica por cima de TUDO no sistema */
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  
+  /* A animação de deslizar (dura 0.6 segundos) */
+  transition: transform 0.6s cubic-bezier(0.25, 0.8, 0.25, 1);
+  transform: translateY(-100%); 
+}
+
+/* Quando ativada, ela desce para a posição 0 (cobrindo a tela) */
+.rest-screen-overlay.active {
+  transform: translateY(0);
+}
+
+.rest-clock {
+  font-size: 6rem;
+  font-weight: bold;
+  margin: 0;
+  text-shadow: 0 4px 20px rgba(0,0,0,0.3);
+}
+
+.rest-subtitle {
+  font-size: 1.5rem;
+  opacity: 0.7;
+  margin-bottom: 40px;
+}
+
+.btn-return-work {
+  padding: 15px 40px;
+  font-size: 1.2rem;
+  font-weight: bold;
+  border-radius: 50px;
+  background-color: #ff2d95; /* Rosa vibrante */
+  color: white;
+  border: none;
+  cursor: pointer;
+  box-shadow: 0 4px 15px rgba(255, 45, 149, 0.4);
+  transition: transform 0.2s, background-color 0.2s;
+}
+
+.btn-return-work:hover {
+  transform: scale(1.05);
+  background-color: #ff1482;
+}

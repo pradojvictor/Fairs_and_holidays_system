@@ -11,6 +11,7 @@ import AdminProfileModal from '../../components/AdminProfileModal';
 import ConfirmModal from '../../components/ConfirmModal';
 import ProfessionalList from '../../components/ProfessionalList';
 import ProfessionManagerModal from '../../components/ProfessionManagerModal';
+import RestScreen from '../../components/RestScreen';
 import './index.css';
 
 export default function Dashboard() {
@@ -38,6 +39,8 @@ export default function Dashboard() {
 
   const [shareFeedback, setShareFeedback] = useState('');
 
+  const [isResting, setIsResting] = useState(false); // NOVO: Controle da tela de descanso
+
   const loadData = async () => {
     setIsLoading(true);
     try {
@@ -59,9 +62,9 @@ export default function Dashboard() {
   };
 
   // 👇 NOVA FUNÇÃO DE COMPARTILHAMENTO 👇
-const handleShare = async () => {
+  const handleShare = async () => {
     const publicUrl = `${window.location.origin}/calendario`;
-    
+
     if (navigator.share) {
       try {
         await navigator.share({
@@ -75,10 +78,10 @@ const handleShare = async () => {
     } else {
       // 1. Copia o link silenciosamente
       navigator.clipboard.writeText(publicUrl);
-      
+
       // 2. Aciona o nosso aviso bonito no lugar do alert() feio
       setShareFeedback('✅ Link copiado para a área de transferência!');
-      
+
       // 3. Apaga o aviso sozinho após 3 segundos
       setTimeout(() => {
         setShareFeedback('');
@@ -176,6 +179,17 @@ const handleShare = async () => {
           <button onClick={handleOpenNewEvent} style={{ padding: '0.5rem 1rem', backgroundColor: '#3b82f6', color: 'white', border: 'none', borderRadius: '4px', fontWeight: 'bold', cursor: 'pointer' }}>+ Nova Ausência</button>
           <button className="btn-header-logout" onClick={handleLogout}>Sair</button>
         </div>
+
+        <button
+          onClick={() => setIsResting(true)}
+          style={{
+            backgroundColor: '#374151', color: 'white', border: 'none',
+            padding: '8px 15px', borderRadius: '8px', cursor: 'pointer',
+            fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: '8px'
+          }}
+        >
+          ☕ Pausar Sistema
+        </button>
       </header>
 
       {/* Passe a prop eventToEdit para o form */}
@@ -279,6 +293,7 @@ const handleShare = async () => {
           {shareFeedback}
         </div>
       )}
+      <RestScreen isActive={isResting} onWakeUp={() => setIsResting(false)} />
     </div>
   );
 }
