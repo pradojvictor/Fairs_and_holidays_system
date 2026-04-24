@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { fetchGistData } from '../services/githubApi';
+import { fetchGistData } from '../../services/githubApi';
 
 
 export default function Login() {
