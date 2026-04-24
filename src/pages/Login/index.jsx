@@ -1,13 +1,18 @@
+// Arquivo: src/pages/Login.jsx
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { fetchGistData } from '../../services/githubApi';
-
+import './index.css';
 
 export default function Login() {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+  
+  // NOVO: Estado para controlar a animação de saída
+  const [isExiting, setIsExiting] = useState(false); 
+  
   const navigate = useNavigate();
 
   const handleSubmit = async (e) => {
@@ -16,62 +21,68 @@ export default function Login() {
     setLoading(true);
 
     try {
-      // Busca os dados do nosso backend (que por sua vez busca do Gist)
       const data = await fetchGistData();
       
-      // Valida as credenciais
       if (data.auth.username === username && data.auth.password === password) {
-        // Sucesso! Salva no localStorage para manter logado
         localStorage.setItem('isAuthenticated', 'true');
-        // Redireciona para a página principal (calendários)
-        navigate('/');
+        
+        // A MÁGICA ACONTECE AQUI:
+        setIsExiting(true); // 1. Aciona a classe do CSS para a tela subir
+        
+        setTimeout(() => {
+          navigate('/'); // 2. Só muda de página depois de 600 milissegundos (quando a animação acaba)
+        }, 600); 
+        
       } else {
         setError('Usuário ou senha incorretos.');
+        setLoading(false); // Só destrava o botão se der erro
       }
     } catch (err) {
       setError('Erro ao conectar com o servidor. Tente novamente.');
       console.error(err);
-    } finally {
       setLoading(false);
     }
   };
 
   return (
-    <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh', backgroundColor: '#f3f4f6' }}>
-      <form onSubmit={handleSubmit} style={{ padding: '2rem', backgroundColor: 'white', borderRadius: '8px', boxShadow: '0 4px 6px rgba(0,0,0,0.1)', display: 'flex', flexDirection: 'column', gap: '1rem', width: '300px' }}>
-        <h2 style={{ textAlign: 'center', margin: '0 0 1rem 0', fontFamily: 'sans-serif' }}>Acesso Restrito</h2>
+    // Adicionamos a classe 'slide-up' quando isExiting for true
+    <div className={`admin-login-container ${isExiting ? 'slide-up' : ''}`}>
+      <form onSubmit={handleSubmit} className="admin-login-card">
         
-        {error && <div style={{ color: 'red', fontSize: '0.875rem', textAlign: 'center' }}>{error}</div>}
+        <div className="admin-login-header">
+          <div className="admin-login-icon">🔒</div>
+          <h2>Acesso Restrito</h2>
+          <p>Painel de Administração</p>
+        </div>
+        
+        {error && <div className="admin-login-error">{error}</div>}
 
-        <div style={{ display: 'flex', flexDirection: 'column' }}>
-          <label style={{ fontSize: '0.875rem', marginBottom: '0.25rem', fontFamily: 'sans-serif' }}>Usuário</label>
+        <div className="admin-input-group">
+          <label>Usuário</label>
           <input 
             type="text" 
             value={username}
             onChange={(e) => setUsername(e.target.value)}
             required
-            style={{ padding: '0.5rem', borderRadius: '4px', border: '1px solid #ccc' }}
+            placeholder="Digite seu usuário"
           />
         </div>
 
-        <div style={{ display: 'flex', flexDirection: 'column' }}>
-          <label style={{ fontSize: '0.875rem', marginBottom: '0.25rem', fontFamily: 'sans-serif' }}>Senha</label>
+        <div className="admin-input-group">
+          <label>Senha</label>
           <input 
             type="password" 
             value={password}
             onChange={(e) => setPassword(e.target.value)}
             required
-            style={{ padding: '0.5rem', borderRadius: '4px', border: '1px solid #ccc' }}
+            placeholder="Digite sua senha"
           />
         </div>
 
-        <button 
-          type="submit" 
-          disabled={loading}
-          style={{ padding: '0.75rem', backgroundColor: '#3b82f6', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer', fontWeight: 'bold', marginTop: '1rem' }}
-        >
-          {loading ? 'Validando...' : 'Entrar'}
+        <button type="submit" disabled={loading} className="admin-btn-login">
+          {loading ? (isExiting ? 'Entrando...' : 'Validando...') : 'Entrar no Sistema'}
         </button>
+        
       </form>
     </div>
   );
