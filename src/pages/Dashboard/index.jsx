@@ -1,16 +1,15 @@
 // Arquivo: src/pages/Dashboard.jsx
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { fetchGistData, updateGistData } from '../../services/githubApi';
 import Sidebar from '../../components/Sidebar';
 import AnnualCalendar from '../../components/AnnualCalendar';
-import { fetchGistData, updateGistData } from '../../services/githubApi';
 import EventModal from '../../components/EventModal';
 import EventDetailModal from '../../components/EventDetailModal';
 import MonthlySummary from '../../components/MonthlySummary';
 import AdminProfileModal from '../../components/AdminProfileModal';
 import ConfirmModal from '../../components/ConfirmModal';
 import ProfessionalList from '../../components/ProfessionalList';
-import ProfessionManagerModal from '../../components/ProfessionManagerModal';
 import RestScreen from '../../components/RestScreen';
 import './index.css';
 
@@ -23,7 +22,7 @@ export default function Dashboard() {
 
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState('');
-  const [isProfManagerOpen, setIsProfManagerOpen] = useState(false); // NOVO
+
   const [dbData, setDbData] = useState({ professionals: [], events: [], professions: [] }); // ADICIONADO professions
 
   // ESTADOS PARA OS FILTROS
@@ -174,8 +173,6 @@ export default function Dashboard() {
           <button onClick={handleShare} style={{ padding: '0.5rem 1rem', backgroundColor: '#8b5cf6', color: 'white', border: 'none', borderRadius: '4px', fontWeight: 'bold', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '5px' }}>
             📤 Compartilhar Link
           </button>
-          {/* NOVO BOTÃO DE CARGOS */}
-          <button onClick={() => setIsProfManagerOpen(true)} style={{ padding: '0.5rem 1rem', backgroundColor: '#4b5563', color: 'white', border: 'none', borderRadius: '4px', fontWeight: 'bold', cursor: 'pointer' }}>⚙️ Cargos</button>
           <button onClick={handleOpenNewEvent} style={{ padding: '0.5rem 1rem', backgroundColor: '#3b82f6', color: 'white', border: 'none', borderRadius: '4px', fontWeight: 'bold', cursor: 'pointer' }}>+ Nova Ausência</button>
           <button className="btn-header-logout" onClick={handleLogout}>Sair</button>
         </div>
@@ -265,12 +262,6 @@ export default function Dashboard() {
       <ProfessionalList
         professionals={filteredProfessionals}
         events={filteredEvents}
-      />
-      <ProfessionManagerModal
-        isOpen={isProfManagerOpen}
-        onClose={() => setIsProfManagerOpen(false)}
-        professions={dbData.professions}
-        onDataUpdated={loadData}
       />
       {/* NOTIFICAÇÃO FLUTUANTE DE COMPARTILHAMENTO */}
       {shareFeedback && (

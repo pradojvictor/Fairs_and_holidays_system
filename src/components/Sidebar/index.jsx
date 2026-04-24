@@ -2,30 +2,38 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { fetchGistData, updateGistData } from '../../services/githubApi';
+import CustomSelect from '../CustomSelect';
 import './index.css';
 
 export default function Sidebar({ isOpen, onClose, onDataUpdated, professionals = [], professions = [], adminName, onOpenProfile }) {
   const navigate = useNavigate();
-  
+
+  // Estados - Profissional
   const [name, setName] = useState('');
   const [matricula, setMatricula] = useState('');
   const [color, setColor] = useState('#3b82f6');
   const [professionId, setProfessionId] = useState('');
   const [shift, setShift] = useState('dia_todo');
-  const [isSupervisor, setIsSupervisor] = useState(false); // NOVO: Estado de Supervisor
-
+  const [isSupervisor, setIsSupervisor] = useState(false);
   const [editingId, setEditingId] = useState(null);
-  
+
   const [loading, setLoading] = useState(false);
   const [feedback, setFeedback] = useState({ type: '', message: '' });
-  
   const [deleteModal, setDeleteModal] = useState({ isOpen: false, pro: null });
+
+  // Estados - Cargos
+  const [newProfession, setNewProfession] = useState('');
+  const [loadingProf, setLoadingProf] = useState(false);
+  const [feedbackProf, setFeedbackProf] = useState({ type: '', message: '' });
+
+  const [expandedCargoId, setExpandedCargoId] = useState(null);
 
   const handleLogout = () => {
     localStorage.removeItem('isAuthenticated');
     navigate('/login');
   };
 
+  // --- Lógica: Profissionais ---
   const handleEditClick = (pro) => {
     setEditingId(pro.id);
     setName(pro.name);
@@ -33,7 +41,7 @@ export default function Sidebar({ isOpen, onClose, onDataUpdated, professionals 
     setColor(pro.baseColor);
     setProfessionId(pro.professionId || '');
     setShift(pro.shift || 'dia_todo');
-    setIsSupervisor(pro.isSupervisor || false); // NOVO
+    setIsSupervisor(pro.isSupervisor || false);
     setFeedback({ type: '', message: '' });
   };
 
@@ -44,11 +52,11 @@ export default function Sidebar({ isOpen, onClose, onDataUpdated, professionals 
     setColor('#3b82f6');
     setProfessionId('');
     setShift('dia_todo');
-    setIsSupervisor(false); // NOVO
+    setIsSupervisor(false);
     setFeedback({ type: '', message: '' });
   };
 
-const handleSaveProfessional = async (e) => {
+  const handleSaveProfessional = async (e) => {
     e.preventDefault();
     setLoading(true);
     setFeedback({ type: '', message: '' });
@@ -56,9 +64,14 @@ const handleSaveProfessional = async (e) => {
     const matriculaLimpa = matricula.trim();
     const nomeLimpo = name.trim();
 
-    // 1. Validação extra de segurança: Impede matrícula vazia
     if (!matriculaLimpa) {
       setFeedback({ type: 'error', message: 'A matrícula não pode ficar em branco!' });
+      setLoading(false);
+      return;
+    }
+
+    if (!professionId) {
+      setFeedback({ type: 'error', message: 'Por favor, selecione o Cargo do funcionário.' });
       setLoading(false);
       return;
     }
@@ -66,9 +79,8 @@ const handleSaveProfessional = async (e) => {
     try {
       const currentData = await fetchGistData();
       let successMessage = '';
-      
+
       if (editingId) {
-        // Validação: Evitar matrículas duplicadas ao editar (ignorando a própria matrícula)
         const matriculaExiste = currentData.professionals?.some(p => p.matricula === matriculaLimpa && p.id !== editingId);
         if (matriculaExiste) {
           setFeedback({ type: 'error', message: 'Esta matrícula já está sendo usada por outro funcionário!' });
@@ -76,12 +88,11 @@ const handleSaveProfessional = async (e) => {
           return;
         }
 
-        currentData.professionals = currentData.professionals.map(p => 
+        currentData.professionals = currentData.professionals.map(p =>
           p.id === editingId ? { ...p, name: nomeLimpo, matricula: matriculaLimpa, baseColor: color, professionId, shift, isSupervisor } : p
         );
         successMessage = 'Profissional atualizado com sucesso!';
       } else {
-        // Validação: Evitar matrículas duplicadas ao criar novo
         const matriculaExiste = currentData.professionals?.some(p => p.matricula === matriculaLimpa);
         if (matriculaExiste) {
           setFeedback({ type: 'error', message: 'Erro: Já existe um funcionário com esta matrícula!' });
@@ -103,37 +114,31 @@ const handleSaveProfessional = async (e) => {
       }
 
       await updateGistData(currentData);
-
-      cancelEdit(); 
+      cancelEdit();
       setFeedback({ type: 'success', message: successMessage });
-      
       if (onDataUpdated) onDataUpdated();
       setTimeout(() => setFeedback({ type: '', message: '' }), 4000);
     } catch (error) {
-      console.error(error);
       setFeedback({ type: 'error', message: 'Erro ao salvar os dados.' });
     } finally {
       setLoading(false);
     }
   };
 
-  const requestDelete = (pro) => {
-    setDeleteModal({ isOpen: true, pro: pro });
-  };
+  const requestDelete = (pro) => setDeleteModal({ isOpen: true, pro: pro });
 
   const confirmDelete = async () => {
     const id = deleteModal.pro.id;
     setLoading(true);
-    
     try {
       const currentData = await fetchGistData();
       currentData.professionals = currentData.professionals.filter(p => p.id !== id);
       currentData.events = (currentData.events || []).filter(e => e.professionalId !== id);
       await updateGistData(currentData);
-      
-      if (editingId === id) cancelEdit(); 
+
+      if (editingId === id) cancelEdit();
       if (onDataUpdated) onDataUpdated();
-      
+
       setDeleteModal({ isOpen: false, pro: null });
       setFeedback({ type: 'success', message: 'Profissional e eventos excluídos!' });
       setTimeout(() => setFeedback({ type: '', message: '' }), 4000);
@@ -145,117 +150,259 @@ const handleSaveProfessional = async (e) => {
     }
   };
 
+  const handleAddProfession = async (e) => {
+    e.preventDefault();
+    if (!newProfession.trim()) return;
+
+    setLoadingProf(true);
+    setFeedbackProf({ type: '', message: '' });
+
+    try {
+      const currentData = await fetchGistData();
+      const newCargo = { id: `cargo_${Date.now()}`, name: newProfession.trim() };
+      currentData.professions = [...(currentData.professions || []), newCargo];
+
+      await updateGistData(currentData);
+      setNewProfession('');
+      if (onDataUpdated) onDataUpdated();
+
+      setFeedbackProf({ type: 'success', message: 'Cargo salvo com sucesso!' });
+      setTimeout(() => setFeedbackProf({ type: '', message: '' }), 3000);
+    } catch (error) {
+      setFeedbackProf({ type: 'error', message: 'Erro ao salvar o cargo.' });
+    } finally {
+      setLoadingProf(false);
+    }
+  };
+
+  const PRESET_COLORS = [
+    '#F44336', '#D32F2F', '#B71C1C', '#8B0000', '#E91E63', '#C2185B', '#880E4F', '#F50057',
+    '#9C27B0', '#7B1FA2', '#4A148C', '#651FFF', '#3F51B5', '#303F9F', '#1A237E', '#3D5AFE',
+    '#2196F3', '#1976D2', '#0D47A1', '#0288D1', '#00BCD4', '#0097A7', '#006064', '#00838F',
+    '#009688', '#00796B', '#004D40', '#26A69A', '#4CAF50', '#388E3C', '#1B5E20', '#00C853',
+    '#8BC34A', '#689F38', '#33691E', '#AFB42B', '#FFB300', '#FF8F00', '#F57F17', '#E65100',
+    '#FF9800', '#F57C00', '#FF5722', '#BF360C', '#795548', '#4E342E', '#607D8B', '#263238', '#424242', '#000000'
+  ];
+
   return (
     <>
       <div className={`sidebar-overlay ${isOpen ? 'open' : ''}`} onClick={onClose} />
-      
+
       <div className={`sidebar-container ${isOpen ? 'open' : ''}`}>
-        
+
         <div className="sidebar-header">
           <h2>Painel Administrativo</h2>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '0.5rem' }}>
-            <p style={{ margin: 0 }}>Logado como: <strong>{adminName || 'admin'}</strong></p>
-            <button 
-              onClick={onOpenProfile}
-              title="Editar Perfil"
-              style={{ background: 'transparent', border: '1px solid #4b5563', color: '#9ca3af', padding: '0.2rem 0.5rem', borderRadius: '4px', cursor: 'pointer', fontSize: '0.75rem', transition: 'all 0.2s' }}
-              onMouseOver={(e) => { e.currentTarget.style.color = 'white'; e.currentTarget.style.borderColor = '#9ca3af'; }}
-              onMouseOut={(e) => { e.currentTarget.style.color = '#9ca3af'; e.currentTarget.style.borderColor = '#4b5563'; }}
-            >
-              ✏️ Editar
+          <div className="sidebar-header-actions">
+            <p>Logado como: <strong>{adminName || 'admin'}</strong></p>
+            <button onClick={onOpenProfile} title="Editar Perfil" className="btn-edit-profile">
+              <svg clipRule="evenodd" fillRule="evenodd" strokeLinejoin="round" strokeMiterlimit={2} viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                <path d="m19 20.25c0-.402-.356-.75-.75-.75-2.561 0-11.939 0-14.5 0-.394 0-.75.348-.75.75s.356.75.75.75h14.5c.394 0 .75-.348.75-.75zm-12.023-7.083c-1.334 3.916-1.48 4.232-1.48 4.587 0 .527.46.749.749.749.352 0 .668-.137 4.574-1.493zm1.06-1.061 3.846 3.846 8.824-8.814c.195-.195.293-.451.293-.707 0-.255-.098-.511-.293-.706-.692-.691-1.742-1.741-2.435-2.432-.195-.195-.451-.293-.707-.293-.254 0-.51.098-.706.293z" fillRule="nonzero" />
+              </svg>
+              Editar
             </button>
           </div>
         </div>
 
-        <div className="sidebar-body">
-          <h3 className="sidebar-title">
-            <span>{editingId ? 'Editar Profissional' : 'Novo Profissional'}</span>
-          </h3>
+        <div className="sidebar-split-layout">
 
-          <form onSubmit={handleSaveProfessional} className="sidebar-form">
-            <label>Nome do Funcionário</label>
-            <input type="text" value={name} onChange={(e) => setName(e.target.value)} placeholder="Ex: João Silva" required className="sidebar-input" />
+          {/* COLUNA 1: PROFISSIONAIS */}
+          <div className="sidebar-column">
+            <h3 className="sidebar-title">
+              <span>{editingId ? 'Editar Profissional' : 'Novo Profissional'}</span>
+            </h3>
 
-            <label>Matrícula (Senha de Acesso)</label>
-            <input type="text" value={matricula} onChange={(e) => setMatricula(e.target.value)} placeholder="Ex: 12345" required className="sidebar-input" />
+            <form onSubmit={handleSaveProfessional} className="sidebar-form">
+              <label>Nome do Funcionário</label>
+              <input type="text" value={name} onChange={(e) => setName(e.target.value)} placeholder="Ex: João Silva" required className="sidebar-input" />
 
-            {/* NOVO: CHECKBOX DE SUPERVISOR */}
-            <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '15px', backgroundColor: '#f3f4f6', padding: '10px', borderRadius: '8px', borderLeft: '4px solid #8b5cf6' }}>
-              <input 
-                type="checkbox" 
-                id="isSupervisor" 
-                checked={isSupervisor} 
-                onChange={(e) => setIsSupervisor(e.target.checked)} 
-                style={{ width: '18px', height: '18px', cursor: 'pointer' }}
+              <label>Matrícula ( Senha de Acesso )</label>
+              <input type="text" value={matricula} onChange={(e) => setMatricula(e.target.value)} placeholder="Ex: 12345" required className="sidebar-input" />
+
+              {/* --- TOGGLE DE SUPERVISOR ANIMADO --- */}
+              <div className="custom-toggle-container" onClick={() => setIsSupervisor(!isSupervisor)}>
+                <div className="custom-toggle-track">
+                  <div className={`custom-toggle-knob ${isSupervisor ? 'active' : ''}`}>
+                    {isSupervisor && <span className="custom-toggle-text">Supervisor</span>}
+                  </div>
+                </div>
+                <div className="custom-toggle-labels">
+                  <span>Pode ver a escala da equipe.</span>
+                </div>
+              </div>
+
+              {/* 🧩 USANDO OS COMPONENTES AQUI 🧩 */}
+              <CustomSelect
+                label="Cargo / Profissão"
+                placeholder="-- Selecione o Cargo --"
+                value={professionId}
+                onChange={setProfessionId}
+                options={professions.map(p => ({ value: p.id, label: p.name }))}
               />
-              <label htmlFor="isSupervisor" style={{ margin: 0, fontSize: '0.85rem', color: '#4b5563', cursor: 'pointer' }}>
-                <strong>Privilégio de Supervisor</strong><br/>
-                <span style={{ fontSize: '0.75rem' }}>Pode ver a escala de toda a equipe.</span>
-              </label>
-            </div>
 
-            <label>Cargo / Profissão</label>
-            <select value={professionId} onChange={(e) => setProfessionId(e.target.value)} required className="sidebar-input">
-              <option value="">-- Selecione o Cargo --</option>
-              {professions.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
-            </select>
+              <CustomSelect
+                label="Turno de Trabalho"
+                placeholder="-- Selecione o Turno --"
+                value={shift}
+                onChange={setShift}
+                options={[
+                  { value: 'manhã', label: 'Manhã' },
+                  { value: 'tarde', label: 'Tarde' },
+                  { value: 'dia_todo', label: 'Dia Todo (Ambos)' }
+                ]}
+              />
 
-            <label>Turno de Trabalho</label>
-            <select value={shift} onChange={(e) => setShift(e.target.value)} required className="sidebar-input">
-              <option value="manhã">Manhã</option>
-              <option value="tarde">Tarde</option>
-              <option value="dia_todo">Dia Todo (Ambos)</option>
-            </select>
+              <CustomSelect
+                label="Cor no Calendário"
+                variant="color"
+                value={color}
+                onChange={setColor}
+                options={PRESET_COLORS}
+              />
 
-            <label>Cor no Calendário</label>
-            <div className="color-picker-wrapper">
-              <input type="color" value={color} onChange={(e) => setColor(e.target.value)} />
-              <span>{color}</span>
-            </div>
+              <button type="submit" disabled={loading} className="btn-save">
+                {loading ? 'Processando...' : (editingId ? 'Atualizar Dados' : 'Salvar Profissional')}
+              </button>
 
-            <button type="submit" disabled={loading} className="btn-save">
-              {loading ? 'Processando...' : (editingId ? 'Atualizar Dados' : 'Salvar Profissional')}
-            </button>
+              {editingId && (
+                <button type="button" onClick={cancelEdit} className="btn-cancel" disabled={loading}>Cancelar Edição</button>
+              )}
 
-            {editingId && (
-              <button type="button" onClick={cancelEdit} className="btn-cancel" disabled={loading}>Cancelar Edição</button>
-            )}
+              {feedback.message && (
+                <div className={`feedback-toast ${feedback.type}`}>{feedback.message}</div>
+              )}
+            </form>
 
-            {feedback.message && (
-              <div className={`feedback-toast ${feedback.type}`}>{feedback.message}</div>
-            )}
-          </form>
-
-          <div className="pro-list-container">
-            <h4 className="pro-list-title">Equipe Cadastrada ({professionals.length})</h4>
-            <div className="pro-list">
-              {professionals.length === 0 ? (
-                <p style={{ fontSize: '0.85rem', color: '#9ca3af' }}>Nenhum cadastrado ainda.</p>
-              ) : (
-                professionals.map(pro => (
-                  <div key={pro.id} className="pro-item">
-                    <div className="pro-info">
-                      <div className="pro-color" style={{ backgroundColor: pro.baseColor }}></div>
-                      <div style={{display: 'flex', flexDirection: 'column'}}>
-                         <span className="pro-name">
-                           {pro.name} 
-                           {pro.isSupervisor && <span title="Supervisor" style={{marginLeft:'5px'}}>👑</span>}
-                         </span>
-                         <span style={{fontSize: '0.7rem', color: '#6b7280'}}>Mat: {pro.matricula || 'Sem senha'}</span>
+            <div className="pro-list-container">
+              <h4 className="pro-list-title">Equipe Cadastrada ({professionals.length})</h4>
+              <div className="pro-list">
+                {professionals.length === 0 ? (
+                  <p className="empty-msg">Nenhum cadastrado ainda.</p>
+                ) : (
+                  professionals.map(pro => (
+                    <div key={pro.id} className="pro-item">
+                      <div className="pro-info">
+                        <div className="pro-color" style={{ backgroundColor: pro.baseColor }}></div>
+                        <div className="pro-info-text">
+                          <span className="pro-name">
+                            {pro.name}
+                            {pro.isSupervisor && <span title="Supervisor" className="pro-supervisor-icon">
+                              <svg clipRule="evenodd" fillRule="evenodd" strokeLinejoin="round" strokeMiterlimit={2} viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                                <path d="m11.322 2.923c.126-.259.39-.423.678-.423.289 0 .552.164.678.423.974 1.998 2.65 5.44 2.65 5.44s3.811.524 6.022.829c.403.055.65.396.65.747 0 .19-.072.383-.231.536-1.61 1.538-4.382 4.191-4.382 4.191s.677 3.767 1.069 5.952c.083.462-.275.882-.742.882-.122 0-.244-.029-.355-.089-1.968-1.048-5.359-2.851-5.359-2.851s-3.391 1.803-5.359 2.851c-.111.06-.234.089-.356.089-.465 0-.825-.421-.741-.882.393-2.185 1.07-5.952 1.07-5.952s-2.773-2.653-4.382-4.191c-.16-.153-.232-.346-.232-.535 0-.352.249-.694.651-.748 2.211-.305 6.021-.829 6.021-.829s1.677-3.442 2.65-5.44z" fillRule="nonzero"/>
+                              </svg>
+                            </span>}
+                          </span>
+                          <span className="pro-matricula">Mat: {pro.matricula || 'S/N'}</span>
+                        </div>
+                      </div>
+                      <div className="pro-actions">
+                        <button onClick={() => handleEditClick(pro)} className="btn-icon edit" title="Editar">
+                          <svg clipRule="evenodd" fillRule="evenodd" strokeLinejoin="round" strokeMiterlimit={2} viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                            <path d="m11.239 15.533c-1.045 3.004-1.238 3.451-1.238 3.84 0 .441.385.627.627.627.272 0 1.108-.301 3.829-1.249zm.888-.888 3.22 3.22 6.408-6.401c.163-.163.245-.376.245-.591 0-.213-.082-.427-.245-.591-.58-.579-1.458-1.457-2.039-2.036-.163-.163-.377-.245-.591-.245-.213 0-.428.082-.592.245zm-3.127-.895c0-.402-.356-.75-.75-.75-2.561 0-2.939 0-5.5 0-.394 0-.75.348-.75.75s.356.75.75.75h5.5c.394 0 .75-.348.75-.75zm5-3c0-.402-.356-.75-.75-.75-2.561 0-7.939 0-10.5 0-.394 0-.75.348-.75.75s.356.75.75.75h10.5c.394 0 .75-.348.75-.75zm0-3c0-.402-.356-.75-.75-.75-2.561 0-7.939 0-10.5 0-.394 0-.75.348-.75.75s.356.75.75.75h10.5c.394 0 .75-.348.75-.75zm0-3c0-.402-.356-.75-.75-.75-2.561 0-7.939 0-10.5 0-.394 0-.75.348-.75.75s.356.75.75.75h10.5c.394 0 .75-.348.75-.75z" fillRule="nonzero" />
+                          </svg>
+                        </button>
+                        <button onClick={() => requestDelete(pro)} className="btn-icon delete" title="Excluir">
+                          <svg clipRule="evenodd" fillRule="evenodd" strokeLinejoin="round" strokeMiterlimit={2} viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                            <path d="m20.015 6.506h-16v14.423c0 .591.448 1.071 1 1.071h14c.552 0 1-.48 1-1.071 0-3.905 0-14.423 0-14.423zm-5.75 2.494c.414 0 .75.336.75.75v8.5c0 .414-.336.75-.75.75s-.75-.336-.75-.75v-8.5c0-.414.336-.75.75-.75zm-4.5 0c.414 0 .75.336.75.75v8.5c0 .414-.336.75-.75.75s-.75-.336-.75-.75v-8.5c0-.414.336-.75.75-.75zm-.75-5v-1c0-.535.474-1 1-1h4c.526 0 1 .465 1 1v1h5.254c.412 0 .746.335.746.747s-.334.747-.746.747h-16.507c-.413 0-.747-.335-.747-.747s.334-.747.747-.747zm4.5 0v-.5h-3v.5z" fillRule="nonzero" />
+                          </svg>
+                        </button>
                       </div>
                     </div>
-                    <div className="pro-actions">
-                      <button onClick={() => handleEditClick(pro)} className="btn-icon edit" title="Editar">✏️</button>
-                      <button onClick={() => requestDelete(pro)} className="btn-icon delete" title="Excluir">🗑️</button>
-                    </div>
-                  </div>
-                ))
-              )}
+                  ))
+                )}
+              </div>
             </div>
           </div>
-        </div>
 
-        <button onClick={handleLogout} className="btn-logout">Sair do Sistema</button>
+          {/* COLUNA 2: CARGOS */}
+          <div className="sidebar-column">
+            <h3 className="sidebar-title">
+              <span>Gerenciar Cargos</span>
+            </h3>
+
+            <form onSubmit={handleAddProfession} className="sidebar-form">
+              <label>Nome do Cargo</label>
+              <div className="cargo-input-group">
+                <input
+                  type="text"
+                  value={newProfession}
+                  onChange={(e) => setNewProfession(e.target.value)}
+                  placeholder="Ex: Enfermagem..."
+                  required
+                  className="sidebar-input no-margin"
+                  disabled={loadingProf}
+                />
+                <button type="submit" disabled={loadingProf} className="btn-save btn-add-cargo">
+                  {loadingProf ? '⏳' : <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"><path d="M24 10h-10v-10h-4v10h-10v4h10v10h4v-10h10z"/></svg>}
+                </button>
+              </div>
+
+              {feedbackProf.message && (
+                <div className={`feedback-toast ${feedbackProf.type}`}>
+                  {feedbackProf.message}
+                </div>
+              )}
+            </form>
+
+            <div className="pro-list-container cargo-list-container">
+              <h4 className="pro-list-title">Cargos Cadastrados ({professions.length})</h4>
+              <div className="pro-list">
+                {professions.length === 0 ? (
+                  <p className="empty-msg">Nenhum cargo criado.</p>
+                ) : (
+                  professions.map(p => {
+                    const profsInCargo = professionals.filter(pro => pro.professionId === p.id);
+                    const count = profsInCargo.length;
+                    const isExpanded = expandedCargoId === p.id;
+
+                    return (
+                      <div key={p.id} className="cargo-accordion-wrapper">
+                        <div
+                          className={`pro-item cargo-item ${isExpanded ? 'expanded' : ''}`}
+                          onClick={() => setExpandedCargoId(isExpanded ? null : p.id)}
+                        >
+                          <span className="cargo-name">
+                            {p.name}
+                            <span className="cargo-arrow">{isExpanded ? '▲' : '▼'}</span>
+                          </span>
+                          <span className={`cargo-badge ${count > 0 ? 'active' : ''}`} title={`${count} profissional(is) neste cargo`}>
+                            {count}
+                          </span>
+                        </div>
+
+                        {isExpanded && (
+                          <div className="cargo-expanded-content">
+                            {count === 0 ? (
+                              <span className="cargo-empty-msg">Nenhum funcionário neste cargo.</span>
+                            ) : (
+                              <ul className="cargo-pro-list">
+                                {profsInCargo.map(pro => (
+                                  <li key={pro.id} className="cargo-pro-item">
+                                    <span className="cargo-pro-color" style={{ backgroundColor: pro.baseColor }}></span>
+                                    <span>
+                                      {pro.name}
+                                      <span className="cargo-pro-shift">
+                                        ({pro.shift === 'dia_todo' ? 'Dia Todo' : pro.shift})
+                                      </span>
+                                    </span>
+                                  </li>
+                                ))}
+                              </ul>
+                            )}
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })
+                )}
+              </div>
+            </div>
+
+            <button onClick={handleLogout} className="btn-logout mt-auto">
+              Sair do Sistema
+            </button>
+          </div>
+
+        </div>
       </div>
 
       {deleteModal.isOpen && (
