@@ -50,15 +50,15 @@ export default function Login() {
       <form onSubmit={handleSubmit} className="admin-login-card">
         
         <div className="admin-login-header">
-          <div className="admin-login-icon">🔒</div>
-          <h2>Acesso Restrito</h2>
-          <p>Painel de Administração</p>
+          {/* <div className="admin-login-icon">🔒</div> */}
+          <h2>Painel de Administração</h2>
+          <p>Painel exclusivo do administrador</p>
         </div>
         
         {error && <div className="admin-login-error">{error}</div>}
 
         <div className="admin-input-group">
-          <label>Usuário</label>
+          {/* <label>Usuário</label> */}
           <input 
             type="text" 
             value={username}
@@ -69,7 +69,7 @@ export default function Login() {
         </div>
 
         <div className="admin-input-group">
-          <label>Senha</label>
+          {/* <label>Senha</label> */}
           <input 
             type="password" 
             value={password}
