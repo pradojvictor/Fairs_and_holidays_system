@@ -1,8 +1,3 @@
-/* =========================================
-   TELA DE DESCANSO (SCREENSAVER)
-   ========================================= */
-
-/* A tela fica fixa, ocupando 100% do espaço, mas escondida lá no teto (-100%) */
 .rest-screen-overlay {
   position: fixed;
   top: 0;
