@@ -57,8 +57,7 @@
   padding: 2rem;
   flex-grow: 1;
   overflow-x: auto;
-  backdrop-filter: blur(15px);
-  -webkit-backdrop-filter: blur(15px);
+  background-color: gray;
 }
 
 .dashboard-main::before {
@@ -68,10 +67,6 @@
   left: 0;
   width: 100%;
   height: 100%;
-  background-image: url('../../assets/imgs/map-teresina-webp.webp');
- background-size: cover;
-  background-position: center;
-  background-repeat: repeat;
   z-index: -1;
   filter: blur(2px) brightness(40%);  
 }
