@@ -25,9 +25,8 @@ export default function Dashboard() {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState('');
 
-  const [dbData, setDbData] = useState({ professionals: [], events: [], professions: [] }); // ADICIONADO professions
+  const [dbData, setDbData] = useState({ professionals: [], events: [], professions: [] });
 
-  // ESTADOS PARA OS FILTROS
   const [filterProf, setFilterProf] = useState('');
   const [filterType, setFilterType] = useState('');
 
@@ -36,11 +35,11 @@ export default function Dashboard() {
   const [isAdminProfileOpen, setIsAdminProfileOpen] = useState(false);
   const [adminData, setAdminData] = useState({ username: 'Administrador', password: '' });
 
-  const [eventToDelete, setEventToDelete] = useState(null); // Guarda a ID do evento que queremos excluir
+  const [eventToDelete, setEventToDelete] = useState(null);
 
   const [shareFeedback, setShareFeedback] = useState('');
 
-  const [isResting, setIsResting] = useState(false); // NOVO: Controle da tela de descanso
+  const [isResting, setIsResting] = useState(false);
 
   const loadData = async () => {
     setIsLoading(true);
@@ -62,7 +61,6 @@ export default function Dashboard() {
     navigate('/login');
   };
 
-  // 👇 NOVA FUNÇÃO DE COMPARTILHAMENTO 👇
   const handleShare = async () => {
     const publicUrl = `${window.location.origin}/calendario`;
 
@@ -77,26 +75,19 @@ export default function Dashboard() {
         console.log('Compartilhamento cancelado ou falhou', err);
       }
     } else {
-      // 1. Copia o link silenciosamente
       navigator.clipboard.writeText(publicUrl);
-
-      // 2. Aciona o nosso aviso bonito no lugar do alert() feio
       setShareFeedback('✅ Link copiado para a área de transferência!');
-
-      // 3. Apaga o aviso sozinho após 3 segundos
       setTimeout(() => {
         setShareFeedback('');
       }, 3000);
     }
   };
 
-  // Esta função agora apenas ABRIRÁ o nosso novo modal customizado
   const handleDeleteEvent = (eventId) => {
     setEventToDelete(eventId);
   };
 
-  // Esta é a função que o botão vermelho do Modal vai chamar
-const executeDelete = async () => {
+  const executeDelete = async () => {
     if (!eventToDelete) return;
 
     setIsLoading(true);
@@ -104,15 +95,12 @@ const executeDelete = async () => {
       const currentData = await fetchGistData();
       const updatedEvents = (currentData.events || []).filter(e => String(e.id) !== String(eventToDelete));
       
-      // 👇 NOVO: Devolve o saldo pro funcionário (Remove o log de saída do banco)
       const updatedProfessionals = currentData.professionals.map(pro => {
-        // Filtra tirando fora o log que tem o mesmo ID do evento que estamos deletando
         const newFolgas = (pro.bancoFolgas || []).filter(f => f.id !== `log_${eventToDelete}`);
         const newFerias = (pro.bancoFerias || []).filter(f => f.id !== `log_${eventToDelete}`);
         return { ...pro, bancoFolgas: newFolgas, bancoFerias: newFerias };
       });
 
-      // Atualiza eventos e profissionais ao mesmo tempo
       const newData = { ...currentData, events: updatedEvents, professionals: updatedProfessionals };
 
       await updateGistData(newData);
@@ -129,7 +117,6 @@ const executeDelete = async () => {
     }
   };
 
-  // LÓGICA DE FILTRAGEM
   const filteredEvents = dbData.events.filter(event => {
     const matchProf = filterProf ? event.professionalId === filterProf : true;
     const matchType = filterType ? event.type === filterType : true;
@@ -140,16 +127,15 @@ const executeDelete = async () => {
     return filterProf ? pro.id === filterProf : true;
   });
 
-  // Logo antes do 'return'
   const handleOpenNewEvent = () => {
-    setEventToEdit(null); // Garante que o form vem vazio
+    setEventToEdit(null);
     setIsEventModalOpen(true);
   };
 
   const handleEditEvent = (event) => {
-    setSelectedEvent(null); // Fecha a janelinha de detalhes
-    setEventToEdit(event);  // Manda os dados pro formulário
-    setIsEventModalOpen(true); // Abre o formulário
+    setSelectedEvent(null);
+    setEventToEdit(event);
+    setIsEventModalOpen(true);
   };
 
   return (
@@ -159,22 +145,20 @@ const executeDelete = async () => {
         isOpen={isSidebarOpen}
         onClose={() => setIsSidebarOpen(false)}
         professionals={dbData.professionals}
-        professions={dbData.professions} /* <-- NOVO */
+        professions={dbData.professions}
         onDataUpdated={loadData}
         adminName={adminData.username}
         onOpenProfile={() => setIsAdminProfileOpen(true)}
       />
 
-{/* 👇 AQUI ESTÁ A NOVA SIDEBAR DO BANCO 👇 */}
       <BankSidebar
         isOpen={isBankSidebarOpen}
         onClose={() => setIsBankSidebarOpen(false)}
         professionals={dbData.professionals}
-        events={dbData.events}  /* <---- ADICIONE ESTA LINHA */
+        events={dbData.events}
         onDataUpdated={loadData}
       />
 
-      {/* RENDERIZE O NOVO MODAL (Pode colocar logo abaixo da chamada da Sidebar) */}
       <AdminProfileModal
         isOpen={isAdminProfileOpen}
         onClose={() => setIsAdminProfileOpen(false)}
@@ -183,59 +167,48 @@ const executeDelete = async () => {
       />
 
       <header className="dashboard-header">
-        <div style={{ display: 'flex', gap: '1rem', alignItems: 'center' }}>
+        <div className="header-left">
           <button className="btn-menu" onClick={() => setIsSidebarOpen(true)}>☰ Menu</button>
           <h2 className="dashboard-title">Calendário de Ausências</h2>
         </div>
 
-        {/* 👇 AQUI ESTÁ O NOVO BOTÃO 👇 */}
-          <button 
-            onClick={() => setIsBankSidebarOpen(true)} 
-            style={{ padding: '0.5rem 1rem', backgroundColor: 'orange', color: 'white', border: 'none', borderRadius: '4px', fontWeight: 'bold', cursor: 'pointer' }}
-          >
+        <div className="header-actions">
+          <button className="btn-bank" onClick={() => setIsBankSidebarOpen(true)}>
             💰 Banco de Direitos
           </button>
 
-        {/* NOSSO NOVO BOTÃO DE COMPARTILHAR */}
-
-        <div style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap', justifyContent: 'flex-end' }}>
-          <button onClick={handleShare} style={{ padding: '0.5rem 1rem', backgroundColor: '#8b5cf6', color: 'white', border: 'none', borderRadius: '4px', fontWeight: 'bold', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '5px' }}>
+          <button className="btn-share" onClick={handleShare}>
             📤 Compartilhar Link
           </button>
-          <button onClick={handleOpenNewEvent} style={{ padding: '0.5rem 1rem', backgroundColor: '#3b82f6', color: 'white', border: 'none', borderRadius: '4px', fontWeight: 'bold', cursor: 'pointer' }}>+ Nova Ausência</button>
+          
+          <button className="btn-new-event" onClick={handleOpenNewEvent}>
+            + Nova Ausência
+          </button>
+          
           <button className="btn-header-logout" onClick={handleLogout}>Sair</button>
         </div>
 
-        <button
-          onClick={() => setIsResting(true)}
-          style={{
-            backgroundColor: '#374151', color: 'white', border: 'none',
-            padding: '8px 15px', borderRadius: '8px', cursor: 'pointer',
-            fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: '8px'
-          }}
-        >
+        <button className="btn-pause" onClick={() => setIsResting(true)}>
           ☕ Pausar Sistema
         </button>
       </header>
 
-      {/* Passe a prop eventToEdit para o form */}
       <EventModal
         isOpen={isEventModalOpen}
         onClose={() => setIsEventModalOpen(false)}
         professionals={dbData.professionals}
         events={dbData.events}
         onDataUpdated={loadData}
-        eventToEdit={eventToEdit} /* <-- NOVO */
+        eventToEdit={eventToEdit}
       />
 
-      {/* Passe a função onEdit para os detalhes */}
       <EventDetailModal
         isOpen={!!selectedEvent}
         event={selectedEvent}
         professional={dbData.professionals.find(p => p.id === selectedEvent?.professionalId)}
         onClose={() => setSelectedEvent(null)}
         onDelete={handleDeleteEvent}
-        onEdit={handleEditEvent} /* <-- NOVO */
+        onEdit={handleEditEvent}
       />
 
       <ConfirmModal
@@ -247,29 +220,25 @@ const executeDelete = async () => {
         onConfirm={executeDelete}
       />
 
-      {/* NOVO LAYOUT DO MAIN: Flex column com Gap para separar as metades */}
-      <main className="dashboard-main" style={{ display: 'flex', flexDirection: 'column', gap: '2rem' }}>
+      <main className="dashboard-main">
 
         {isLoading ? <div className="status-container"><h2>Carregando...</h2></div> : null}
 
         {!isLoading && !error && (
           <>
-            {/* PARTE SUPERIOR: Filtros + Calendário Anual */}
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-
-              {/* BARRA DE FILTROS */}
-              <div style={{ display: 'flex', gap: '1rem', backgroundColor: 'white', padding: '1rem', borderRadius: '8px', border: '1px solid #e5e7eb' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                  <label style={{ fontSize: '0.85rem', fontWeight: 'bold', color: '#374151' }}>Filtrar Funcionário:</label>
-                  <select value={filterProf} onChange={(e) => setFilterProf(e.target.value)} style={{ padding: '0.4rem', borderRadius: '4px', border: '1px solid #d1d5db' }}>
+            <div className="dashboard-top-section">
+              <div className="filters-bar">
+                <div className="filter-group">
+                  <label>Filtrar Funcionário:</label>
+                  <select value={filterProf} onChange={(e) => setFilterProf(e.target.value)} className="filter-select">
                     <option value="">Todos</option>
                     {dbData.professionals.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
                   </select>
                 </div>
 
-                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                  <label style={{ fontSize: '0.85rem', fontWeight: 'bold', color: '#374151' }}>Filtrar Tipo:</label>
-                  <select value={filterType} onChange={(e) => setFilterType(e.target.value)} style={{ padding: '0.4rem', borderRadius: '4px', border: '1px solid #d1d5db' }}>
+                <div className="filter-group">
+                  <label>Filtrar Tipo:</label>
+                  <select value={filterType} onChange={(e) => setFilterType(e.target.value)} className="filter-select">
                     <option value="">Todos</option>
                     <option value="ferias">Apenas Férias</option>
                     <option value="folga">Apenas Folgas</option>
@@ -277,42 +246,27 @@ const executeDelete = async () => {
                 </div>
               </div>
 
-              {/* CALENDÁRIO ANUAL (Agora usa os filteredEvents!) */}
               <div className="calendar-wrapper">
                 <AnnualCalendar professionals={dbData.professionals} events={filteredEvents} onEventClick={setSelectedEvent} />
               </div>
             </div>
 
-            {/* PARTE INFERIOR: Resumo do Mês (Calendário Menor + Cards) */}
             <MonthlySummary professionals={dbData.professionals} events={dbData.events} professions={dbData.professions} />
           </>
         )}
       </main>
+
       <ProfessionalList
         professionals={filteredProfessionals}
         events={filteredEvents}
       />
-      {/* NOTIFICAÇÃO FLUTUANTE DE COMPARTILHAMENTO */}
+
       {shareFeedback && (
-        <div style={{
-          position: 'fixed',
-          bottom: '20px',
-          right: '20px',
-          backgroundColor: '#10b981', // Verde elegante
-          color: 'white',
-          padding: '12px 24px',
-          borderRadius: '8px',
-          boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
-          zIndex: 9999,
-          animation: 'fadeIn 0.3s ease-out',
-          fontWeight: 'bold',
-          display: 'flex',
-          alignItems: 'center',
-          gap: '8px'
-        }}>
+        <div className="share-feedback-toast">
           {shareFeedback}
         </div>
       )}
+
       <RestScreen isActive={isResting} onWakeUp={() => setIsResting(false)} />
     </div>
   );

@@ -8,6 +8,7 @@
   flex-direction: column;
 }
 
+/* === HEADER E BOTÕES === */
 .dashboard-header {
   padding: 1rem 2rem;
   background-color: white;
@@ -15,6 +16,25 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
+}
+
+.header-left {
+  display: flex;
+  gap: 1rem;
+  align-items: center;
+}
+
+.dashboard-title {
+  margin: 0;
+  font-size: 1.2rem;
+  color: #111827;
+}
+
+.header-actions {
+  display: flex;
+  gap: 1rem;
+  flex-wrap: wrap;
+  justify-content: flex-end;
 }
 
 .btn-menu {
@@ -27,15 +47,39 @@
   font-weight: bold;
   transition: background-color 0.2s;
 }
+.btn-menu:hover { background-color: #374151; }
 
-.btn-menu:hover {
-  background-color: #374151;
+.btn-bank {
+  padding: 0.5rem 1rem;
+  background-color: orange;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  font-weight: bold;
+  cursor: pointer;
 }
 
-.dashboard-title {
-  margin: 0;
-  font-size: 1.2rem;
-  color: #111827;
+.btn-share {
+  padding: 0.5rem 1rem;
+  background-color: #8b5cf6;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  font-weight: bold;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.btn-new-event {
+  padding: 0.5rem 1rem;
+  background-color: #3b82f6;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  font-weight: bold;
+  cursor: pointer;
 }
 
 .btn-header-logout {
@@ -47,43 +91,105 @@
   border-radius: 4px;
   transition: all 0.2s;
 }
+.btn-header-logout:hover { background-color: #f3f4f6; color: #111827; }
 
-.btn-header-logout:hover {
-  background-color: #f3f4f6;
-  color: #111827;
+.btn-pause {
+  background-color: #374151;
+  color: white;
+  border: none;
+  padding: 8px 15px;
+  border-radius: 8px;
+  cursor: pointer;
+  font-weight: bold;
+  display: flex;
+  align-items: center;
+  gap: 8px;
 }
 
+/* === MAIN E IMAGEM DE FUNDO === */
 .dashboard-main {
   padding: 2rem;
   flex-grow: 1;
   overflow-x: auto;
-  background-color: gray;
+  position: relative; /* Necessário para a imagem de fundo funcionar */
+  display: flex;
+  flex-direction: column;
+  gap: 2rem;
 }
 
+/* O SEGREDO DA IMAGEM DE FUNDO: Coloque o link da sua imagem no url() */
 .dashboard-main::before {
   content: "";
-  position: absolute;
+  position: fixed; /* Fixed para não quebrar a rolagem */
   top: 0;
   left: 0;
-  width: 100%;
-  height: 100%;
+  width: 100vw;
+  height: 100vh;
   z-index: -1;
-  filter: blur(2px) brightness(40%);  
+  
+  /* Substitua pelo link da sua imagem real */
+  background-image: url('https://images.unsplash.com/photo-1497366216548-37526070297c?q=80&w=2069&auto=format&fit=crop'); 
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+  
+  filter: blur(4px) brightness(40%);  
 }
 
+.dashboard-top-section {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+/* === FILTROS === */
+.filters-bar {
+  display: flex;
+  gap: 1rem;
+  background-color: white;
+  padding: 1rem;
+  border-radius: 8px;
+  border: 1px solid #e5e7eb;
+}
+
+.filter-group {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.filter-group label {
+  font-size: 0.85rem;
+  font-weight: bold;
+  color: #374151;
+}
+
+.filter-select {
+  padding: 0.4rem;
+  border-radius: 4px;
+  border: 1px solid #d1d5db;
+}
+
+.calendar-wrapper {
+  background-color: white;
+  padding: 1.5rem;
+  border-radius: 8px;
+  border: 1px solid #e5e7eb;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+}
+
+/* === STATUS E TOASTS === */
 .status-container {
   text-align: center;
   padding: 3rem;
-  color: #6b7280;
+  color: #f9fafb; /* Deixei branco para aparecer melhor no fundo escuro da imagem */
 }
 
 .status-container h2 {
   margin-bottom: 1rem;
 }
 
-.status-error {
-  color: #ef4444;
-}
+.status-error { color: #ef4444; }
 
 .btn-retry {
   padding: 0.5rem 1rem;
@@ -95,10 +201,24 @@
   font-weight: bold;
 }
 
-.calendar-wrapper {
-  background-color: white;
-  padding: 1.5rem;
+.share-feedback-toast {
+  position: fixed;
+  bottom: 20px;
+  right: 20px;
+  background-color: #10b981;
+  color: white;
+  padding: 12px 24px;
   border-radius: 8px;
-  border: 1px solid #e5e7eb;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+  z-index: 9999;
+  animation: fadeIn 0.3s ease-out;
+  font-weight: bold;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
 }
