@@ -1,0 +1,170 @@
+/* Arquivo: src/components/BankSidebar.css */
+
+/* Deixa a sidebar mais larga para caber 3 colunas confortavelmente */
+.bank-sidebar {
+  width: 1050px; 
+  max-width: 95vw;
+}
+
+.bank-3-columns {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1.2fr; /* Coluna 3 (Logs) é levemente maior */
+  gap: 1.5rem;
+  overflow: hidden;
+}
+
+.btn-close-bank {
+  background: transparent;
+  border: 1px solid #ef4444;
+  color: #ef4444;
+  padding: 0.3rem 0.6rem;
+  border-radius: 4px;
+  cursor: pointer;
+  font-weight: bold;
+  transition: all 0.2s;
+}
+
+.btn-close-bank:hover {
+  background-color: #ef4444;
+  color: white;
+}
+
+.bank-pro-item {
+  cursor: pointer;
+  border: 1px solid transparent;
+}
+
+.bank-pro-item:hover { border-color: rgba(255, 165, 0, 0.5); }
+.bank-pro-item.active {
+  border-color: orange;
+  background-color: rgba(255, 165, 0, 0.1);
+}
+
+.bank-empty-state {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  color: #9ca3af;
+  text-align: center;
+  font-style: italic;
+  padding: 2rem;
+}
+
+.bank-card {
+  background-color: rgba(0, 0, 0, 0.4);
+  border-radius: 10px;
+  padding: 1.5rem;
+  border: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.bank-card h4 {
+  margin: 0 0 1rem 0;
+  color: white;
+  font-size: 1.1rem;
+}
+
+/* === NOVA SESSÃO DE LOGS === */
+.sidebar-column-log {
+  background-color: rgba(0, 0, 0, 0.2);
+  border-radius: 10px;
+  padding: 1rem;
+  border: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.log-section h4 {
+  color: white;
+  margin: 0 0 10px 0;
+  font-size: 1rem;
+}
+
+.text-green { color: #10b981 !important; }
+
+.log-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  max-height: 250px;
+  overflow-y: auto;
+  padding-right: 5px;
+}
+
+.log-list::-webkit-scrollbar { width: 4px; }
+.log-list::-webkit-scrollbar-thumb { background-color: #4b5563; border-radius: 10px; }
+
+.log-item {
+  background-color: rgba(255,255,255, 0.05);
+  padding: 10px;
+  border-radius: 6px;
+  border-left: 3px solid gray;
+}
+
+.log-item.log-in { border-left-color: #10b981; } /* Entrada Verde */
+.log-item.log-out { border-left-color: #ef4444; } /* Saída Vermelha */
+
+.log-item-main {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 5px;
+}
+
+.log-badge {
+  font-weight: 800;
+  font-size: 0.9rem;
+  color: white;
+}
+
+.log-item.log-in .log-badge { color: #10b981; }
+.log-item.log-out .log-badge { color: #ef4444; }
+
+.log-desc {
+  font-size: 0.9rem;
+  color: #f3f4f6;
+  flex: 1;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.log-item-meta {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 0.75rem;
+  color: #6b7280;
+}
+
+.log-divider {
+  border: 0;
+  border-top: 1px dashed rgba(255,255,255, 0.1);
+  margin: 1.5rem 0;
+}
+
+.saldos-ferias-badges {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.saldo-badge {
+  background-color: #374151;
+  padding: 5px 10px;
+  border-radius: 6px;
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.saldo-badge span { color: #9ca3af; font-size: 0.8rem; }
+.saldo-badge strong { color: orange; font-size: 0.95rem; }
+.saldo-badge.esgotado strong { color: #ef4444; }
+
+/* Para responsividade em telas menores */
+@media (max-width: 1100px) {
+  .bank-3-columns {
+    grid-template-columns: 1fr;
+    overflow-y: auto;
+  }
+}

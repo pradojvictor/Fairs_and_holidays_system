@@ -11,12 +11,14 @@ import AdminProfileModal from '../../components/AdminProfileModal';
 import ConfirmModal from '../../components/ConfirmModal';
 import ProfessionalList from '../../components/ProfessionalList';
 import RestScreen from '../../components/RestScreen';
+import BankSidebar from '../../components/BankSidebar';
 import './index.css';
 
 export default function Dashboard() {
   const navigate = useNavigate();
 
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+  const [isBankSidebarOpen, setIsBankSidebarOpen] = useState(false);
   const [isEventModalOpen, setIsEventModalOpen] = useState(false);
   const [selectedEvent, setSelectedEvent] = useState(null);
 
@@ -94,19 +96,29 @@ export default function Dashboard() {
   };
 
   // Esta é a função que o botão vermelho do Modal vai chamar
-  const executeDelete = async () => {
+const executeDelete = async () => {
     if (!eventToDelete) return;
 
     setIsLoading(true);
     try {
       const currentData = await fetchGistData();
       const updatedEvents = (currentData.events || []).filter(e => String(e.id) !== String(eventToDelete));
-      const newData = { ...currentData, events: updatedEvents };
+      
+      // 👇 NOVO: Devolve o saldo pro funcionário (Remove o log de saída do banco)
+      const updatedProfessionals = currentData.professionals.map(pro => {
+        // Filtra tirando fora o log que tem o mesmo ID do evento que estamos deletando
+        const newFolgas = (pro.bancoFolgas || []).filter(f => f.id !== `log_${eventToDelete}`);
+        const newFerias = (pro.bancoFerias || []).filter(f => f.id !== `log_${eventToDelete}`);
+        return { ...pro, bancoFolgas: newFolgas, bancoFerias: newFerias };
+      });
+
+      // Atualiza eventos e profissionais ao mesmo tempo
+      const newData = { ...currentData, events: updatedEvents, professionals: updatedProfessionals };
 
       await updateGistData(newData);
 
-      setSelectedEvent(null); // Fecha o modal de detalhes
-      setEventToDelete(null); // Fecha o modal de confirmação
+      setSelectedEvent(null); 
+      setEventToDelete(null); 
       await loadData();
 
     } catch (err) {
@@ -153,6 +165,15 @@ export default function Dashboard() {
         onOpenProfile={() => setIsAdminProfileOpen(true)}
       />
 
+{/* 👇 AQUI ESTÁ A NOVA SIDEBAR DO BANCO 👇 */}
+      <BankSidebar
+        isOpen={isBankSidebarOpen}
+        onClose={() => setIsBankSidebarOpen(false)}
+        professionals={dbData.professionals}
+        events={dbData.events}  /* <---- ADICIONE ESTA LINHA */
+        onDataUpdated={loadData}
+      />
+
       {/* RENDERIZE O NOVO MODAL (Pode colocar logo abaixo da chamada da Sidebar) */}
       <AdminProfileModal
         isOpen={isAdminProfileOpen}
@@ -166,6 +187,14 @@ export default function Dashboard() {
           <button className="btn-menu" onClick={() => setIsSidebarOpen(true)}>☰ Menu</button>
           <h2 className="dashboard-title">Calendário de Ausências</h2>
         </div>
+
+        {/* 👇 AQUI ESTÁ O NOVO BOTÃO 👇 */}
+          <button 
+            onClick={() => setIsBankSidebarOpen(true)} 
+            style={{ padding: '0.5rem 1rem', backgroundColor: 'orange', color: 'white', border: 'none', borderRadius: '4px', fontWeight: 'bold', cursor: 'pointer' }}
+          >
+            💰 Banco de Direitos
+          </button>
 
         {/* NOSSO NOVO BOTÃO DE COMPARTILHAR */}
 
