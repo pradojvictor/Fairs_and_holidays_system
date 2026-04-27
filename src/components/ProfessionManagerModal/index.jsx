@@ -12,11 +12,9 @@ export default function ProfessionManagerModal({ isOpen, onClose, professions = 
 
   const handleAddProfession = async (e) => {
     e.preventDefault();
-    if (!newProfession.trim()) return;
-    
+    if (!newProfession.trim()) return; 
     setLoading(true);
     setFeedback({ type: '', message: '' }); 
-    
     try {
       const currentData = await fetchGistData();
       const newCargo = { id: `cargo_${Date.now()}`, name: newProfession.trim() };
@@ -31,7 +29,6 @@ export default function ProfessionManagerModal({ isOpen, onClose, professions = 
       setTimeout(() => {
         setFeedback({ type: '', message: '' });
       }, 3000);
-
     } catch (error) {
       console.error(error);
       setFeedback({ type: 'error', message: 'Erro ao salvar o cargo.' });
@@ -39,16 +36,13 @@ export default function ProfessionManagerModal({ isOpen, onClose, professions = 
       setLoading(false);
     }
   };
-
   return (
     <div className="event-modal-overlay">
-      <div className="event-modal-container modal-sm">
-        
+      <div className="event-modal-container modal-sm">  
         <div className="event-modal-header">
           <h3>Gerenciar Cargos</h3>
           <button onClick={onClose} className="btn-close-modal">&times;</button>
         </div>
-
         <form onSubmit={handleAddProfession} className="prof-manager-form">
           <input 
             type="text" 
@@ -73,7 +67,6 @@ export default function ProfessionManagerModal({ isOpen, onClose, professions = 
             {feedback.type === 'success' ? '✅ ' : '❌ '} {feedback.message}
           </div>
         )}
-
         <div className="prof-list-container-modal">
           <h4 className="prof-list-title">Cargos Cadastrados ({professions.length})</h4>
           <ul className="prof-list-ul">

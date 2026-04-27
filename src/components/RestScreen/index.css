@@ -12,7 +12,7 @@
   justify-content: center;
   align-items: center;
   transition: transform 0.6s cubic-bezier(0.25, 0.8, 0.25, 1);
-  transform: translateY(-100%); 
+  transform: translateY(-100%);
 }
 
 .rest-screen-overlay.active {
@@ -23,7 +23,7 @@
   font-size: 6rem;
   font-weight: bold;
   margin: 0;
-  text-shadow: 0 4px 20px rgba(0,0,0,0.3);
+  text-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
   color: white;
 }
 
@@ -43,8 +43,8 @@
   align-items: center;
   text-align: center;
 
-  span{
-    margin:0 10px;
+  span {
+    margin: 0 10px;
   }
 }
 

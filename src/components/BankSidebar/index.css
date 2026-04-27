@@ -1,14 +1,11 @@
-/* Arquivo: src/components/BankSidebar.css */
-
-/* Deixa a sidebar mais larga para caber 3 colunas confortavelmente */
 .bank-sidebar {
-  width: 1200px; 
+  width: 1200px;
   max-width: 95vw;
 }
 
 .bank-3-columns {
   display: grid;
-  grid-template-columns: 1fr 1fr 1.2fr; /* Coluna 3 (Logs) é levemente maior */
+  grid-template-columns: 1fr 1fr 1.2fr;
   gap: 1.5rem;
   overflow: hidden;
 }
@@ -34,7 +31,10 @@
   border: 1px solid transparent;
 }
 
-.bank-pro-item:hover { border-color: rgba(255, 165, 0, 0.5); }
+.bank-pro-item:hover {
+  border-color: rgba(255, 165, 0, 0.5);
+}
+
 .bank-pro-item.active {
   border-color: orange;
   background-color: rgba(255, 165, 0, 0.1);
@@ -64,7 +64,6 @@
   font-size: 1.1rem;
 }
 
-/* === NOVA SESSÃO DE LOGS === */
 .sidebar-column-log {
   background-color: rgba(0, 0, 0, 0.2);
   border-radius: 10px;
@@ -78,7 +77,9 @@
   font-size: 1rem;
 }
 
-.text-green { color: #10b981 !important; }
+.text-green {
+  color: #10b981 !important;
+}
 
 .log-list {
   display: flex;
@@ -89,18 +90,29 @@
   padding-right: 5px;
 }
 
-.log-list::-webkit-scrollbar { width: 4px; }
-.log-list::-webkit-scrollbar-thumb { background-color: #4b5563; border-radius: 10px; }
+.log-list::-webkit-scrollbar {
+  width: 4px;
+}
+
+.log-list::-webkit-scrollbar-thumb {
+  background-color: #4b5563;
+  border-radius: 10px;
+}
 
 .log-item {
-  background-color: rgba(255,255,255, 0.05);
+  background-color: rgba(255, 255, 255, 0.05);
   padding: 10px;
   border-radius: 6px;
   border-left: 3px solid gray;
 }
 
-.log-item.log-in { border-left-color: #10b981; } /* Entrada Verde */
-.log-item.log-out { border-left-color: #ef4444; } /* Saída Vermelha */
+.log-item.log-in {
+  border-left-color: #10b981;
+}
+
+.log-item.log-out {
+  border-left-color: #ef4444;
+}
 
 .log-item-main {
   display: flex;
@@ -115,8 +127,13 @@
   color: white;
 }
 
-.log-item.log-in .log-badge { color: #10b981; }
-.log-item.log-out .log-badge { color: #ef4444; }
+.log-item.log-in .log-badge {
+  color: #10b981;
+}
+
+.log-item.log-out .log-badge {
+  color: #ef4444;
+}
 
 .log-desc {
   font-size: 0.9rem;
@@ -137,7 +154,7 @@
 
 .log-divider {
   border: 0;
-  border-top: 1px dashed rgba(255,255,255, 0.1);
+  border-top: 1px dashed rgba(255, 255, 255, 0.1);
   margin: 1.5rem 0;
 }
 
@@ -157,11 +174,20 @@
   border: 1px solid rgba(255, 255, 255, 0.1);
 }
 
-.saldo-badge span { color: #9ca3af; font-size: 0.8rem; }
-.saldo-badge strong { color: orange; font-size: 0.95rem; }
-.saldo-badge.esgotado strong { color: #ef4444; }
+.saldo-badge span {
+  color: #9ca3af;
+  font-size: 0.8rem;
+}
 
-/* Para responsividade em telas menores */
+.saldo-badge strong {
+  color: orange;
+  font-size: 0.95rem;
+}
+
+.saldo-badge.esgotado strong {
+  color: #ef4444;
+}
+
 @media (max-width: 1100px) {
   .bank-3-columns {
     grid-template-columns: 1fr;

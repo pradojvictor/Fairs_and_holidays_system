@@ -8,13 +8,12 @@ export default function CustomSelect({
   value, 
   onChange, 
   placeholder = '-- Selecione --',
-  variant = 'text', // Pode ser 'text' ou 'color'
+  variant = 'text',
   customThemeClass = '' 
 }) {
   const [isOpen, setIsOpen] = useState(false);
   const dropdownRef = useRef(null);
 
-  // MÁGICA: Fecha ao clicar fora do componente
   useEffect(() => {
     function handleClickOutside(event) {
       if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
@@ -24,8 +23,6 @@ export default function CustomSelect({
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
-
-  // Renderiza o botão (depende se é texto ou cor)
   const renderTriggerContent = () => {
     if (variant === 'color') {
       return (
@@ -35,8 +32,6 @@ export default function CustomSelect({
         </div>
       );
     }
-    
-    // Se for texto (Cargo/Turno)
     const selectedOption = options.find(opt => opt.value === value);
     const displayLabel = selectedOption ? selectedOption.label : placeholder;
     return (
@@ -45,7 +40,6 @@ export default function CustomSelect({
       </span>
     );
   };
-
   return (
     <div className={`custom-select-wrapper ${customThemeClass}`} ref={dropdownRef}>
       {label && <label className="custom-select-label">{label}</label>}

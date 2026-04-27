@@ -1,5 +1,3 @@
-/* Arquivo: src/components/AnnualCalendar.css */
-
 .calendar-container {
   display: flex;
   flex-direction: column;
@@ -8,15 +6,8 @@
 
 .months-wrapper {
   display: grid;
-  
-  /* 1. AUMENTAMOS o tamanho mínimo do mês (de 350px para 390px). 
-        Isso garante que os 31 dias terão espaço físico suficiente. */
   grid-template-columns: repeat(auto-fit, minmax(390px, 1fr));
-  
-  /* 2. REDUZIMOS o espaço entre os meses (de 1.5rem para 0.5rem). 
-        Assim, eles ficam mais próximos e aproveitam melhor a tela. */
   gap: 0.5rem; 
-  
   align-items: start;
 }
 
@@ -43,23 +34,23 @@
 
 .days-header-grid {
   display: grid;
-  gap: 0; /* Removemos o gap horizontal para ganhar espaço */
+  gap: 0;
   text-align: center;
-  font-size: 0.65rem; /* Fonte um pouquinho menor (aprox 10px) */
-  font-variant-numeric: tabular-nums; /* Força os números a terem a mesma largura */
+  font-size: 0.65rem;
+  font-variant-numeric: tabular-nums;
   color: #6b7280;
 }
 
 .month-body {
   padding: 0.5rem;
   display: grid;
-  gap: 4px 0; /* 4px de espaço vertical entre os funcionários, e ZERO espaço horizontal */
+  gap: 4px 0;
   background-color: white;
 }
 
 .day-separator {
-  border-left: 1px dashed #f3f4f6; /* Troque de border-right para border-left */
-  margin-left: -1px; /* Puxa a linha para o limite exato da coluna */
+  border-left: 1px dashed #f3f4f6;
+  margin-left: -1px;
 }
 
 .event-line {
@@ -72,7 +63,6 @@
   align-self: center;
 }
 
-/* Um pequeno efeito visual quando o mouse passa por cima da linha */
 .event-line:hover {
   filter: brightness(0.8);
   transform: scaleY(1.5); 
@@ -121,14 +111,12 @@
   font-weight: 500;
 }
 
-/* Adicione no final do AnnualCalendar.css */
-
 .holiday-day {
-  color: #ef4444 !important; /* Vermelho forte */
+  color: #ef4444 !important;
   font-weight: 900 !important;
-  background-color: #fef2f2; /* Fundo vermelho bem clarinho */
+  background-color: #fef2f2;
   border-radius: 3px;
-  cursor: help; /* Muda o mouse para um ponto de interrogação */
+  cursor: help;
   transition: all 0.2s;
 }
 

@@ -1,4 +1,3 @@
-// Arquivo: src/components/AnnualCalendar.jsx
 import React, { useState, useEffect } from 'react';
 import './index.css';
 
@@ -9,11 +8,8 @@ const meses = [
 
 export default function AnnualCalendar({ professionals = [], events = [], onEventClick }) {
   const currentYear = new Date().getFullYear();
-  
-  // NOVO: Estado para guardar os feriados da API
   const [holidays, setHolidays] = useState([]);
 
-  // NOVO: Busca os feriados automaticamente ao abrir o calendário
   useEffect(() => {
     const fetchHolidays = async () => {
       try {
@@ -29,59 +25,43 @@ export default function AnnualCalendar({ professionals = [], events = [], onEven
   }, [currentYear]);
 
   const getDaysInMonth = (month, year) => new Date(year, month + 1, 0).getDate();
-
   const getEventSpan = (startDateStr, endDateStr, monthIndex, year) => {
     if (!startDateStr || !endDateStr) return null;
-    
     const [sYear, sMonth, sDay] = startDateStr.split('-').map(Number);
     const [eYear, eMonth, eDay] = endDateStr.split('-').map(Number);
-
     const start = new Date(sYear, sMonth - 1, sDay, 12, 0, 0);
     const end = new Date(eYear, eMonth - 1, eDay, 12, 0, 0);
     const mStart = new Date(year, monthIndex, 1, 0, 0, 0);
     const mEnd = new Date(year, monthIndex + 1, 0, 23, 59, 59);
-
     if (start > mEnd || end < mStart) return null;
-
     const startDay = start < mStart ? 1 : start.getDate();
     const endDay = end > mEnd ? mEnd.getDate() : end.getDate();
-
     return { startDay, endDay };
   };
-
-  // NOVO: Função para descobrir se um dia específico é feriado
   const getHolidayForDay = (monthIndex, day) => {
-    // Formata o mês e dia para ficar no padrão da API: "AAAA-MM-DD"
     const m = String(monthIndex + 1).padStart(2, '0');
     const d = String(day).padStart(2, '0');
     const dateString = `${currentYear}-${m}-${d}`;
-    
     return holidays.find(h => h.date === dateString);
   };
-
   return (
-    <div className="calendar-container">
-      
+    <div className="calendar-container">  
       <div className="months-wrapper">
         {meses.map((nomeMes, indexMes) => {
           const daysCount = getDaysInMonth(indexMes, currentYear);
           const daysArray = Array.from({ length: daysCount }, (_, i) => i + 1);
-
           return (
-            <div key={nomeMes} className="month-block">
-              
+            <div key={nomeMes} className="month-block">   
               <div className="month-header">
                 <strong className="month-title">{nomeMes} {currentYear}</strong>
                 <div className="days-header-grid" style={{ gridTemplateColumns: `repeat(${daysCount}, minmax(0, 1fr))` }}>
                   {daysArray.map(day => {
-                    // Verifica se o dia atual do loop é um feriado
-                    const holiday = getHolidayForDay(indexMes, day);
-                    
+                    const holiday = getHolidayForDay(indexMes, day); 
                     return (
                       <div 
                         key={day} 
                         className={holiday ? 'holiday-day' : ''}
-                        title={holiday ? holiday.name : ''} // O tooltip com o nome do feriado
+                        title={holiday ? holiday.name : ''}
                       >
                         {day}
                       </div>
@@ -89,7 +69,6 @@ export default function AnnualCalendar({ professionals = [], events = [], onEven
                   })}
                 </div>
               </div>
-
               <div 
                 className="month-body" 
                 style={{ 
@@ -104,15 +83,12 @@ export default function AnnualCalendar({ professionals = [], events = [], onEven
                     style={{ gridColumn: day, gridRow: `1 / span ${Math.max(1, professionals.length)}` }} 
                   />
                 ))}
-
                 {events.map((event, i) => {
                   const span = getEventSpan(event.startDate, event.endDate, indexMes, currentYear);
                   if (!span) return null; 
-
                   const proIndex = professionals.findIndex(p => p.id === event.professionalId);
                   if (proIndex === -1) return null;
-                  const pro = professionals[proIndex];
-                  
+                  const pro = professionals[proIndex];  
                   return (
                     <div 
                       key={`${event.id}-${indexMes}-${i}`}
@@ -133,7 +109,6 @@ export default function AnnualCalendar({ professionals = [], events = [], onEven
           );
         })}
       </div>
-
       <div className="legend-container">
         <h4 className="legend-title">Legenda da Equipe</h4>
         <div className="legend-items">
@@ -149,7 +124,6 @@ export default function AnnualCalendar({ professionals = [], events = [], onEven
           )}
         </div>
       </div>
-
     </div>
   );
 }

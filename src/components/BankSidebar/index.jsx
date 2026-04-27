@@ -8,19 +8,13 @@ export default function BankSidebar({ isOpen, onClose, onDataUpdated, profession
   const [selectedProId, setSelectedProId] = useState(null);
   const [loading, setLoading] = useState(false);
   const [feedback, setFeedback] = useState({ type: '', message: '' });
-
-  // Estado para o Modal de Exclusão do Log
   const [deleteLogModal, setDeleteLogModal] = useState({ isOpen: false, log: null, isFolga: false });
-
   const [folgaDays, setFolgaDays] = useState('');
   const [folgaReason, setFolgaReason] = useState('');
-
   const [feriasYear, setFeriasYear] = useState(new Date().getFullYear().toString());
   const [feriasType, setFeriasType] = useState('Individual');
   const [feriasDays, setFeriasDays] = useState('');
-
   const selectedPro = professionals.find(p => p.id === selectedProId);
-
   const showFeedback = (type, message, duration = 5000) => {
     setFeedback({ type, message });
     setTimeout(() => setFeedback({ type: '', message: '' }), duration); 
@@ -32,7 +26,6 @@ export default function BankSidebar({ isOpen, onClose, onDataUpdated, profession
       showFeedback('error', 'Preencha a quantidade e o motivo!');
       return;
     }
-
     setLoading(true);
     try {
       const currentData = await fetchGistData();
@@ -44,7 +37,6 @@ export default function BankSidebar({ isOpen, onClose, onDataUpdated, profession
         createdAt: new Date().toLocaleDateString('pt-BR'),
         targetDate: null
       };
-
       const updatedProfessionals = currentData.professionals.map(pro => {
         if (pro.id === selectedProId) {
           const currentFolgas = Array.isArray(pro.bancoFolgas) ? pro.bancoFolgas : [];
@@ -52,7 +44,6 @@ export default function BankSidebar({ isOpen, onClose, onDataUpdated, profession
         }
         return pro;
       });
-
       await updateGistData({ ...currentData, professionals: updatedProfessionals });
       setFolgaDays('');
       setFolgaReason('');
@@ -64,17 +55,14 @@ export default function BankSidebar({ isOpen, onClose, onDataUpdated, profession
       setLoading(false);
     }
   };
-
   const handleAddFerias = async (e) => {
     e.preventDefault();
     if (!selectedProId || !feriasYear || !feriasType || !feriasDays) return;
-
     const anoNumero = Number(feriasYear);
     if (feriasYear.length !== 4 || anoNumero < 2000 || anoNumero > 2100) {
       showFeedback('error', 'Por favor, digite um ano válido com 4 dígitos (Ex: 2026).');
       return;
     }
-
     setLoading(true);
     try {
       const currentData = await fetchGistData();
@@ -87,7 +75,6 @@ export default function BankSidebar({ isOpen, onClose, onDataUpdated, profession
         createdAt: new Date().toLocaleDateString('pt-BR'),
         targetDate: null
       };
-
       const updatedProfessionals = currentData.professionals.map(pro => {
         if (pro.id === selectedProId) {
           const currentFerias = Array.isArray(pro.bancoFerias) ? pro.bancoFerias : [];
@@ -95,7 +82,6 @@ export default function BankSidebar({ isOpen, onClose, onDataUpdated, profession
         }
         return pro;
       });
-
       await updateGistData({ ...currentData, professionals: updatedProfessionals });
       setFeriasDays('');
       if (onDataUpdated) onDataUpdated();
@@ -106,21 +92,15 @@ export default function BankSidebar({ isOpen, onClose, onDataUpdated, profession
       setLoading(false);
     }
   };
-
-  // --- NOVA LÓGICA DE EXCLUSÃO DE LOGS COM PROTEÇÃO E AVISO ---
   const requestDeleteLog = (logItem, isFolga) => {
-    // PROTEÇÃO 1: Se for SAÍDA, impede de apagar se estiver no calendário
     if (logItem.type === 'saida') {
       const eventIdFromLog = logItem.id.replace('log_', ''); 
       const eventExistsInCalendar = events.find(e => e.id === eventIdFromLog);
-
       if (eventExistsInCalendar) {
         showFeedback('error', `ATENÇÃO: Não é possível apagar este registro por aqui! Ele está vinculado a uma ausência agendada no Calendário (${logItem.targetDate}). Vá em "Detalhes da Ausência" no calendário e exclua o agendamento lá.`, 10000);
         return; 
       }
     }
-
-    // PROTEÇÃO 2: Se for ENTRADA, impede de apagar se for negativar o saldo
     if (logItem.type === 'entrada') {
       if (isFolga) {
         const saldoAtualFolgas = getSaldoFolgas(selectedPro);
@@ -137,13 +117,8 @@ export default function BankSidebar({ isOpen, onClose, onDataUpdated, profession
         }
       }
     }
-
-    // Se chegou até aqui, é uma entrada válida para excluir ou uma saída fantasma.
-    // Abre o modal de confirmação em vez de apagar direto!
     setDeleteLogModal({ isOpen: true, log: logItem, isFolga: isFolga });
   };
-
-  // A função que realmente executa o delete após o "SIM" no Modal
   const confirmDeleteLog = async () => {
     setLoading(true);
     const logItem = deleteLogModal.log;
@@ -161,7 +136,6 @@ export default function BankSidebar({ isOpen, onClose, onDataUpdated, profession
         }
         return pro;
       });
-
       await updateGistData({ ...currentData, professionals: updatedProfessionals });
       if (onDataUpdated) onDataUpdated();
       setDeleteLogModal({ isOpen: false, log: null, isFolga: false });
@@ -174,12 +148,10 @@ export default function BankSidebar({ isOpen, onClose, onDataUpdated, profession
     }
   };
 
-
   const getSaldoFolgas = (pro) => {
     if (!pro?.bancoFolgas || !Array.isArray(pro.bancoFolgas)) return 0;
     return pro.bancoFolgas.reduce((acc, log) => log.type === 'entrada' ? acc + log.days : acc - log.days, 0);
   };
-
   const getSaldosFerias = (pro) => {
     if (!pro?.bancoFerias || !Array.isArray(pro.bancoFerias)) return {};
     const saldos = {};
@@ -190,11 +162,9 @@ export default function BankSidebar({ isOpen, onClose, onDataUpdated, profession
     });
     return saldos;
   };
-
   return (
     <>
       <div className={`sidebar-overlay ${isOpen ? 'open' : ''}`} onClick={onClose} />
-
       <div className={`sidebar-container bank-sidebar ${isOpen ? 'open' : ''}`}>
         <div className="sidebar-header">
           <h2>Banco de Ausências</h2>
@@ -203,9 +173,7 @@ export default function BankSidebar({ isOpen, onClose, onDataUpdated, profession
             <button onClick={onClose} className="btn-close-bank">✖ Fechar</button>
           </div>
         </div>
-
         <div className="sidebar-split-layout bank-3-columns">
-          
           <div className="sidebar-column">
             <h3 className="sidebar-title">1. Funcionário</h3>
             <div className="pro-list" style={{ marginTop: '1rem' }}>
@@ -230,7 +198,6 @@ export default function BankSidebar({ isOpen, onClose, onDataUpdated, profession
               })}
             </div>
           </div>
-
           <div className="sidebar-column">
             <h3 className="sidebar-title">2. Lançar Entradas</h3>
             {!selectedPro ? (
@@ -240,7 +207,6 @@ export default function BankSidebar({ isOpen, onClose, onDataUpdated, profession
                 {feedback.message && (
                   <div className={`feedback-toast ${feedback.type}`} style={{ marginBottom: '1rem' }}>{feedback.message}</div>
                 )}
-                
                 <div className="bank-card">
                   <h4>🗓️ Crédito de Folgas</h4>
                   <form onSubmit={handleAddFolga} className="bank-form-column">
@@ -249,7 +215,6 @@ export default function BankSidebar({ isOpen, onClose, onDataUpdated, profession
                     <button type="submit" className="btn-save" disabled={loading}>{loading ? '⏳' : '+ Adicionar Folga'}</button>
                   </form>
                 </div>
-
                 <div className="bank-card" style={{ marginTop: '1.5rem' }}>
                   <h4>🏖️ Crédito de Férias</h4>
                   <form onSubmit={handleAddFerias} className="bank-form-column">
@@ -270,7 +235,6 @@ export default function BankSidebar({ isOpen, onClose, onDataUpdated, profession
               </div>
             )}
           </div>
-
           <div className="sidebar-column sidebar-column-log">
             <h3 className="sidebar-title">3. Histórico e Saldos</h3>
             {!selectedPro ? (
@@ -288,7 +252,6 @@ export default function BankSidebar({ isOpen, onClose, onDataUpdated, profession
                         const saidaText = linkedEvent?.reason 
                           ? `Uso em: ${log.targetDate} - ${linkedEvent.reason}` 
                           : (log.reason || `Uso em: ${log.targetDate}`);
-
                         return (
                           <div key={log.id} className={`log-item ${log.type === 'saida' ? 'log-out' : 'log-in'}`}>
                             <div className="log-item-main">
@@ -307,9 +270,7 @@ export default function BankSidebar({ isOpen, onClose, onDataUpdated, profession
                     )}
                   </div>
                 </div>
-
                 <hr className="log-divider" />
-
                 <div className="log-section">
                   <div className="log-header"><h4>Saldos de Férias por Ano:</h4></div>
                   <div className="saldos-ferias-badges">
@@ -319,13 +280,11 @@ export default function BankSidebar({ isOpen, onClose, onDataUpdated, profession
                       </div>
                     ))}
                   </div>
-
                   <div className="log-list" style={{ marginTop: '1rem' }}>
                     {(!selectedPro.bancoFerias || selectedPro.bancoFerias.length === 0) ? (
                       <p className="empty-msg">Nenhum log registrado.</p>
                     ) : (
                       selectedPro.bancoFerias.map(log => {
-                        // 👇 MÁGICA: Busca o motivo direto do calendário para as FÉRIAS (se o RH digitou)
                         const linkedEvent = log.type === 'saida' ? events.find(e => e.id === log.id.replace('log_', '')) : null;
                         const saidaText = linkedEvent?.reason 
                           ? `Uso em: ${log.targetDate} - ${linkedEvent.reason}` 
@@ -355,8 +314,6 @@ export default function BankSidebar({ isOpen, onClose, onDataUpdated, profession
           </div>
         </div>
       </div>
-
-      {/* --- O MODAL AMARELO DE EXCLUSÃO DE LOG --- */}
       {deleteLogModal.isOpen && (
         <div className="modal-overlay-custom" style={{ zIndex: 9999 }}>
           <div className="modal-container" style={{ borderLeft: '4px solid orange' }}>

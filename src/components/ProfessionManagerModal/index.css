@@ -1,13 +1,7 @@
-/* =========================================
-   MODAL DE GERENCIAR CARGOS (PROFISSÕES)
-   ========================================= */
-
-/* Limita a largura do modal */
 .modal-sm {
   max-width: 400px !important;
 }
 
-/* Formulário de adicionar cargo */
 .prof-manager-form {
   display: flex;
   gap: 10px;
@@ -20,7 +14,6 @@
   transition: all 0.2s;
 }
 
-/* Mensagens de Sucesso / Erro (Feedback) */
 .feedback-toast-inline {
   margin-bottom: 15px;
   padding: 8px 12px;
@@ -43,7 +36,6 @@
   border: 1px solid #f87171;
 }
 
-/* Lista de Cargos Cadastrados */
 .prof-list-container-modal {
   background-color: #f9fafb;
   border-radius: 8px;

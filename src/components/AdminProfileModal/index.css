@@ -1,5 +1,3 @@
-/* Arquivo: src/components/EventModal.css */
-
 .event-modal-overlay {
   position: fixed;
   top: 0;
@@ -11,7 +9,7 @@
   display: flex;
   justify-content: center;
   align-items: center;
-  backdrop-filter: blur(3px); /* Um leve desfoque no fundo para ficar moderno */
+  backdrop-filter: blur(3px);
 }
 
 .event-modal-container {
@@ -103,7 +101,6 @@
   transition: all 0.2s;
 }
 
-/* O "Rádio Button" visual */
 .type-option.active.ferias {
   background-color: #eff6ff;
   border-color: #3b82f6;

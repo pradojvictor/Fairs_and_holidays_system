@@ -1,5 +1,3 @@
-/* Arquivo: src/components/Sidebar.css */
-
 .sidebar-overlay {
   position: fixed;
   top: 0;
@@ -21,30 +19,29 @@
 .sidebar-container {
   position: fixed;
   top: 20px;
-  left: -1300px; 
-  width: 750px; 
-  height: 90vh; 
-  box-sizing: border-box; 
+  left: -1300px;
+  width: 750px;
+  height: 90vh;
+  box-sizing: border-box;
   color: white;
   transition: left 0.3s ease;
   z-index: 1000;
   padding: 1.5rem;
   display: flex;
   flex-direction: column;
-  overflow-y: hidden; 
+  overflow-y: hidden;
   margin-left: 15px;
   background-color: rgba(0, 0, 0, 0.6);
   backdrop-filter: blur(15px);
-  border: 1px solid rgba(255, 255, 255, 0.1); 
+  border: 1px solid rgba(255, 255, 255, 0.1);
   border-radius: 8px;
   box-shadow: 0 4px 30px rgba(0, 0, 0, 0.5);
 }
 
 .sidebar-container.open {
-  left: 0; 
+  left: 0;
 }
 
-/* --- HEADER E BOTÃO EDITAR PERFIL --- */
 .sidebar-header {
   margin-bottom: 1.5rem;
   border-bottom: 1px solid #374151;
@@ -105,12 +102,11 @@
   background-color: orange;
 }
 
-/* --- LAYOUT DE COLUNAS --- */
 .sidebar-split-layout {
   display: flex;
   gap: 2rem;
   flex-grow: 1;
-  overflow: hidden; 
+  overflow: hidden;
 }
 
 .sidebar-column {
@@ -118,14 +114,22 @@
   display: flex;
   flex-direction: column;
   overflow-y: auto;
-  padding-right: 20px; 
+  padding-right: 20px;
 }
 
-.sidebar-column::-webkit-scrollbar { width: 5px; }
-.sidebar-column::-webkit-scrollbar-track { background: transparent; }
-.sidebar-column::-webkit-scrollbar-thumb { background-color: #4b5563; border-radius: 10px; }
+.sidebar-column::-webkit-scrollbar {
+  width: 5px;
+}
 
-/* --- FORMULÁRIO GERAL --- */
+.sidebar-column::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.sidebar-column::-webkit-scrollbar-thumb {
+  background-color: #4b5563;
+  border-radius: 10px;
+}
+
 .sidebar-title {
   color: white;
   margin-bottom: 1rem;
@@ -162,14 +166,15 @@
   color-scheme: dark;
 }
 
-.sidebar-input:focus { 
+.sidebar-input:focus {
   border-color: orange;
   background-color: rgba(128, 128, 128, 0.4);
 }
 
-.sidebar-input.no-margin { margin-bottom: 0; }
+.sidebar-input.no-margin {
+  margin-bottom: 0;
+}
 
-/* --- TOGGLE ANIMADO (SUPERVISOR) --- */
 .custom-toggle-container {
   display: flex;
   flex-direction: column;
@@ -181,7 +186,7 @@
   border-radius: 8px;
   border-left: 4px solid orange;
   cursor: pointer;
-  user-select: none; 
+  user-select: none;
   transition: background-color 0.2s;
 }
 
@@ -192,10 +197,10 @@
 .custom-toggle-track {
   width: 200px;
   height: 34px;
-  background-color: rgba(0, 0, 0, 0.6); 
+  background-color: rgba(0, 0, 0, 0.6);
   border-radius: 17px;
   position: relative;
-  box-shadow: inset 0 2px 4px rgba(0,0,0,0.5);
+  box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.5);
   border: 1px solid rgba(255, 255, 255, 0.1);
   flex-shrink: 0;
 }
@@ -205,20 +210,20 @@
   top: 3px;
   left: 3px;
   height: 26px;
-  width: 39px; 
-  background-color: black; 
+  width: 39px;
+  background-color: black;
   border-radius: 13px;
   transition: all 0.35s cubic-bezier(0.4, 0.0, 0.2, 1);
   display: flex;
   align-items: center;
   justify-content: center;
   overflow: hidden;
-  box-shadow: 0 2px 5px rgba(0,0,0,0.5);
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.5);
 }
 
 .custom-toggle-knob.active {
-  width: 153px; 
-  left: 42px; 
+  width: 153px;
+  left: 42px;
   background-color: orange;
 }
 
@@ -229,7 +234,7 @@
   text-transform: uppercase;
   letter-spacing: 0.5px;
   white-space: nowrap;
-  animation: fadeInText 0.3s ease 0.1s both; 
+  animation: fadeInText 0.3s ease 0.1s both;
 }
 
 .custom-toggle-labels {
@@ -250,8 +255,15 @@
 }
 
 @keyframes fadeInText {
-  from { opacity: 0; transform: scale(0.8); }
-  to { opacity: 1; transform: scale(1); }
+  from {
+    opacity: 0;
+    transform: scale(0.8);
+  }
+
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
 }
 
 .btn-save {
@@ -266,8 +278,14 @@
   transition: background-color 0.2s;
 }
 
-.btn-save:hover:not(:disabled) { background-color: #e69500; }
-.btn-save:disabled { cursor: not-allowed; opacity: 0.7; }
+.btn-save:hover:not(:disabled) {
+  background-color: #e69500;
+}
+
+.btn-save:disabled {
+  cursor: not-allowed;
+  opacity: 0.7;
+}
 
 .btn-add-cargo {
   width: auto;
@@ -275,7 +293,8 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  svg{
+
+  svg {
     width: 20px;
     height: 20px;
     fill: white;
@@ -294,9 +313,9 @@
   margin-top: 10px;
 }
 
-.btn-cancel:hover { 
-  color: white; 
-  background-color: #374151; 
+.btn-cancel:hover {
+  color: white;
+  background-color: #374151;
 }
 
 .btn-logout {
@@ -311,16 +330,19 @@
   transition: all 0.2s;
 }
 
-.btn-logout.mt-auto { 
-  margin-top: auto; 
+.btn-logout.mt-auto {
+  margin-top: auto;
 }
-.btn-logout:hover { 
-  background-color: #dc2626; 
-  color: white; 
+
+.btn-logout:hover {
+  background-color: #dc2626;
+  color: white;
 }
-.pro-list-container { 
+
+.pro-list-container {
   margin-top: 1rem;
 }
+
 .cargo-list-container {
   margin-top: 1.5rem;
 }
@@ -345,10 +367,10 @@
 }
 
 .pro-item {
-  background-color: rgba(0, 0, 0, 0.4); 
-  border: none; 
-  border-radius: 10px; 
-  padding: 12px 15px; 
+  background-color: rgba(0, 0, 0, 0.4);
+  border: none;
+  border-radius: 10px;
+  padding: 12px 15px;
   display: flex;
   justify-content: space-between;
   align-items: center;
@@ -387,23 +409,23 @@
 }
 
 .pro-info:hover {
-  svg{
+  svg {
     fill: orange;
     scale: 1.2;
   }
 }
 
-.pro-supervisor-icon { 
-  svg{
+.pro-supervisor-icon {
+  svg {
     width: 20px;
     fill: white;
     margin: 2px;
   }
 }
 
-.pro-matricula { 
-  font-size: .9rem; 
-  color: gray; 
+.pro-matricula {
+  font-size: .9rem;
+  color: gray;
 }
 
 .btn-icon {
@@ -421,16 +443,18 @@
 }
 
 .delete svg {
-    width: 25px;
-    fill: white;
+  width: 25px;
+  fill: white;
 }
 
-.edit svg{
-    width: 30px;
-    fill: white;
+.edit svg {
+  width: 30px;
+  fill: white;
 }
 
-.btn-icon:hover { opacity: 1; }
+.btn-icon:hover {
+  opacity: 1;
+}
 
 .cargo-input-group {
   display: flex;
@@ -449,8 +473,8 @@
   transition: border-color 0.2s;
 }
 
-.cargo-item.expanded { 
-  border: 1px solid orange; /* Borda laranja apenas quando abre a gaveta */
+.cargo-item.expanded {
+  border: 1px solid orange;
 }
 
 .cargo-name {
@@ -474,9 +498,9 @@
   color: #9ca3af;
 }
 
-.cargo-badge.active { 
-  background-color: orange; 
-  color: white; 
+.cargo-badge.active {
+  background-color: orange;
+  color: white;
 }
 
 .cargo-expanded-content {
@@ -534,21 +558,28 @@
   animation: fadeIn 0.3s ease;
 }
 
-.feedback-toast.success { 
-  background-color: rgba(16, 185, 129, 0.1); 
-  color: #34d399; 
-  border: 1px solid rgba(16, 185, 129, 0.2); 
+.feedback-toast.success {
+  background-color: rgba(16, 185, 129, 0.1);
+  color: #34d399;
+  border: 1px solid rgba(16, 185, 129, 0.2);
 }
 
-.feedback-toast.error { 
-  background-color: rgba(239, 68, 68, 0.1); 
-  color: #f87171; 
-  border: 1px solid rgba(239, 68, 68, 0.2); 
+.feedback-toast.error {
+  background-color: rgba(239, 68, 68, 0.1);
+  color: #f87171;
+  border: 1px solid rgba(239, 68, 68, 0.2);
 }
 
-@keyframes fadeIn { 
-  from { opacity: 0; transform: translateY(-5px); } 
-  to { opacity: 1; transform: translateY(0); } 
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(-5px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 .modal-overlay-custom {
@@ -558,7 +589,7 @@
   width: 100vw;
   height: 100vh;
   background-color: rgba(0, 0, 0, 0.6);
-  z-index: 9999; 
+  z-index: 9999;
   display: flex;
   justify-content: center;
   align-items: center;
@@ -571,15 +602,15 @@
   border-radius: 8px;
   width: 90%;
   max-width: 400px;
-  box-shadow: 0 10px 25px rgba(0,0,0,0.5);
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.5);
   border: none;
   color: white;
-   border-left: 5px solid orange;
+  border-left: 5px solid orange;
 }
 
 .modal-container h3 {
   margin: 0 0 1rem 0;
-  color: orange; 
+  color: orange;
   font-size: 1.2rem;
 }
 
@@ -587,7 +618,8 @@
   margin: 0 0 0.5rem 0;
   font-size: 0.95rem;
   color: #d1d5db;
-  strong{
+
+  strong {
     color: white;
     font-weight: 600;
     text-transform: capitalize;
@@ -618,9 +650,9 @@
   transition: all 0.2s;
 }
 
-.btn-modal-cancel:hover { 
-  background-color: #374151; 
-  color: white; 
+.btn-modal-cancel:hover {
+  background-color: #374151;
+  color: white;
 }
 
 .btn-modal-confirm {
@@ -634,19 +666,21 @@
   transition: background-color 0.2s;
 }
 
-.btn-modal-confirm:hover { 
-  background-color: #b91c1c; 
+.btn-modal-confirm:hover {
+  background-color: #b91c1c;
 }
 
 @media (max-width: 768px) {
   .sidebar-container {
-    width: 90vw; 
+    width: 90vw;
     left: -100vw;
   }
+
   .sidebar-split-layout {
-    flex-direction: column; 
+    flex-direction: column;
     overflow-y: auto;
   }
+
   .sidebar-column {
     overflow-y: visible;
   }

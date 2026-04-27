@@ -18,11 +18,11 @@
   align-items: center;
 }
 
-.btn-arrow{
+.btn-arrow {
   width: 75px;
   border: none;
   cursor: pointer;
-  fill:white;
+  fill: white;
   background-color: transparent;
 }
 
@@ -335,7 +335,7 @@ span .pro-name {
   cursor: pointer;
 }
 
-.btn-logout-mobile:hover{
+.btn-logout-mobile:hover {
   background: rgba(255, 255, 255, 0.6);
 }
 

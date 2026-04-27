@@ -7,8 +7,6 @@ import './index.css';
 
 export default function Sidebar({ isOpen, onClose, onDataUpdated, professionals = [], professions = [], adminName, onOpenProfile }) {
   const navigate = useNavigate();
-
-  // Estados - Profissional
   const [name, setName] = useState('');
   const [matricula, setMatricula] = useState('');
   const [color, setColor] = useState('#3b82f6');
@@ -16,16 +14,12 @@ export default function Sidebar({ isOpen, onClose, onDataUpdated, professionals 
   const [shift, setShift] = useState('dia_todo');
   const [isSupervisor, setIsSupervisor] = useState(false);
   const [editingId, setEditingId] = useState(null);
-
   const [loading, setLoading] = useState(false);
   const [feedback, setFeedback] = useState({ type: '', message: '' });
   const [deleteModal, setDeleteModal] = useState({ isOpen: false, pro: null });
-
-  // Estados - Cargos
   const [newProfession, setNewProfession] = useState('');
   const [loadingProf, setLoadingProf] = useState(false);
   const [feedbackProf, setFeedbackProf] = useState({ type: '', message: '' });
-
   const [expandedCargoId, setExpandedCargoId] = useState(null);
 
   const handleLogout = () => {
@@ -33,7 +27,6 @@ export default function Sidebar({ isOpen, onClose, onDataUpdated, professionals 
     navigate('/login');
   };
 
-  // --- Lógica: Profissionais ---
   const handleEditClick = (pro) => {
     setEditingId(pro.id);
     setName(pro.name);
@@ -87,7 +80,6 @@ export default function Sidebar({ isOpen, onClose, onDataUpdated, professionals 
           setLoading(false);
           return;
         }
-
         currentData.professionals = currentData.professionals.map(p =>
           p.id === editingId ? { ...p, name: nomeLimpo, matricula: matriculaLimpa, baseColor: color, professionId, shift, isSupervisor } : p
         );
@@ -99,7 +91,6 @@ export default function Sidebar({ isOpen, onClose, onDataUpdated, professionals 
           setLoading(false);
           return;
         }
-
         const newProfessional = {
           id: `p_${Date.now()}`,
           name: nomeLimpo,
@@ -112,7 +103,6 @@ export default function Sidebar({ isOpen, onClose, onDataUpdated, professionals 
         currentData.professionals = [...(currentData.professionals || []), newProfessional];
         successMessage = 'Novo profissional cadastrado!';
       }
-
       await updateGistData(currentData);
       cancelEdit();
       setFeedback({ type: 'success', message: successMessage });
@@ -126,7 +116,6 @@ export default function Sidebar({ isOpen, onClose, onDataUpdated, professionals 
   };
 
   const requestDelete = (pro) => setDeleteModal({ isOpen: true, pro: pro });
-
   const confirmDelete = async () => {
     const id = deleteModal.pro.id;
     setLoading(true);
@@ -135,10 +124,8 @@ export default function Sidebar({ isOpen, onClose, onDataUpdated, professionals 
       currentData.professionals = currentData.professionals.filter(p => p.id !== id);
       currentData.events = (currentData.events || []).filter(e => e.professionalId !== id);
       await updateGistData(currentData);
-
       if (editingId === id) cancelEdit();
       if (onDataUpdated) onDataUpdated();
-
       setDeleteModal({ isOpen: false, pro: null });
       setFeedback({ type: 'success', message: 'Profissional e eventos excluídos!' });
       setTimeout(() => setFeedback({ type: '', message: '' }), 4000);
@@ -153,19 +140,15 @@ export default function Sidebar({ isOpen, onClose, onDataUpdated, professionals 
   const handleAddProfession = async (e) => {
     e.preventDefault();
     if (!newProfession.trim()) return;
-
     setLoadingProf(true);
     setFeedbackProf({ type: '', message: '' });
-
     try {
       const currentData = await fetchGistData();
       const newCargo = { id: `cargo_${Date.now()}`, name: newProfession.trim() };
       currentData.professions = [...(currentData.professions || []), newCargo];
-
       await updateGistData(currentData);
       setNewProfession('');
       if (onDataUpdated) onDataUpdated();
-
       setFeedbackProf({ type: 'success', message: 'Cargo salvo com sucesso!' });
       setTimeout(() => setFeedbackProf({ type: '', message: '' }), 3000);
     } catch (error) {
@@ -187,9 +170,7 @@ export default function Sidebar({ isOpen, onClose, onDataUpdated, professionals 
   return (
     <>
       <div className={`sidebar-overlay ${isOpen ? 'open' : ''}`} onClick={onClose} />
-
       <div className={`sidebar-container ${isOpen ? 'open' : ''}`}>
-
         <div className="sidebar-header">
           <h2>Painel Administrativo</h2>
           <div className="sidebar-header-actions">
@@ -202,23 +183,16 @@ export default function Sidebar({ isOpen, onClose, onDataUpdated, professionals 
             </button>
           </div>
         </div>
-
         <div className="sidebar-split-layout">
-
-          {/* COLUNA 1: PROFISSIONAIS */}
           <div className="sidebar-column">
             <h3 className="sidebar-title">
               <span>{editingId ? 'Editar Profissional' : 'Novo Profissional'}</span>
             </h3>
-
             <form onSubmit={handleSaveProfessional} className="sidebar-form">
               <label>Nome do Funcionário</label>
               <input type="text" value={name} onChange={(e) => setName(e.target.value)} placeholder="Ex: João Silva" required className="sidebar-input" />
-
               <label>Matrícula ( Senha de Acesso )</label>
               <input type="text" value={matricula} onChange={(e) => setMatricula(e.target.value)} placeholder="Ex: 12345" required className="sidebar-input" />
-
-              {/* --- TOGGLE DE SUPERVISOR ANIMADO --- */}
               <div className="custom-toggle-container" onClick={() => setIsSupervisor(!isSupervisor)}>
                 <div className="custom-toggle-track">
                   <div className={`custom-toggle-knob ${isSupervisor ? 'active' : ''}`}>
@@ -229,8 +203,6 @@ export default function Sidebar({ isOpen, onClose, onDataUpdated, professionals 
                   <span>Pode ver a escala da equipe.</span>
                 </div>
               </div>
-
-              {/* 🧩 USANDO OS COMPONENTES AQUI 🧩 */}
               <CustomSelect
                 label="Cargo / Profissão"
                 placeholder="-- Selecione o Cargo --"
@@ -238,7 +210,6 @@ export default function Sidebar({ isOpen, onClose, onDataUpdated, professionals 
                 onChange={setProfessionId}
                 options={professions.map(p => ({ value: p.id, label: p.name }))}
               />
-
               <CustomSelect
                 label="Turno de Trabalho"
                 placeholder="-- Selecione o Turno --"
@@ -250,7 +221,6 @@ export default function Sidebar({ isOpen, onClose, onDataUpdated, professionals 
                   { value: 'dia_todo', label: 'Dia Todo (Ambos)' }
                 ]}
               />
-
               <CustomSelect
                 label="Cor no Calendário"
                 variant="color"
@@ -258,20 +228,16 @@ export default function Sidebar({ isOpen, onClose, onDataUpdated, professionals 
                 onChange={setColor}
                 options={PRESET_COLORS}
               />
-
               <button type="submit" disabled={loading} className="btn-save">
                 {loading ? 'Processando...' : (editingId ? 'Atualizar Dados' : 'Salvar Profissional')}
               </button>
-
               {editingId && (
                 <button type="button" onClick={cancelEdit} className="btn-cancel" disabled={loading}>Cancelar Edição</button>
               )}
-
               {feedback.message && (
                 <div className={`feedback-toast ${feedback.type}`}>{feedback.message}</div>
               )}
             </form>
-
             <div className="pro-list-container">
               <h4 className="pro-list-title">Equipe Cadastrada ({professionals.length})</h4>
               <div className="pro-list">
@@ -312,13 +278,10 @@ export default function Sidebar({ isOpen, onClose, onDataUpdated, professionals 
               </div>
             </div>
           </div>
-
-          {/* COLUNA 2: CARGOS */}
           <div className="sidebar-column">
             <h3 className="sidebar-title">
               <span>Gerenciar Cargos</span>
             </h3>
-
             <form onSubmit={handleAddProfession} className="sidebar-form">
               <label>Nome do Cargo</label>
               <div className="cargo-input-group">
@@ -335,14 +298,12 @@ export default function Sidebar({ isOpen, onClose, onDataUpdated, professionals 
                   {loadingProf ? '⏳' : <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"><path d="M24 10h-10v-10h-4v10h-10v4h10v10h4v-10h10z"/></svg>}
                 </button>
               </div>
-
               {feedbackProf.message && (
                 <div className={`feedback-toast ${feedbackProf.type}`}>
                   {feedbackProf.message}
                 </div>
               )}
             </form>
-
             <div className="pro-list-container cargo-list-container">
               <h4 className="pro-list-title">Cargos Cadastrados ({professions.length})</h4>
               <div className="pro-list">
@@ -353,7 +314,6 @@ export default function Sidebar({ isOpen, onClose, onDataUpdated, professionals 
                     const profsInCargo = professionals.filter(pro => pro.professionId === p.id);
                     const count = profsInCargo.length;
                     const isExpanded = expandedCargoId === p.id;
-
                     return (
                       <div key={p.id} className="cargo-accordion-wrapper">
                         <div
@@ -368,7 +328,6 @@ export default function Sidebar({ isOpen, onClose, onDataUpdated, professionals 
                             {count}
                           </span>
                         </div>
-
                         {isExpanded && (
                           <div className="cargo-expanded-content">
                             {count === 0 ? (
@@ -396,15 +355,12 @@ export default function Sidebar({ isOpen, onClose, onDataUpdated, professionals 
                 )}
               </div>
             </div>
-
             <button onClick={handleLogout} className="btn-logout mt-auto">
               Sair do Sistema
             </button>
           </div>
-
         </div>
       </div>
-
       {deleteModal.isOpen && (
         <div className="modal-overlay-custom">
           <div className="modal-container">
