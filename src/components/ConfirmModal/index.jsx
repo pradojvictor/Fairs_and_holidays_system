@@ -8,8 +8,6 @@ export default function ConfirmModal({ isOpen, onClose, onConfirm, title, messag
   return (
     <div className="confirm-modal-overlay">
       <div className="confirm-modal-container">
-        
-        <div className="confirm-icon">⚠️</div>
         <h3 className="confirm-title">{title}</h3>
         <p className="confirm-message">{message}</p>
         

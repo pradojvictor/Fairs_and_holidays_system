@@ -567,7 +567,6 @@
 .modal-container {
   background-color: rgba(0, 0, 0, 0.6);
   backdrop-filter: blur(15px);
-  -webkit-backdrop-filter: blur(15px);
   padding: 2rem;
   border-radius: 8px;
   width: 90%;
@@ -575,6 +574,7 @@
   box-shadow: 0 10px 25px rgba(0,0,0,0.5);
   border: none;
   color: white;
+   border-left: 5px solid orange;
 }
 
 .modal-container h3 {
