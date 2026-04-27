@@ -68,6 +68,7 @@ export default function PublicDashboard() {
     : dbData.events.filter(e => e.professionalId === loggedInUser?.id);
 
   const getEventsForDay = (day) => {
+    if (!day) return [];
     const target = new Date(year, month, day, 12, 0, 0);
     return myEvents.filter(e => {
       const start = new Date(`${e.startDate}T12:00:00`);
@@ -123,6 +124,22 @@ export default function PublicDashboard() {
     return `De ${sDay}/${sMonth} até ${eDay}/${eMonth}`;
   };
 
+  const changeMonth = (offset) => {
+    const newDate = new Date(year, month + offset, 1);
+    setCurrentDate(newDate);
+    
+    const today = new Date();
+    const isCurrentMonth = newDate.getMonth() === today.getMonth() && newDate.getFullYear() === today.getFullYear();
+    
+    if (isCurrentMonth) {
+      setSelectedDay(today.getDate());
+    } else {
+      setSelectedDay(null);
+    }
+    
+    setIsExpanded(false);
+  };
+
   if (isLoading) return <div className="mobile-dash-container loading-screen">Carregando...</div>;
 
   if (!isLoggedIn) {
@@ -167,14 +184,14 @@ export default function PublicDashboard() {
       </div>
 
       <div className="mobile-dash-header">
-        <button className='btn-arrow' onClick={() => setCurrentDate(new Date(year, month - 1, 1))}>
+        <button className='btn-arrow' onClick={() => changeMonth(-1)}>
           <svg clip-rule="evenodd" fill-rule="evenodd" stroke-linejoin="round" stroke-miterlimit="2" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="m13.789 7.155c.141-.108.3-.157.456-.157.389 0 .755.306.755.749v8.501c0 .445-.367.75-.755.75-.157 0-.316-.05-.457-.159-1.554-1.203-4.199-3.252-5.498-4.258-.184-.142-.29-.36-.29-.592 0-.23.107-.449.291-.591 1.299-1.002 3.945-3.044 5.498-4.243z" /></svg>
         </button>
         <div className="mobile-header-title">
           <span className="month">{monthName.toUpperCase()}</span>
           <span className="year">{year}</span>
         </div>
-        <button className='btn-arrow' onClick={() => setCurrentDate(new Date(year, month + 1, 1))}>
+        <button className='btn-arrow' onClick={() => changeMonth(1)}>
           <svg clip-rule="evenodd" fill-rule="evenodd" stroke-linejoin="round" stroke-miterlimit="2" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="m10.211 7.155c-.141-.108-.3-.157-.456-.157-.389 0-.755.306-.755.749v8.501c0 .445.367.75.755.75.157 0 .316-.05.457-.159 1.554-1.203 4.199-3.252 5.498-4.258.184-.142.29-.36.29-.592 0-.23-.107-.449-.291-.591-1.299-1.002-3.945-3.044-5.498-4.243z" /></svg>
         </button>
       </div>
@@ -207,51 +224,61 @@ export default function PublicDashboard() {
         </div>
       </div>
 
-      <div className="mobile-half-drawer">
+      <div className={`mobile-half-drawer ${isExpanded ? 'expanded' : ''}`}>
         <div className="drawer-header-clickable" onClick={() => setIsExpanded(!isExpanded)}>
           <div className="drawer-handle"></div>
           <div className="drawer-title-row">
-            <h3 className="drawer-date-title">{selectedDay} de {monthName}</h3>
+            <h3 className="drawer-date-title">
+              {selectedDay ? `${selectedDay} de ${monthName}` : `Resumo de ${monthNameCapitalized}`}
+            </h3>
             <button className="btn-expand-drawer">
               {isExpanded ? 'Ocultar ▲' : 'Ver Detalhes ▼'}
             </button>
           </div>
           {!isExpanded && (
             <p className="drawer-summary">
-              {selectedDayEvents.length === 0
-                ? (isSuper ? 'Ninguém de folga hoje.' : 'Você tem expediente normal hoje.')
-                : (isSuper ? `${selectedDayEvents.length} funcionário(s) ausente(s) hoje.` : `Você tem ${selectedDayEvents[0].type.toUpperCase()} registrada hoje!`)}
+              {selectedDay === null
+                ? 'Selecione um dia no calendário para ver os detalhes.'
+                : selectedDayEvents.length === 0
+                  ? (isSuper ? 'Ninguém de folga hoje.' : 'Você tem expediente normal hoje.')
+                  : (isSuper ? `${selectedDayEvents.length} funcionário(s) ausente(s) hoje.` : `Você tem ${selectedDayEvents[0].type.toUpperCase()} registrada hoje!`)
+              }
             </p>
           )}
         </div>
 
         {isExpanded && (
           <div className="drawer-content">
-            <h4 className="drawer-section-title">Neste dia ({selectedDay}):</h4>
-            <div className="compact-event-list-spaced">
-              {selectedDayEvents.length === 0 ? (
-                <p className="empty-msg-drawer">{isSuper ? 'Equipe completa.' : 'Sem ausências agendadas. Dia normal de trabalho.'}</p>
-              ) : (
-                selectedDayEvents.map(ev => {
-                  const pro = dbData.professionals.find(p => p.id === ev.professionalId) || loggedInUser;
-                  const cargo = dbData.professions.find(p => p.id === pro.professionId)?.name || 'Geral';
-                  return (
-                    <div key={ev.id} className="compact-row dynamic-height">
-                      <div className="pro-color-bar" style={{ backgroundColor: pro.baseColor }}></div>
-                      <div className="pro-info-box">
-                        <div className="pro-main-line">
-                          <span className="pro-name">{isSuper ? pro.name : "Sua Escala"}</span>
-                          <span className={`type-tag ${ev.type}`}>{ev.type === 'ferias' ? 'FÉRIAS' : 'FOLGA'}</span>
+            {selectedDay && (
+              <>
+                <h4 className="drawer-section-title">Neste dia ({selectedDay}):</h4>
+                <div className="compact-event-list-spaced">
+                  {selectedDayEvents.length === 0 ? (
+                    <p className="empty-msg-drawer">{isSuper ? 'Equipe completa.' : 'Sem ausências agendadas. Dia normal de trabalho.'}</p>
+                  ) : (
+                    selectedDayEvents.map(ev => {
+                      const pro = dbData.professionals.find(p => p.id === ev.professionalId) || loggedInUser;
+                      const cargo = dbData.professions.find(p => p.id === pro.professionId)?.name || 'Geral';
+                      return (
+                        <div key={ev.id} className="compact-row dynamic-height">
+                          <div className="pro-color-bar" style={{ backgroundColor: pro.baseColor }}></div>
+                          <div className="pro-info-box">
+                            <div className="pro-main-line">
+                              <span className="pro-name">{isSuper ? pro.name : "Sua Escala"}</span>
+                              <span className={`type-tag ${ev.type}`}>{ev.type === 'ferias' ? 'FÉRIAS' : 'FOLGA'}</span>
+                            </div>
+                            <div className="pro-sub-line">
+                              {cargo} • {pro.shift === 'dia_todo' ? 'Dia Todo' : pro.shift}
+                            </div>
+                          </div>
                         </div>
-                        <div className="pro-sub-line">
-                          {cargo} • {pro.shift === 'dia_todo' ? 'Dia Todo' : pro.shift}
-                        </div>
-                      </div>
-                    </div>
-                  );
-                })
-              )}
-            </div>
+                      );
+                    })
+                  )}
+                </div>
+              </>
+            )}
+
             <h4 className="drawer-section-title">{isSuper ? `Visão da Equipe - ${monthNameCapitalized}` : `Minha Visão de ${monthNameCapitalized}:`}</h4>
             <div className="compact-event-list-spaced">
               {currentMonthEvents.length === 0 ? (
@@ -276,6 +303,7 @@ export default function PublicDashboard() {
                 })
               )}
             </div>
+            
             <h4 className="drawer-section-title">{isSuper ? `Histórico Anual da Equipe (${year})` : `Meu Histórico Anual (${year}):`}</h4>
             <div className="compact-event-list">
               {currentYearEvents.length === 0 ? (
