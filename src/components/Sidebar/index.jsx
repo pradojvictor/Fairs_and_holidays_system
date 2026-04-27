@@ -17,6 +17,7 @@ export default function Sidebar({ isOpen, onClose, onDataUpdated, professionals 
   const [loading, setLoading] = useState(false);
   const [feedback, setFeedback] = useState({ type: '', message: '' });
   const [deleteModal, setDeleteModal] = useState({ isOpen: false, pro: null });
+  const [deleteCargoModal, setDeleteCargoModal] = useState({ isOpen: false, cargo: null });
   const [newProfession, setNewProfession] = useState('');
   const [loadingProf, setLoadingProf] = useState(false);
   const [feedbackProf, setFeedbackProf] = useState({ type: '', message: '' });
@@ -153,6 +154,38 @@ export default function Sidebar({ isOpen, onClose, onDataUpdated, professionals 
       setTimeout(() => setFeedbackProf({ type: '', message: '' }), 3000);
     } catch (error) {
       setFeedbackProf({ type: 'error', message: 'Erro ao salvar o cargo.' });
+    } finally {
+      setLoadingProf(false);
+    }
+  };
+
+  const requestDeleteCargo = (cargo, count) => {
+    if (count > 0) {
+      setFeedbackProf({ 
+        type: 'error', 
+        message: `ATENÇÃO: Você não pode excluir o cargo "${cargo.name}" pois existem ${count} funcionário(s) vinculados a ele. Altere o cargo deles primeiro.` 
+      });
+      setTimeout(() => setFeedbackProf({ type: '', message: '' }), 7000);
+      return;
+    }
+    setDeleteCargoModal({ isOpen: true, cargo: cargo });
+  };
+
+  const confirmDeleteCargo = async () => {
+    const id = deleteCargoModal.cargo.id;
+    setLoadingProf(true);
+    try {
+      const currentData = await fetchGistData();
+      currentData.professions = currentData.professions.filter(p => p.id !== id);
+      await updateGistData(currentData);
+      
+      if (onDataUpdated) onDataUpdated();
+      setDeleteCargoModal({ isOpen: false, cargo: null });
+      setFeedbackProf({ type: 'success', message: 'Cargo excluído permanentemente!' });
+      setTimeout(() => setFeedbackProf({ type: '', message: '' }), 4000);
+    } catch (error) {
+      setDeleteCargoModal({ isOpen: false, cargo: null });
+      setFeedbackProf({ type: 'error', message: 'Erro ao tentar excluir cargo.' });
     } finally {
       setLoadingProf(false);
     }
@@ -316,17 +349,25 @@ export default function Sidebar({ isOpen, onClose, onDataUpdated, professionals 
                     const isExpanded = expandedCargoId === p.id;
                     return (
                       <div key={p.id} className="cargo-accordion-wrapper">
-                        <div
-                          className={`pro-item cargo-item ${isExpanded ? 'expanded' : ''}`}
-                          onClick={() => setExpandedCargoId(isExpanded ? null : p.id)}
-                        >
-                          <span className="cargo-name">
-                            {p.name}
-                            <span className="cargo-arrow">{isExpanded ? '▲' : '▼'}</span>
-                          </span>
-                          <span className={`cargo-badge ${count > 0 ? 'active' : ''}`} title={`${count} profissional(is) neste cargo`}>
-                            {count}
-                          </span>
+                        <div className={`pro-item cargo-item ${isExpanded ? 'expanded' : ''}`}>
+                          <div className="cargo-item-main" onClick={() => setExpandedCargoId(isExpanded ? null : p.id)} style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                            <span className="cargo-name">
+                              {p.name}
+                              <span className="cargo-arrow">{isExpanded ? '▲' : '▼'}</span>
+                            </span>
+                            <span className={`cargo-badge ${count > 0 ? 'active' : ''}`} title={`${count} profissional(is) neste cargo`}>
+                              {count}
+                            </span>
+                          </div>
+                          <button 
+                            onClick={(e) => { e.stopPropagation(); requestDeleteCargo(p, count); }} 
+                            className="btn-icon delete btn-delete-cargo" 
+                            title="Excluir Cargo"
+                          >
+                            <svg clipRule="evenodd" fillRule="evenodd" strokeLinejoin="round" strokeMiterlimit={2} viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                              <path d="m20.015 6.506h-16v14.423c0 .591.448 1.071 1 1.071h14c.552 0 1-.48 1-1.071 0-3.905 0-14.423 0-14.423zm-5.75 2.494c.414 0 .75.336.75.75v8.5c0 .414-.336.75-.75.75s-.75-.336-.75-.75v-8.5c0-.414.336-.75.75-.75zm-4.5 0c.414 0 .75.336.75.75v8.5c0 .414-.336.75-.75.75s-.75-.336-.75-.75v-8.5c0-.414.336-.75.75-.75zm-.75-5v-1c0-.535.474-1 1-1h4c.526 0 1 .465 1 1v1h5.254c.412 0 .746.335.746.747s-.334.747-.746.747h-16.507c-.413 0-.747-.335-.747-.747s.334-.747.747-.747zm4.5 0v-.5h-3v.5z" fillRule="nonzero" />
+                            </svg>
+                          </button>
                         </div>
                         {isExpanded && (
                           <div className="cargo-expanded-content">
@@ -370,6 +411,19 @@ export default function Sidebar({ isOpen, onClose, onDataUpdated, professionals 
             <div className="modal-actions">
               <button className="btn-modal-cancel" onClick={() => setDeleteModal({ isOpen: false, pro: null })} disabled={loading}>Cancelar</button>
               <button className="btn-modal-confirm" onClick={confirmDelete} disabled={loading}>{loading ? 'Excluindo...' : 'Sim, Excluir'}</button>
+            </div>
+          </div>
+        </div>
+      )}
+      {deleteCargoModal.isOpen && (
+        <div className="modal-overlay-custom">
+          <div className="modal-container" style={{ borderLeftColor: '#ef4444' }}>
+            <h3 style={{ color: '#ef4444' }}>Deletar Cargo</h3>
+            <p>Deseja remover o cargo <strong>{deleteCargoModal.cargo?.name}</strong>?</p>
+            <p className="modal-warning">Esta ação apagará este cargo da lista permanentemente.</p>
+            <div className="modal-actions">
+              <button className="btn-modal-cancel" onClick={() => setDeleteCargoModal({ isOpen: false, cargo: null })} disabled={loadingProf}>Cancelar</button>
+              <button className="btn-modal-confirm" onClick={confirmDeleteCargo} disabled={loadingProf}>{loadingProf ? 'Removendo...' : 'Sim, Remover Cargo'}</button>
             </div>
           </div>
         </div>

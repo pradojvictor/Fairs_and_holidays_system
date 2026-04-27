@@ -670,6 +670,28 @@
   background-color: #b91c1c;
 }
 
+.cargo-item-main {
+  cursor: pointer;
+}
+
+.cargo-item-main:hover .cargo-name {
+  color: orange;
+}
+
+.btn-delete-cargo {
+  margin-left: 10px;
+  padding: 5px;
+}
+
+.btn-delete-cargo svg {
+  width: 20px;
+  fill: #ef4444;
+}
+
+.btn-delete-cargo:hover svg {
+  fill: #b91c1c;
+}
+
 @media (max-width: 768px) {
   .sidebar-container {
     width: 90vw;
