@@ -1,10 +1,8 @@
-// src/components/EventDetailModal.jsx
 import './index.css';
 
 export default function EventDetailModal({ isOpen, event, professional, onClose, onDelete, onEdit }) {
   if (!isOpen || !event || !professional) return null;
 
-  // Formata a data para algo mais amigável (DD/MM/AAAA)
   const formatDate = (dateStr) => {
     const [y, m, d] = dateStr.split('-');
     return `${d}/${m}/${y}`;
@@ -15,7 +13,7 @@ export default function EventDetailModal({ isOpen, event, professional, onClose,
       <div className="detail-modal-container">
         <div className="detail-modal-header" style={{ backgroundColor: professional.baseColor }}>
           <h3 style={{ margin: 0 }}>Detalhes da Ausência</h3>
-          <button onClick={onClose} style={{ background: 'none', border: 'none', color: 'white', fontSize: '1.5rem', cursor: 'pointer' }}>&times;</button>
+          <button onClick={onClose} className="btn-close-detail-top">&times;</button>
         </div>
 
         <div className="detail-modal-content">
