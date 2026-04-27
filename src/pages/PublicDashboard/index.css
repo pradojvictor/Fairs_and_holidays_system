@@ -1,10 +1,14 @@
 .mobile-dash-container {
   background-color: #1a154d;
-  min-height: 100vh; /* Alterado de 'height' para 'min-height'. A página agora cresce naturalmente! */
+  min-height: 100vh;
   display: flex;
   flex-direction: column;
   color: white;
-  /* overflow: hidden; <-- APAGADO: Agora a página pode rolar! */
+  background-image: url('../../assets/imgs/fundoPlant01-webp.webp');
+  background-size: cover;
+  background-position: center;
+  background-attachment: fixed;
+  backdrop-filter: blur(15px);
 }
 
 .mobile-dash-header {
@@ -14,16 +18,39 @@
   align-items: center;
 }
 
-.mobile-header-title {
-    display: flex;
-    flex-direction: column;
-    text-align: center;
+.btn-arrow{
+  width: 75px;
+  border: none;
+  cursor: pointer;
+  fill:white;
+  background-color: transparent;
 }
 
-.mobile-header-title .month { font-size: 1.4rem; font-weight: 800; }
-.mobile-header-title .year { font-size: 0.9rem; opacity: 0.6; }
+.mobile-header-title {
+  display: flex;
+  flex-direction: column;
+  text-align: center;
+}
 
-.mobile-calendar-section { padding: 10px 20px; }
+.mobile-header-title .month {
+  font-size: 1.4rem;
+  font-weight: 800;
+}
+
+.mobile-header-title .year {
+  font-size: 0.9rem;
+  opacity: 0.6;
+}
+
+.mobile-calendar-section {
+  padding: 10px 20px;
+  margin: 10px;
+  border-radius: 8px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+  background-color: rgba(0, 0, 0, 0.2);
+  backdrop-filter: blur(15px);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+}
 
 .mobile-calendar-grid {
   display: grid;
@@ -32,7 +59,11 @@
   text-align: center;
 }
 
-.mobile-weekday { font-size: 0.7rem; opacity: 0.5; font-weight: bold; }
+.mobile-weekday {
+  font-size: 0.7rem;
+  opacity: 0.5;
+  font-weight: bold;
+}
 
 .mobile-day {
   height: 45px;
@@ -44,24 +75,34 @@
   position: relative;
 }
 
-.mobile-day.selected { background-color: #ff2d95; box-shadow: 0 4px 15px rgba(255, 45, 149, 0.4); }
+.mobile-day.selected {
+  background-color: var(--pk-gold, #c3a479);
+  box-shadow: 0 4px 15px rgba(255, 255, 255, 0.7);
+}
 
-.day-dots-container { display: flex; gap: 2px; margin-top: 4px; }
-.day-dots-container .dot { width: 4px; height: 4px; border-radius: 50%; }
+.day-dots-container {
+  display: flex;
+  gap: 2px;
+  margin-top: 4px;
+}
 
-/* GAVETA DE METADE DA TELA */
+.day-dots-container .dot {
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+}
+
 .mobile-half-drawer {
   background-color: white;
   margin-top: auto;
   border-radius: 30px 30px 0 0;
   color: #333;
   padding: 15px 20px 30px;
-  box-shadow: 0 -5px 25px rgba(0,0,0,0.2);
-  /* Alturas fixas e animações malucas APAGADAS */
+  box-shadow: 0 -5px 25px rgba(0, 0, 0, 0.2);
 }
 
 .mobile-half-drawer.expanded {
-  height: 85vh; /* Ocupa quase a tela inteira */
+  height: 85vh;
 }
 
 .drawer-handle-wrapper {
@@ -77,9 +118,9 @@
 }
 
 .drawer-handle {
-  width: 50px; 
-  height: 6px; 
-  background: #d1d5db; 
+  width: 50px;
+  height: 6px;
+  background: #d1d5db;
   border-radius: 10px;
   margin: 0 auto 15px;
 }
@@ -90,16 +131,16 @@
   align-items: center;
 }
 
-.drawer-date-title { 
-  font-size: 1.2rem; 
-  margin: 0; 
-  color: #111; 
+.drawer-date-title {
+  font-size: 1.2rem;
+  margin: 0;
+  color: #111;
 }
 
 .btn-expand-drawer {
   background: none;
   border: none;
-  color: #ff2d95; /* Cor rosa combinando com a seleção */
+  color: var(--pk-gold, #c3a479);
   font-weight: bold;
   font-size: 0.85rem;
   cursor: pointer;
@@ -114,15 +155,14 @@
 
 .drawer-content {
   margin-top: 20px;
-  animation: fadeIn 0.3s ease-out; /* Dá um efeitinho suave ao abrir */
+  animation: fadeIn 0.3s ease-out;
 }
 
-.compact-event-list { 
+.compact-event-list {
   display: flex;
   flex-direction: column;
 }
 
-/* Os estilos da compact-row continuam os mesmos... */
 .compact-row {
   display: flex;
   align-items: center;
@@ -133,47 +173,77 @@
   height: 60px;
 }
 
-.pro-color-bar { width: 6px; height: 100%; }
-.pro-info-box { padding: 0 15px; flex: 1; display: flex; flex-direction: column; gap: 2px; }
+.pro-color-bar {
+  width: 6px;
+  height: 100%;
+}
 
-.pro-main-line { display: flex; justify-content: space-between; align-items: center; }
-span .pro-name { font-weight: bold; font-size: 1rem; color: #222; }
+.pro-info-box {
+  padding: 0 15px;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
 
-.type-tag { font-size: 0.65rem; font-weight: 800; padding: 2px 6px; border-radius: 4px; }
-.type-tag.ferias { background: #e3f2fd; color: #1976d2; }
-.type-tag.folga { background: #fff3e0; color: #f57c00; }
+.pro-main-line {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
 
-.pro-sub-line { font-size: 0.8rem; color: #777; }
+span .pro-name {
+  font-weight: bold;
+  font-size: 1rem;
+  color: #222;
+}
 
-/* =========================================
-   📱 PUBLIC DASHBOARD - LOGIN E USUÁRIO
-   ========================================= */
+.type-tag {
+  font-size: 0.65rem;
+  font-weight: 800;
+  padding: 2px 6px;
+  border-radius: 4px;
+}
 
-/* Tela de Loading centralizada */
+.type-tag.ferias {
+  background: #e3f2fd;
+  color: #1976d2;
+}
+
+.type-tag.folga {
+  background: #fff3e0;
+  color: #f57c00;
+}
+
+.pro-sub-line {
+  font-size: 0.8rem;
+  color: #777;
+}
+
 .loading-screen {
   justify-content: center;
   align-items: center;
 }
 
-/* Centraliza o box de login na tela */
 .login-screen-container {
   justify-content: center;
   padding: 20px;
 }
 
-/* O cartão branco do Login */
 .login-card {
   background-color: white;
   padding: 30px;
   border-radius: 20px;
-  color: #111827;
+  color: var(--pk-gold, #c3a479);
   text-align: center;
-  box-shadow: 0 10px 25px rgba(0,0,0,0.2);
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
+  background-color: rgba(255, 255, 255, 0.1);
+  backdrop-filter: blur(15px);
 }
 
 .login-title {
   margin: 0 0 10px 0;
-  font-size: 1.5rem;
+  font-size: 1.6rem;
 }
 
 .login-subtitle {
@@ -203,7 +273,7 @@ span .pro-name { font-weight: bold; font-size: 1rem; color: #222; }
 }
 
 .login-btn {
-  background-color: #ff2d95;
+  background-color: var(--pk-gold, #c3a479);
   color: white;
   border: none;
   padding: 12px;
@@ -213,9 +283,6 @@ span .pro-name { font-weight: bold; font-size: 1rem; color: #222; }
   cursor: pointer;
 }
 
-/* =========================================
-   CABEÇALHO DO USUÁRIO LOGADO
-   ========================================= */
 .user-profile-header {
   display: flex;
   justify-content: space-between;
@@ -247,28 +314,31 @@ span .pro-name { font-weight: bold; font-size: 1rem; color: #222; }
 }
 
 .user-greeting {
-  font-size: 0.75rem;
+  font-size: 0.9rem;
   opacity: 0.7;
 }
 
 .user-firstname {
   font-weight: bold;
-  font-size: 1rem;
+  font-size: 1.2rem;
+  text-transform: capitalize;
 }
 
 .btn-logout-mobile {
-  background: rgba(255,255,255,0.1);
+  background: rgba(255, 255, 255, 0.2);
+  backdrop-filter: blur(15px);
   border: none;
   color: white;
-  padding: 5px 12px;
+  padding: 10px 20px;
   border-radius: 20px;
   font-size: 0.8rem;
   cursor: pointer;
 }
 
-/* =========================================
-   GAVETA: TÍTULOS E LISTAS
-   ========================================= */
+.btn-logout-mobile:hover{
+  background: rgba(255, 255, 255, 0.6);
+}
+
 .drawer-section-title {
   font-size: 0.9rem;
   color: #6b7280;
@@ -290,12 +360,6 @@ span .pro-name { font-weight: bold; font-size: 1rem; color: #222; }
   font-size: 0.9rem;
 }
 
-/* =========================================
-   COMPACT ROW (AJUSTES AUTOMÁTICOS DE ALTURA)
-   ========================================= */
-
-/* (Se você já tiver uma classe .compact-row, apenas certifique-se 
-    que ela NÃO tem "height: 60px" travado, use "min-height: 60px") */
 .compact-row.dynamic-height {
   height: auto;
   min-height: 60px;
@@ -307,13 +371,11 @@ span .pro-name { font-weight: bold; font-size: 1rem; color: #222; }
   color: #4b5563;
 }
 
-/* Efeito para eventos do passado */
 .past-event {
   opacity: 0.55;
   transition: opacity 0.2s ease-in-out;
 }
 
-/* O texto do motivo da folga */
 .pro-reason-text {
   font-style: italic;
   font-size: 0.8rem;
@@ -321,7 +383,6 @@ span .pro-name { font-weight: bold; font-size: 1rem; color: #222; }
   margin-top: 4px;
 }
 
-/* Aquele bolinha minúscula "+" quando passa de 3 eventos */
 .dot-more {
   color: white;
   font-size: 8px;

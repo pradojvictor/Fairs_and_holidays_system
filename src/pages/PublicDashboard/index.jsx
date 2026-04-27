@@ -6,7 +6,7 @@ import './index.css';
 export default function PublicDashboard() {
   const [isLoading, setIsLoading] = useState(true);
   const [dbData, setDbData] = useState({ professionals: [], events: [], professions: [] });
-  
+
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [loggedInUser, setLoggedInUser] = useState(null);
   const [inputMatricula, setInputMatricula] = useState('');
@@ -21,12 +21,12 @@ export default function PublicDashboard() {
       setIsLoading(true);
       try {
         const data = await fetchGistData();
-        setDbData({ 
-          professionals: data.professionals || [], 
+        setDbData({
+          professionals: data.professionals || [],
           events: data.events || [],
           professions: data.professions || []
         });
-      } catch (err) { console.error(err); } 
+      } catch (err) { console.error(err); }
       finally { setIsLoading(false); }
     };
     loadData();
@@ -35,7 +35,7 @@ export default function PublicDashboard() {
   const handleLogin = (e) => {
     e.preventDefault();
     const user = dbData.professionals.find(p => p.matricula === inputMatricula.trim());
-    
+
     if (user) {
       setLoggedInUser(user);
       setIsLoggedIn(true);
@@ -62,9 +62,9 @@ export default function PublicDashboard() {
   const days = Array.from({ length: daysInMonth }, (_, i) => i + 1);
 
   const isSuper = loggedInUser?.isSupervisor === true;
-  
-  const myEvents = isSuper 
-    ? dbData.events 
+
+  const myEvents = isSuper
+    ? dbData.events
     : dbData.events.filter(e => e.professionalId === loggedInUser?.id);
 
   const getEventsForDay = (day) => {
@@ -132,13 +132,13 @@ export default function PublicDashboard() {
           <h2 className="login-title">Portal do Colaborador</h2>
           <p className="login-subtitle">Digite sua matrícula para ver sua escala.</p>
           <form onSubmit={handleLogin} className="login-form">
-            <input 
-              type="text" 
-              placeholder="Número da Matrícula" 
-              value={inputMatricula} 
-              onChange={(e) => setInputMatricula(e.target.value)} 
-              required 
-              className="login-input" 
+            <input
+              type="text"
+              placeholder="Número da Matrícula"
+              value={inputMatricula}
+              onChange={(e) => setInputMatricula(e.target.value)}
+              required
+              className="login-input"
             />
             {loginError && <p className="login-error">{loginError}</p>}
             <button type="submit" className="login-btn">
@@ -152,7 +152,7 @@ export default function PublicDashboard() {
 
   return (
     <div className="mobile-dash-container">
-      
+
       <div className="user-profile-header">
         <div className="user-info-wrapper">
           <div className="user-avatar" style={{ backgroundColor: loggedInUser.baseColor }}>
@@ -167,25 +167,29 @@ export default function PublicDashboard() {
       </div>
 
       <div className="mobile-dash-header">
-        <button onClick={() => setCurrentDate(new Date(year, month - 1, 1))}>&lt;</button>
+        <button className='btn-arrow' onClick={() => setCurrentDate(new Date(year, month - 1, 1))}>
+          <svg clip-rule="evenodd" fill-rule="evenodd" stroke-linejoin="round" stroke-miterlimit="2" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="m13.789 7.155c.141-.108.3-.157.456-.157.389 0 .755.306.755.749v8.501c0 .445-.367.75-.755.75-.157 0-.316-.05-.457-.159-1.554-1.203-4.199-3.252-5.498-4.258-.184-.142-.29-.36-.29-.592 0-.23.107-.449.291-.591 1.299-1.002 3.945-3.044 5.498-4.243z" /></svg>
+        </button>
         <div className="mobile-header-title">
-            <span className="month">{monthName.toUpperCase()}</span>
-            <span className="year">{year}</span>
+          <span className="month">{monthName.toUpperCase()}</span>
+          <span className="year">{year}</span>
         </div>
-        <button onClick={() => setCurrentDate(new Date(year, month + 1, 1))}>&gt;</button>
+        <button className='btn-arrow' onClick={() => setCurrentDate(new Date(year, month + 1, 1))}>
+          <svg clip-rule="evenodd" fill-rule="evenodd" stroke-linejoin="round" stroke-miterlimit="2" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="m10.211 7.155c-.141-.108-.3-.157-.456-.157-.389 0-.755.306-.755.749v8.501c0 .445.367.75.755.75.157 0 .316-.05.457-.159 1.554-1.203 4.199-3.252 5.498-4.258.184-.142.29-.36.29-.592 0-.23-.107-.449-.291-.591-1.299-1.002-3.945-3.044-5.498-4.243z" /></svg>
+        </button>
       </div>
 
       <div className="mobile-calendar-section">
         <div className="mobile-calendar-grid">
-          {['D','S','T','Q','Q','S','S'].map((d, index) => <div key={`day-${index}`} className="mobile-weekday">{d}</div>)}
+          {['D', 'S', 'T', 'Q', 'Q', 'S', 'S'].map((d, index) => <div key={`day-${index}`} className="mobile-weekday">{d}</div>)}
           {blanks.map(b => <div key={`b-${b}`} className="mobile-day empty"></div>)}
           {days.map(day => {
             const eventsToday = getEventsForDay(day);
             const isSelected = selectedDay === day;
             return (
-              <div 
-                key={day} 
-                className={`mobile-day ${isSelected ? 'selected' : ''}`} 
+              <div
+                key={day}
+                className={`mobile-day ${isSelected ? 'selected' : ''}`}
                 onClick={() => { setSelectedDay(day); setIsExpanded(false); }}
               >
                 <span>{day}</span>
@@ -213,18 +217,16 @@ export default function PublicDashboard() {
             </button>
           </div>
           {!isExpanded && (
-             <p className="drawer-summary">
-               {selectedDayEvents.length === 0 
-                 ? (isSuper ? 'Ninguém de folga hoje.' : 'Você tem expediente normal hoje.')
-                 : (isSuper ? `${selectedDayEvents.length} funcionário(s) ausente(s) hoje.` : `Você tem ${selectedDayEvents[0].type.toUpperCase()} registrada hoje!`)}
-             </p>
+            <p className="drawer-summary">
+              {selectedDayEvents.length === 0
+                ? (isSuper ? 'Ninguém de folga hoje.' : 'Você tem expediente normal hoje.')
+                : (isSuper ? `${selectedDayEvents.length} funcionário(s) ausente(s) hoje.` : `Você tem ${selectedDayEvents[0].type.toUpperCase()} registrada hoje!`)}
+            </p>
           )}
         </div>
 
         {isExpanded && (
           <div className="drawer-content">
-            
-            {/* --- SEÇÃO 1: DIA SELECIONADO --- */}
             <h4 className="drawer-section-title">Neste dia ({selectedDay}):</h4>
             <div className="compact-event-list-spaced">
               {selectedDayEvents.length === 0 ? (
@@ -237,21 +239,19 @@ export default function PublicDashboard() {
                     <div key={ev.id} className="compact-row dynamic-height">
                       <div className="pro-color-bar" style={{ backgroundColor: pro.baseColor }}></div>
                       <div className="pro-info-box">
-                          <div className="pro-main-line">
-                              <span className="pro-name">{isSuper ? pro.name : "Sua Escala"}</span>
-                              <span className={`type-tag ${ev.type}`}>{ev.type === 'ferias' ? 'FÉRIAS' : 'FOLGA'}</span>
-                          </div>
-                          <div className="pro-sub-line">
-                              {cargo} • {pro.shift === 'dia_todo' ? 'Dia Todo' : pro.shift}
-                          </div>
+                        <div className="pro-main-line">
+                          <span className="pro-name">{isSuper ? pro.name : "Sua Escala"}</span>
+                          <span className={`type-tag ${ev.type}`}>{ev.type === 'ferias' ? 'FÉRIAS' : 'FOLGA'}</span>
+                        </div>
+                        <div className="pro-sub-line">
+                          {cargo} • {pro.shift === 'dia_todo' ? 'Dia Todo' : pro.shift}
+                        </div>
                       </div>
                     </div>
                   );
                 })
               )}
             </div>
-
-            {/* --- SEÇÃO 2: MÊS INTEIRO --- */}
             <h4 className="drawer-section-title">{isSuper ? `Visão da Equipe - ${monthNameCapitalized}` : `Minha Visão de ${monthNameCapitalized}:`}</h4>
             <div className="compact-event-list-spaced">
               {currentMonthEvents.length === 0 ? (
@@ -263,21 +263,19 @@ export default function PublicDashboard() {
                     <div key={`month-${ev.id}`} className="compact-row dynamic-height">
                       <div className="pro-color-bar" style={{ backgroundColor: pro.baseColor }}></div>
                       <div className="pro-info-box">
-                          <div className="pro-main-line">
-                              <span className="pro-name">{isSuper ? pro.name : "Ausência Agendada"}</span>
-                              <span className={`type-tag ${ev.type}`}>{ev.type === 'ferias' ? 'FÉRIAS' : 'FOLGA'}</span>
-                          </div>
-                          <div className="pro-sub-line bold-dark">
-                              {formatPeriod(ev.startDate, ev.endDate)}
-                          </div>
+                        <div className="pro-main-line">
+                          <span className="pro-name">{isSuper ? pro.name : "Ausência Agendada"}</span>
+                          <span className={`type-tag ${ev.type}`}>{ev.type === 'ferias' ? 'FÉRIAS' : 'FOLGA'}</span>
+                        </div>
+                        <div className="pro-sub-line bold-dark">
+                          {formatPeriod(ev.startDate, ev.endDate)}
+                        </div>
                       </div>
                     </div>
                   );
                 })
               )}
             </div>
-
-            {/* --- SEÇÃO 3: ANO INTEIRO --- */}
             <h4 className="drawer-section-title">{isSuper ? `Histórico Anual da Equipe (${year})` : `Meu Histórico Anual (${year}):`}</h4>
             <div className="compact-event-list">
               {currentYearEvents.length === 0 ? (
@@ -286,32 +284,29 @@ export default function PublicDashboard() {
                 currentYearEvents.map(ev => {
                   const pro = dbData.professionals.find(p => p.id === ev.professionalId) || loggedInUser;
                   const isPast = new Date(`${ev.endDate}T23:59:59`) < new Date();
-                  
+
                   return (
                     <div key={`year-${ev.id}`} className={`compact-row dynamic-height ${isPast ? 'past-event' : ''}`}>
                       <div className="pro-color-bar" style={{ backgroundColor: pro.baseColor }}></div>
                       <div className="pro-info-box">
-                          <div className="pro-main-line">
-                              <span className="pro-name">{isSuper ? pro.name : "Ausência"}</span>
-                              <span className={`type-tag ${ev.type}`}>{ev.type === 'ferias' ? 'FÉRIAS' : 'FOLGA'}</span>
+                        <div className="pro-main-line">
+                          <span className="pro-name">{isSuper ? pro.name : "Ausência"}</span>
+                          <span className={`type-tag ${ev.type}`}>{ev.type === 'ferias' ? 'FÉRIAS' : 'FOLGA'}</span>
+                        </div>
+                        <div className="pro-sub-line bold-dark">
+                          {formatAnnualPeriod(ev.startDate, ev.endDate)}
+                        </div>
+                        {ev.type === 'folga' && ev.reason && (
+                          <div className="pro-reason-text">
+                            Motivo: {ev.reason}
                           </div>
-                          
-                          <div className="pro-sub-line bold-dark">
-                              {formatAnnualPeriod(ev.startDate, ev.endDate)}
-                          </div>
-                          
-                          {ev.type === 'folga' && ev.reason && (
-                              <div className="pro-reason-text">
-                                  Motivo: {ev.reason}
-                              </div>
-                          )}
+                        )}
                       </div>
                     </div>
                   );
                 })
               )}
             </div>
-
           </div>
         )}
       </div>
