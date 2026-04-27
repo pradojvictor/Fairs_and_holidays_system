@@ -9,22 +9,18 @@ export default function EventModal({ isOpen, onClose, professionals = [], events
   const [reason, setReason] = useState('');
   const [startDate, setStartDate] = useState('');
   const [endDate, setEndDate] = useState('');
-
-  // NOVOS ESTADOS PARA O BANCO
   const [selectedLoteYear, setSelectedLoteYear] = useState(''); 
   const [calculatedDays, setCalculatedDays] = useState(0);
-
   const [loading, setLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
   const [conflictWarning, setConflictWarning] = useState(null);
 
-  // Calcula dias sempre que as datas mudarem
   useEffect(() => {
     if (startDate && endDate) {
       const start = new Date(startDate);
       const end = new Date(endDate);
       const diffTime = Math.abs(end - start);
-      const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)) + 1; // +1 para incluir o dia de retorno na conta
+      const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)) + 1;
       setCalculatedDays(startDate > endDate ? 0 : diffDays);
     } else {
       setCalculatedDays(0);
@@ -38,7 +34,7 @@ export default function EventModal({ isOpen, onClose, professionals = [], events
       setReason(eventToEdit.reason || '');
       setStartDate(eventToEdit.startDate);
       setEndDate(eventToEdit.endDate);
-      setSelectedLoteYear(eventToEdit.loteYear || ''); // Tenta pegar o lote original se existir
+      setSelectedLoteYear(eventToEdit.loteYear || '');
     } else {
       setProfId('');
       setType('ferias');
@@ -55,7 +51,6 @@ export default function EventModal({ isOpen, onClose, professionals = [], events
 
   const currentPro = professionals.find(p => String(p.id) === String(profId));
 
-  // --- LÓGICA DE CÁLCULO DE SALDOS (COPIADA DO BANK) ---
   const getSaldosFerias = (pro) => {
     if (!pro?.bancoFerias || !Array.isArray(pro.bancoFerias)) return {};
     const saldos = {};
@@ -75,7 +70,6 @@ export default function EventModal({ isOpen, onClose, professionals = [], events
   const saldosAtuais = currentPro ? getSaldosFerias(currentPro) : {};
   const saldoFolgasAtual = currentPro ? getSaldoFolgas(currentPro) : 0;
 
-  // --- VALIDAÇÕES DE SALDO (Bloqueio) ---
   let isSaldoInsuficiente = false;
   let mensagemSaldo = '';
 
@@ -86,8 +80,7 @@ export default function EventModal({ isOpen, onClose, professionals = [], events
         mensagemSaldo = 'Selecione um lote de férias abaixo.';
       } else {
         const saldoDoLote = saldosAtuais[selectedLoteYear]?.days || 0;
-        
-        // Se estiver EDITANDO, precisamos somar de volta os dias que a pessoa já tinha "gasto" nesse evento para calcular o saldo real permitido.
+
         let saldoReal = saldoDoLote;
         if (eventToEdit && eventToEdit.type === 'ferias' && eventToEdit.loteYear === selectedLoteYear) {
             const startE = new Date(eventToEdit.startDate);
@@ -102,8 +95,7 @@ export default function EventModal({ isOpen, onClose, professionals = [], events
         }
       }
     } else if (type === 'folga') {
-       // Para folga, avisamos, mas por enquanto a política permite saldo negativo? Se sim, deixamos passar, senão bloqueamos. 
-       // Vou bloquear folga negativa por padrão de banco.
+
        let saldoReal = saldoFolgasAtual;
        if (eventToEdit && eventToEdit.type === 'folga') {
           const startE = new Date(eventToEdit.startDate);
@@ -128,7 +120,6 @@ export default function EventModal({ isOpen, onClose, professionals = [], events
     if (isSaldoInsuficiente) { setErrorMsg(mensagemSaldo); return; }
     if (type === 'folga' && !reason.trim()) { setErrorMsg('Digite o motivo da folga (Ex: Banco, Eleição).'); return; }
 
-    // 1. VERIFICAÇÃO RÍGIDA: Mesma pessoa
     const hasPersonalConflict = events.some(existingEvent => {
       if (existingEvent.professionalId !== profId) return false;
       if (eventToEdit && existingEvent.id === eventToEdit.id) return false;
@@ -140,7 +131,6 @@ export default function EventModal({ isOpen, onClose, professionals = [], events
       return; 
     }
 
-    // 2. VERIFICAÇÃO DE CARGO: Setor Descoberto (Aviso Amarelo)
     if (!forceSave) {
       const currentCargoId = currentPro?.professionId;
       if (currentCargoId) {
@@ -174,23 +164,18 @@ export default function EventModal({ isOpen, onClose, professionals = [], events
         id: eventId,
         professionalId: profId,
         type: type,
-        reason: reason.trim(), // Agora obrigatório pra folga, opcional pra férias
+        reason: reason.trim(), 
         startDate: startDate,
         endDate: endDate,
-        loteYear: type === 'ferias' ? selectedLoteYear : null // Salva qual lote de férias foi descontado
+        loteYear: type === 'ferias' ? selectedLoteYear : null 
       };
 
-      // 3. ATUALIZAR EVENTOS (Calendário)
       if (eventToEdit) {
         currentData.events = currentData.events.map(e => e.id === eventToEdit.id ? savedEvent : e);
       } else {
         currentData.events = [...(currentData.events || []), savedEvent];
       }
 
-      // 4. ATUALIZAR BANCO (Histórico / Saída)
-      // Se for edição, idealmente deveríamos reverter o log anterior e lançar um novo, ou editar o log.
-      // Para manter seguro: Vamos procurar o log que tem o mesmo ID do Evento e atualizar!
-      
       const updatedProfessionals = currentData.professionals.map(pro => {
         if (pro.id === profId) {
           let updatedFolgas = Array.isArray(pro.bancoFolgas) ? [...pro.bancoFolgas] : [];
@@ -200,7 +185,7 @@ export default function EventModal({ isOpen, onClose, professionals = [], events
 
           if (type === 'folga') {
             const logFolga = {
-              id: `log_${eventId}`, // Liga o log ao evento para podermos editar/deletar depois
+              id: `log_${eventId}`,
               type: 'saida',
               days: calculatedDays,
               reason: `Uso no período: ${saidaFormatada} - Motivo: ${reason.trim()}`,
@@ -208,7 +193,6 @@ export default function EventModal({ isOpen, onClose, professionals = [], events
               targetDate: saidaFormatada
             };
 
-            // Remove o log antigo desse evento (caso seja edição) e bota o novo
             updatedFolgas = updatedFolgas.filter(f => f.id !== `log_${eventId}`);
             updatedFolgas.push(logFolga);
 
@@ -221,18 +205,14 @@ export default function EventModal({ isOpen, onClose, professionals = [], events
               createdAt: new Date().toLocaleDateString('pt-BR'),
               targetDate: saidaFormatada
             };
-
             updatedFerias = updatedFerias.filter(f => f.id !== `log_${eventId}`);
             updatedFerias.push(logFerias);
           }
-
           return { ...pro, bancoFolgas: updatedFolgas, bancoFerias: updatedFerias };
         }
         return pro;
       });
-
       currentData.professionals = updatedProfessionals;
-
       await updateGistData(currentData);
       if (onDataUpdated) onDataUpdated();
       onClose();
@@ -243,7 +223,6 @@ export default function EventModal({ isOpen, onClose, professionals = [], events
       setLoading(false);
     }
   };
-
   return (
     <div className="event-modal-overlay">
       <div className="event-modal-container">
@@ -251,7 +230,6 @@ export default function EventModal({ isOpen, onClose, professionals = [], events
           <h3>{eventToEdit ? 'Editar Ausência' : 'Nova Ausência'}</h3>
           <button onClick={onClose} className="btn-close-modal">&times;</button>
         </div>
-
         <form onSubmit={handleSubmit}>
           
           <div className="form-group">
@@ -271,8 +249,6 @@ export default function EventModal({ isOpen, onClose, professionals = [], events
               </div>
             </div>
           )}
-
-          {/* PAINEL DE SALDO ATUAL DO FUNCIONÁRIO SELECIONADO */}
           {profId && type === 'ferias' && (
             <div className="form-group" style={{ backgroundColor: '#f9fafb', padding: '10px', borderRadius: '6px', border: '1px solid #d1d5db' }}>
               <label style={{ color: 'orange', fontWeight: 'bold' }}>Selecione o Lote de Férias a Descontar:</label>
@@ -325,8 +301,6 @@ export default function EventModal({ isOpen, onClose, professionals = [], events
           )}
 
           {errorMsg && <p className="error-msg-modal" style={{ color: '#dc2626', backgroundColor: '#fee2e2', padding: '10px', borderRadius: '6px', fontSize: '0.85rem' }}>{errorMsg}</p>}
-
-          {/* CAIXA DE AVISO AMARELA */}
           {conflictWarning && (
             <div className="conflict-warning-box">
               <p>⚠️ {conflictWarning}</p>
