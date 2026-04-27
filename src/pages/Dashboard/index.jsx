@@ -1,4 +1,3 @@
-// Arquivo: src/pages/Dashboard.jsx
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { fetchGistData, updateGistData } from '../../services/githubApi';
@@ -12,6 +11,7 @@ import ConfirmModal from '../../components/ConfirmModal';
 import ProfessionalList from '../../components/ProfessionalList';
 import RestScreen from '../../components/RestScreen';
 import BankSidebar from '../../components/BankSidebar';
+import CustomSelect from '../../components/CustomSelect';
 import './index.css';
 
 export default function Dashboard() {
@@ -94,7 +94,7 @@ export default function Dashboard() {
     try {
       const currentData = await fetchGistData();
       const updatedEvents = (currentData.events || []).filter(e => String(e.id) !== String(eventToDelete));
-      
+
       const updatedProfessionals = currentData.professionals.map(pro => {
         const newFolgas = (pro.bancoFolgas || []).filter(f => f.id !== `log_${eventToDelete}`);
         const newFerias = (pro.bancoFerias || []).filter(f => f.id !== `log_${eventToDelete}`);
@@ -105,8 +105,8 @@ export default function Dashboard() {
 
       await updateGistData(newData);
 
-      setSelectedEvent(null); 
-      setEventToDelete(null); 
+      setSelectedEvent(null);
+      setEventToDelete(null);
       await loadData();
 
     } catch (err) {
@@ -168,31 +168,17 @@ export default function Dashboard() {
 
       <header className="dashboard-header">
         <div className="header-left">
-          <button className="btn-menu" onClick={() => setIsSidebarOpen(true)}>☰ Menu</button>
-          <h2 className="dashboard-title">Calendário de Ausências</h2>
+          <button className="btn-menu" onClick={() => setIsSidebarOpen(true)}>☰ Painel Administrativo</button>
+          <button className="btn-bank" onClick={() => setIsBankSidebarOpen(true)}>Banco de Férias</button>
+          <button className="btn-share" onClick={handleShare}>Compartilhar Link</button>
+          <button className="btn-new-event" onClick={handleOpenNewEvent}>+ Nova Ausência</button>
         </div>
 
         <div className="header-actions">
-          <button className="btn-bank" onClick={() => setIsBankSidebarOpen(true)}>
-            💰 Banco de Direitos
-          </button>
-
-          <button className="btn-share" onClick={handleShare}>
-            📤 Compartilhar Link
-          </button>
-          
-          <button className="btn-new-event" onClick={handleOpenNewEvent}>
-            + Nova Ausência
-          </button>
-          
-          <button className="btn-header-logout" onClick={handleLogout}>Sair</button>
+          <h2 className="dashboard-title">Calendário de Ausências CAPS II LESTE</h2>
         </div>
-
-        <button className="btn-pause" onClick={() => setIsResting(true)}>
-          ☕ Pausar Sistema
-        </button>
+        <button className="btn-pause" onClick={() => setIsResting(true)}>Pausar Sistema</button>
       </header>
-
       <EventModal
         isOpen={isEventModalOpen}
         onClose={() => setIsEventModalOpen(false)}
@@ -201,7 +187,6 @@ export default function Dashboard() {
         onDataUpdated={loadData}
         eventToEdit={eventToEdit}
       />
-
       <EventDetailModal
         isOpen={!!selectedEvent}
         event={selectedEvent}
@@ -210,7 +195,6 @@ export default function Dashboard() {
         onDelete={handleDeleteEvent}
         onEdit={handleEditEvent}
       />
-
       <ConfirmModal
         isOpen={!!eventToDelete}
         title="Excluir Agendamento"
@@ -219,54 +203,55 @@ export default function Dashboard() {
         onClose={() => setEventToDelete(null)}
         onConfirm={executeDelete}
       />
-
       <main className="dashboard-main">
-
         {isLoading ? <div className="status-container"><h2>Carregando...</h2></div> : null}
-
         {!isLoading && !error && (
           <>
             <div className="dashboard-top-section">
               <div className="filters-bar">
                 <div className="filter-group">
                   <label>Filtrar Funcionário:</label>
-                  <select value={filterProf} onChange={(e) => setFilterProf(e.target.value)} className="filter-select">
-                    <option value="">Todos</option>
-                    {dbData.professionals.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
-                  </select>
+                  <CustomSelect
+                    value={filterProf}
+                    onChange={setFilterProf}
+                    options={[
+                      { value: '', label: 'Todos' },
+                      ...dbData.professionals.map(p => ({ value: p.id, label: p.name }))
+                    ]}
+                    customThemeClass="filter-select"
+                  />
                 </div>
-
-                <div className="filter-group">
+                <div className="filter-group" >
                   <label>Filtrar Tipo:</label>
-                  <select value={filterType} onChange={(e) => setFilterType(e.target.value)} className="filter-select">
-                    <option value="">Todos</option>
-                    <option value="ferias">Apenas Férias</option>
-                    <option value="folga">Apenas Folgas</option>
-                  </select>
+                  <CustomSelect
+                    value={filterType}
+                    onChange={setFilterType}
+                    options={[
+                      { value: '', label: 'Todos' },
+                      { value: 'ferias', label: 'Apenas Férias' },
+                      { value: 'folga', label: 'Apenas Folgas' }
+                    ]}
+                    customThemeClass="filter-select"
+                  />
                 </div>
               </div>
-
               <div className="calendar-wrapper">
                 <AnnualCalendar professionals={dbData.professionals} events={filteredEvents} onEventClick={setSelectedEvent} />
               </div>
             </div>
-
             <MonthlySummary professionals={dbData.professionals} events={dbData.events} professions={dbData.professions} />
           </>
         )}
       </main>
-
       <ProfessionalList
         professionals={filteredProfessionals}
         events={filteredEvents}
       />
-
       {shareFeedback && (
         <div className="share-feedback-toast">
           {shareFeedback}
         </div>
       )}
-
       <RestScreen isActive={isResting} onWakeUp={() => setIsResting(false)} />
     </div>
   );

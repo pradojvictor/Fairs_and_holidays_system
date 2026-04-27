@@ -1,4 +1,3 @@
-// Arquivo: src/components/MonthlySummary.jsx
 import React, { useState } from 'react';
 import './index.css';
 
@@ -9,7 +8,7 @@ export default function MonthlySummary({ professionals = [], events = [], profes
   const currentMonth = baseDate.getMonth();
   const monthName = baseDate.toLocaleString('pt-BR', { month: 'long' });
   const monthNameCapitalized = monthName.charAt(0).toUpperCase() + monthName.slice(1);
-  
+
   const daysInMonth = new Date(currentYear, currentMonth + 1, 0).getDate();
   const firstDayIndex = new Date(currentYear, currentMonth, 1).getDay();
 
@@ -20,7 +19,6 @@ export default function MonthlySummary({ professionals = [], events = [], profes
   const realToday = new Date();
   const isRealCurrentMonth = realToday.getFullYear() === currentYear && realToday.getMonth() === currentMonth;
 
-  // 1. EVENTOS DO MÊS ATUAL
   const currentMonthEvents = events.filter(e => {
     const start = new Date(`${e.startDate}T12:00:00`);
     const end = new Date(`${e.endDate}T12:00:00`);
@@ -31,7 +29,6 @@ export default function MonthlySummary({ professionals = [], events = [], profes
 
   currentMonthEvents.sort((a, b) => new Date(a.startDate) - new Date(b.startDate));
 
-  // 2. EVENTOS ESPECÍFICOS DE "HOJE"
   const todayTarget = new Date(realToday.getFullYear(), realToday.getMonth(), realToday.getDate(), 12, 0, 0);
   const todayEvents = events.filter(e => {
     const start = new Date(`${e.startDate}T12:00:00`);
@@ -46,34 +43,32 @@ export default function MonthlySummary({ professionals = [], events = [], profes
   const days = Array.from({ length: daysInMonth }, (_, i) => i + 1);
   const weekDays = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'];
 
-  // Função Inteligente de Datas
   const formatPeriod = (startStr, endStr) => {
     if (!startStr || !endStr) return '';
     const start = new Date(`${startStr}T12:00:00`);
     const end = new Date(`${endStr}T12:00:00`);
-    
+
     const sDay = String(start.getDate()).padStart(2, '0');
     const sMonth = String(start.getMonth() + 1).padStart(2, '0');
     const eDay = String(end.getDate()).padStart(2, '0');
     const eMonth = String(end.getMonth() + 1).padStart(2, '0');
 
     if (startStr === endStr) return `Apenas dia ${sDay}/${sMonth}`;
-    
+
     const firstDayOfMonth = new Date(currentYear, currentMonth, 1, 12, 0, 0);
     const lastDayOfMonth = new Date(currentYear, currentMonth + 1, 0, 12, 0, 0);
-    
+
     if (start <= firstDayOfMonth && end >= lastDayOfMonth) return "O Mês Todo";
     return `De ${sDay}/${sMonth} até ${eDay}/${eMonth}`;
   };
 
-  // Análise de Impacto Operacional
   const generateImpactReport = () => {
     const report = {};
     currentMonthEvents.forEach(e => {
       const pro = professionals.find(p => p.id === e.professionalId);
       if (!pro) return;
       const cargo = professions.find(p => p.id === pro.professionId)?.name || 'Sem Cargo Definido';
-      
+
       let turnoFormatado = pro.shift;
       if (turnoFormatado === 'dia_todo') turnoFormatado = 'Dia Todo';
       if (turnoFormatado === 'manhã' || turnoFormatado === 'manha') turnoFormatado = 'Manhã';
@@ -81,7 +76,7 @@ export default function MonthlySummary({ professionals = [], events = [], profes
 
       const key = `${cargo} | Turno: ${turnoFormatado}`;
       if (!report[key]) report[key] = { total: 0, ferias: 0, folgas: 0 };
-      
+
       report[key].total += 1;
       if (e.type === 'ferias') report[key].ferias += 1;
       if (e.type === 'folga') report[key].folgas += 1;
@@ -92,49 +87,24 @@ export default function MonthlySummary({ professionals = [], events = [], profes
   const impactReport = generateImpactReport();
   const impactKeys = Object.keys(impactReport);
 
-  const exportToCSV = () => {
-    if (currentMonthEvents.length === 0) {
-      alert("Não há ausências para exportar neste mês.");
-      return;
-    }
-    let csvContent = "Profissional;Cargo;Turno;Tipo;Data Inicio;Data Fim;Motivo\n";
-    currentMonthEvents.forEach(e => {
-      const pro = professionals.find(p => p.id === e.professionalId);
-      const name = pro ? pro.name.replace(/;/g, ",") : 'Desconhecido';
-      const cargo = professions.find(p => p.id === pro?.professionId)?.name || '-';
-      const shift = pro?.shift === 'dia_todo' ? 'Dia Todo' : (pro?.shift || '-');
-      const type = e.type === 'folga' ? 'Folga' : 'Férias';
-      const start = new Date(`${e.startDate}T12:00:00`).toLocaleDateString('pt-BR');
-      const end = new Date(`${e.endDate}T12:00:00`).toLocaleDateString('pt-BR');
-      const reason = e.reason ? e.reason.replace(/;/g, ",") : '-';
-      csvContent += `${name};${cargo};${shift};${type};${start};${end};${reason}\n`;
-    });
-    const blob = new Blob(["\uFEFF" + csvContent], { type: 'text/csv;charset=utf-8;' });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement("a");
-    link.href = url;
-    link.setAttribute("download", `Ausencias_${monthName}_${currentYear}.csv`);
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-  };
-
   return (
     <div className="summary-container">
-      
-      {/* LADO ESQUERDO: Calendário Mensal */}
       <div className="mini-calendar-card">
         <div className="month-navigation">
-          <button onClick={handlePrevMonth} className="btn-nav-month" title="Mês Anterior">&lt;</button>
+          <button onClick={handlePrevMonth} className="btn-nav-month" title="Mês Anterior">
+            <svg clip-rule="evenodd" fill-rule="evenodd" stroke-linejoin="round" stroke-miterlimit="2" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="m13.789 7.155c.141-.108.3-.157.456-.157.389 0 .755.306.755.749v8.501c0 .445-.367.75-.755.75-.157 0-.316-.05-.457-.159-1.554-1.203-4.199-3.252-5.498-4.258-.184-.142-.29-.36-.29-.592 0-.23.107-.449.291-.591 1.299-1.002 3.945-3.044 5.498-4.243z" /></svg>
+          </button>
           <div className="month-nav-title">
             <strong>{monthName} {currentYear}</strong>
             {!isRealCurrentMonth && (
               <button onClick={handleToday} className="btn-today">Voltar para Hoje</button>
             )}
           </div>
-          <button onClick={handleNextMonth} className="btn-nav-month" title="Próximo Mês">&gt;</button>
+          <button onClick={handleNextMonth} className="btn-nav-month" title="Próximo Mês">
+            <svg clip-rule="evenodd" fill-rule="evenodd" stroke-linejoin="round" stroke-miterlimit="2" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="m10.211 7.155c-.141-.108-.3-.157-.456-.157-.389 0-.755.306-.755.749v8.501c0 .445.367.75.755.75.157 0 .316-.05.457-.159 1.554-1.203 4.199-3.252 5.498-4.258.184-.142.29-.36.29-.592 0-.23-.107-.449-.291-.591-1.299-1.002-3.945-3.044-5.498-4.243z" /></svg>
+          </button>
         </div>
-        
+
         <div className="mini-calendar-grid">
           {weekDays.map(d => <div key={d} className="mini-day-name">{d}</div>)}
           {blanks.map(b => <div key={`blank-${b}`} className="mini-day-cell empty"></div>)}
@@ -161,21 +131,14 @@ export default function MonthlySummary({ professionals = [], events = [], profes
           })}
         </div>
       </div>
-
-      {/* LADO DIREITO: Indicadores e Listas */}
-      <div className="indicators-card" style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-        
-        {/* ==============================================================
-            ÁREA FIXA (NÃO ROLA): CABEÇALHO E CONTADORES
-            ============================================================== */}
-        <div style={{ paddingBottom: '10px', borderBottom: '1px solid #e5e7eb' }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
-            <h3 style={{ margin: 0, color: '#111827', fontSize: '1.2rem', textTransform: 'capitalize' }}>
+      <div className="indicators-card">
+        <div className="summary-header-area">
+          <div className="summary-header-top">
+            <h3 className="summary-title">
               Resumo de {monthName}
             </h3>
-            <button onClick={exportToCSV} className="btn-export">⬇️ Exportar CSV</button>
           </div>
-          
+
           <div className="indicator-row">
             <div className="indicator-box ferias">
               <span className="ind-number">{feriasCount}</span>
@@ -188,12 +151,8 @@ export default function MonthlySummary({ professionals = [], events = [], profes
           </div>
         </div>
 
-        {/* ==============================================================
-            ÁREA DE ROLAGEM: LISTAS E IMPACTO OPERACIONAL
-            ============================================================== */}
-        <div className="absent-list" style={{ display: 'flex', flexDirection: 'column', gap: '2rem', margin: 0, paddingBottom: '20px' }}>
-          
-          {/* SEÇÃO 1: HOJE */}
+        <div className="absent-list">
+
           <div>
             <h4 className="section-header">📅 Hoje ({realToday.toLocaleDateString('pt-BR').slice(0, 5)})</h4>
             <div className="compact-event-list">
@@ -221,7 +180,6 @@ export default function MonthlySummary({ professionals = [], events = [], profes
             </div>
           </div>
 
-          {/* SEÇÃO 2: VISÃO GERAL DO MÊS */}
           <div>
             <h4 className="section-header">🗓️ Visão Geral de {monthNameCapitalized}</h4>
             <div className="compact-event-list">
@@ -251,29 +209,32 @@ export default function MonthlySummary({ professionals = [], events = [], profes
               )}
             </div>
           </div>
-
-          {/* SEÇÃO 3: IMPACTO OPERACIONAL (Movido para dentro da rolagem) */}
           {impactKeys.length > 0 && (
-            <div className="impact-box" style={{ margin: 0 }}>
-              <h4 style={{ margin: '0 0 10px 0', color: '#374151', fontSize: '0.95rem' }}>📊 Impacto Operacional no Mês</h4>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+            <div className="impact-box impact-box-no-margin">
+              <h4 className="impact-box-title">📊 Impacto Operacional no Mês</h4>
+
+              <div className="impact-list">
                 {impactKeys.map(key => {
                   const data = impactReport[key];
-                  const isWarning = data.total >= 2; 
+                  const isWarning = data.total >= 2;
+
                   return (
-                    <div key={key} className="impact-row" style={{ borderLeftColor: isWarning ? '#f59e0b' : '#10b981' }}>
-                      <div style={{ display: 'flex', flexDirection: 'column' }}>
+                    <div key={key} className={`impact-row ${isWarning ? 'status-warning' : 'status-safe'}`}>
+                      <div className="impact-row-left">
                         <span className="impact-title">
                           {isWarning && <span title="Atenção">⚠️ </span>}
                           {key.split('|')[0]}
                         </span>
                         <span className="impact-shift">{key.split('|')[1]}</span>
                       </div>
-                      <div style={{ textAlign: 'right' }}>
-                        <span className="impact-total" style={{ color: isWarning ? '#b45309' : '#047857' }}>
+
+                      <div className="impact-row-right">
+                        <span className={`impact-total ${isWarning ? 'text-warning' : 'text-safe'}`}>
                           {data.total} ausência{data.total > 1 ? 's' : ''}
                         </span>
-                        <div className="impact-details">({data.ferias} Férias, {data.folgas} Folgas)</div>
+                        <div className="impact-details">
+                          ({data.ferias} Férias, {data.folgas} Folgas)
+                        </div>
                       </div>
                     </div>
                   );
@@ -281,7 +242,6 @@ export default function MonthlySummary({ professionals = [], events = [], profes
               </div>
             </div>
           )}
-
         </div>
       </div>
     </div>

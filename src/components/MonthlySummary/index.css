@@ -1,33 +1,46 @@
-/* Arquivo: src/components/MonthlySummary.css */
-
 .summary-container {
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 2rem;
   padding-bottom: 4rem;
-  
-  /* NOVAS REGRAS: Trava a largura em telas gigantes e centraliza */
-  max-width: 1920px; 
+  max-width: 1920px;
   width: 100%;
-  margin: 0 auto; 
+  margin: 0 auto;
 }
 
-/* LADO ESQUERDO: Calendário do Mês */
-.mini-calendar-card, 
+.mini-calendar-card,
 .indicators-card {
-  background-color: white;
   padding: 1.5rem;
   border-radius: 8px;
   border: 1px solid #e5e7eb;
-  box-shadow: 0 1px 3px rgba(0,0,0,0.05);
-  
-  height: 900px; /* Altura de Ouro: cabe o calendário perfeitamente */
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+  background-color: rgba(255, 255, 255, 0.2);
+  backdrop-filter: blur(15px);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  height: 900px;
   display: flex;
   flex-direction: column;
   box-sizing: border-box;
+  gap: 1rem;
 }
 
-/* Adicione no topo do MonthlySummary.css */
+.summary-header-area {
+  padding-bottom: 15px;
+}
+
+.summary-header-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1rem;
+}
+
+.summary-title {
+  margin: 0;
+  color: white;
+  font-size: 1.5rem;
+  text-transform: uppercase;
+}
 
 .month-navigation {
   display: flex;
@@ -40,8 +53,8 @@
 
 .month-nav-title {
   text-transform: capitalize;
-  font-size: 1.2rem;
-  color: #111827;
+  font-size: 1.5rem;
+  color: white;
   margin: 0;
   display: flex;
   align-items: center;
@@ -50,10 +63,10 @@
 
 .btn-nav-month {
   background-color: white;
-  border: 1px solid #d1d5db;
+  border: none;
   color: #374151;
-  border-radius: 6px;
-  width: 32px;
+  border-radius: 25px;
+  width: 64px;
   height: 32px;
   display: flex;
   justify-content: center;
@@ -64,21 +77,27 @@
 }
 
 .btn-nav-month:hover {
-  background-color: #f3f4f6;
+  background-color: var(--pk-gold, #c3a479);
 }
 
 .btn-today {
-  font-size: 0.75rem;
-  padding: 0.2rem 0.5rem;
-  background-color: #eff6ff;
-  color: #2563eb;
-  border: 1px solid #bfdbfe;
-  border-radius: 4px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  text-align: center;
+  padding: .5rem .5rem;
+  background-color: var(--pk-gold, #c3a479);
+  font-size: 1rem;
+  font-weight: bold;
+  color: white;
+  text-transform: uppercase;
+  border-radius: 5px;
+  border: none;
   cursor: pointer;
 }
 
 .btn-today:hover {
-  background-color: #dbeafe;
+  background-color: rgba(255, 166, 0, 0.5);
 }
 
 .mini-calendar-header {
@@ -94,21 +113,17 @@
   grid-template-columns: repeat(7, 1fr);
   gap: 4px;
   text-align: center;
-  
-  /* NOVAS REGRAS: Limita o tamanho máximo dos quadrados e centraliza no cartão */
-  /* max-width: 550px;
-  margin: 0 auto; */
 }
 
 .mini-day-name {
-  font-size: 0.75rem;
+  font-size: 0.9rem;
   font-weight: bold;
-  color: #6b7280;
+  color: gray;
   padding-bottom: 0.5rem;
 }
 
 .mini-day-cell {
-  aspect-ratio: 1; /* Mantém quadradinho */
+  aspect-ratio: 1;
   display: flex;
   flex-direction: column;
   justify-content: center;
@@ -126,12 +141,12 @@
 }
 
 .mini-day-cell.today {
-  border: 2px solid #3b82f6;
+  border: 4px solid orange;
   font-weight: bold;
-  color: #1d4ed8;
+  font-size: 1.5rem;
+  color: orange;
 }
 
-/* Bolinhas indicadoras dentro do dia */
 .day-dots {
   display: flex;
   gap: 2px;
@@ -142,8 +157,8 @@
 }
 
 .day-dot {
-  width: 6px;
-  height: 6px;
+  width: 8px;
+  height: 8px;
   border-radius: 50%;
 }
 
@@ -159,8 +174,15 @@
   text-align: center;
 }
 
-.indicator-box.ferias { background-color: #eff6ff; border: 1px solid #bfdbfe; }
-.indicator-box.folgas { background-color: #fef2f2; border: 1px solid #fecaca; }
+.indicator-box.ferias {
+  background-color: #eff6ff;
+  border: 1px solid #bfdbfe;
+}
+
+.indicator-box.folgas {
+  background-color: #fef2f2;
+  border: 1px solid #fecaca;
+}
 
 .ind-number {
   font-size: 2rem;
@@ -168,41 +190,39 @@
   display: block;
 }
 
-.indicator-box.ferias .ind-number { color: #1d4ed8; }
-.indicator-box.folgas .ind-number { color: #b91c1c; }
+.indicator-box.ferias .ind-number {
+  color: #1d4ed8;
+}
+
+.indicator-box.folgas .ind-number {
+  color: #b91c1c;
+}
 
 .ind-label {
-  font-size: 0.85rem;
+  font-size: 0.9rem;
+  font-weight: 700;
   color: #4b5563;
   text-transform: uppercase;
 }
 
-/* 2. O conteúdo da lista rola dentro do limite de 620px */
 .absent-list {
   flex-grow: 1;
   overflow-y: auto;
   padding-right: 10px;
   margin: 0;
   padding-bottom: 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 2rem;
 }
 
-.absent-list h4 {
-  margin: 0 0 0.5rem 0;
-  color: #374151;
-  font-size: 0.95rem;
-  border-bottom: 1px solid #e5e7eb;
-  padding-bottom: 0.5rem;
-}
-
-/* =========================================
-   ESTILOS DA LISTA COMPACTA (ADMIN)
-   ========================================= */
 .section-header {
   margin: 0 0 10px 0;
-  color: #374151;
+  color: white;
   font-size: 0.95rem;
   border-bottom: 1px solid #e5e7eb;
   padding-bottom: 5px;
+  text-transform: uppercase;
 }
 
 .empty-msg-admin {
@@ -249,72 +269,144 @@
 .admin-pro-name {
   font-weight: bold;
   font-size: 0.95rem;
-  color: #111827;
+  color: black;
+  text-transform: capitalize;
 }
 
 .admin-tag {
-  font-size: 0.65rem;
-  font-weight: 800;
+  font-size: 0.75rem;
+  font-weight: 700;
   padding: 2px 6px;
   border-radius: 4px;
 }
 
-.admin-tag.ferias { background: #e3f2fd; color: #1d4ed8; }
-.admin-tag.folga { background: #fef2f2; color: #b91c1c; }
+.admin-tag.ferias {
+  color: #1d4ed8;
+}
+
+.admin-tag.folga {
+  color: #b91c1c;
+}
 
 .admin-pro-sub {
   font-size: 0.8rem;
   color: #6b7280;
+   font-weight: 700;
+  text-transform: capitalize;
 }
 
-/* Ajustes Extras */
-.btn-export {
-  background-color: #10b981; 
-  color: white; 
-  border: none; 
-  padding: 6px 12px; 
-  border-radius: 6px; 
-  cursor: pointer; 
-  font-size: 0.85rem; 
-  font-weight: bold;
-}
 .impact-box {
-  background-color: #f9fafb; 
-  padding: 15px; 
-  border-radius: 8px; 
-  border: 1px solid #e5e7eb;
+  padding: 15px;
+  border-radius: 8px;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  background-color: rgba(255, 255, 255, 0.2);
 }
+
 .impact-row {
-  display: flex; 
-  justify-content: space-between; 
-  align-items: center; 
-  background-color: white; 
-  padding: 8px 12px; 
-  border-radius: 6px; 
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background-color: white;
+  padding: 8px 12px;
+  border-radius: 6px;
   border-left-width: 4px;
   border-left-style: solid;
-  box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
 }
-.impact-title { font-size: 0.85rem; font-weight: bold; color: #4b5563; }
-.impact-shift { font-size: 0.75rem; color: #9ca3af; }
-.impact-total { font-size: 0.9rem; font-weight: bold; }
-.impact-details { font-size: 0.7rem; color: #6b7280; }
 
-/* Barra de rolagem moderna para a lista */
-.absent-list::-webkit-scrollbar { width: 6px; }
-.absent-list::-webkit-scrollbar-track { background: transparent; }
-.absent-list::-webkit-scrollbar-thumb { background-color: #d1d5db; border-radius: 10px; }
-.absent-list::-webkit-scrollbar-thumb:hover { background-color: #9ca3af; }
+.impact-title {
+  font-size: 0.85rem;
+  font-weight: bold;
+  color: #4b5563;
+  text-transform: uppercase;
+}
 
-/* 3. RESPONSIVIDADE (Celular) */
-/* No celular, tira a altura fixa para não espremer a tela */
+.impact-shift {
+  font-size: 0.85rem;
+  color: #9ca3af;
+  margin: 2px 0;
+}
+
+.impact-total {
+  font-size: 0.9rem;
+  font-weight: bold;
+}
+
+.impact-details {
+  font-size: 0.7rem;
+  color: #6b7280;
+}
+
+.absent-list::-webkit-scrollbar {
+  width: 6px;
+}
+
+.absent-list::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.absent-list::-webkit-scrollbar-thumb {
+  background-color: #d1d5db;
+  border-radius: 10px;
+}
+
+.absent-list::-webkit-scrollbar-thumb:hover {
+  background-color: #9ca3af;
+}
+
+.impact-box.impact-box-no-margin {
+  margin: 0;
+}
+
+.impact-box-title {
+  margin: 0 0 10px 0;
+  color: white;
+  font-size: 0.95rem;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+
+.impact-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.impact-row-left {
+  display: flex;
+  flex-direction: column;
+}
+
+.impact-row-right {
+  text-align: right;
+}
+
+.impact-row.status-warning {
+  border-left-color: #f59e0b;
+}
+
+.impact-row.status-safe {
+  border-left-color: #10b981;
+}
+
+.impact-total.text-warning {
+  color: #fbbf24;
+  font-weight: bold;
+}
+
+.impact-total.text-safe {
+  color: #34d399;
+  font-weight: bold;
+}
+
 @media (max-width: 768px) {
   .summary-container {
-    grid-template-columns: 1fr; /* Empilha: Calendário em cima, Info embaixo */
+    grid-template-columns: 1fr;
   }
-  .mini-calendar-card, 
+
+  .mini-calendar-card,
   .indicators-card {
-    height: auto; 
-    max-height: 700px; /* Mantém a rolagem, mas permite crescer um pouco mais */
+    height: auto;
+    max-height: 700px;
   }
 }

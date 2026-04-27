@@ -1,40 +1,38 @@
-/* Arquivo: src/pages/index.css (ou Dashboard.css) */
-
 .dashboard-layout {
   min-height: 100vh;
-  background-color: #f9fafb;
+  background-image: url('../../assets/imgs/fundoPlant01-webp.webp');
   font-family: sans-serif;
   display: flex;
   flex-direction: column;
 }
 
-/* === HEADER E BOTÕES === */
 .dashboard-header {
   padding: 1rem 2rem;
-  background-color: white;
-  border-bottom: 1px solid #e5e7eb;
+  margin: 1rem 1rem 0 1rem;
+  border-radius: 5px;
+  background-color: rgba(255, 255, 255, 0.2);
+  backdrop-filter: blur(15px);
+  border: 1px solid rgba(255, 255, 255, 0.2);
   display: flex;
   justify-content: space-between;
   align-items: center;
+  button {
+    text-transform: uppercase;
+  }
 }
 
 .header-left {
   display: flex;
   gap: 1rem;
   align-items: center;
+  
 }
 
 .dashboard-title {
   margin: 0;
-  font-size: 1.2rem;
-  color: #111827;
-}
-
-.header-actions {
-  display: flex;
-  gap: 1rem;
-  flex-wrap: wrap;
-  justify-content: flex-end;
+  font-size: 2rem;
+  color: rgb(255, 255, 255);
+  text-transform: uppercase;
 }
 
 .btn-menu {
@@ -43,27 +41,35 @@
   background-color: #1f2937;
   color: white;
   border: none;
+  border-bottom: 5px solid #1f2937;
   border-radius: 4px;
   font-weight: bold;
   transition: background-color 0.2s;
 }
-.btn-menu:hover { background-color: #374151; }
 
 .btn-bank {
   padding: 0.5rem 1rem;
-  background-color: orange;
+  background-color: #1f2937;
   color: white;
   border: none;
+  border-bottom: 5px solid orange;
   border-radius: 4px;
   font-weight: bold;
   cursor: pointer;
 }
 
+.btn-menu:hover { background-color: #374151; }
+.btn-bank:hover { background-color: orange; }
+.btn-share:hover { background-color: #8b5cf6; }
+.btn-new-event:hover { background-color: #3b82f6; }
+.btn-pause:hover { background-color: var(--pk-gold, #c3a479); }
+
 .btn-share {
   padding: 0.5rem 1rem;
-  background-color: #8b5cf6;
+  background-color: #1f2937;
   color: white;
   border: none;
+  border-bottom: 5px solid #8b5cf6;
   border-radius: 4px;
   font-weight: bold;
   cursor: pointer;
@@ -74,31 +80,22 @@
 
 .btn-new-event {
   padding: 0.5rem 1rem;
-  background-color: #3b82f6;
+  background-color: #1f2937;
   color: white;
   border: none;
+  border-bottom: 5px solid #3b82f6;
   border-radius: 4px;
   font-weight: bold;
   cursor: pointer;
 }
 
-.btn-header-logout {
-  padding: 0.5rem 1rem;
-  cursor: pointer;
-  background-color: transparent;
-  color: #6b7280;
-  border: 1px solid #d1d5db;
-  border-radius: 4px;
-  transition: all 0.2s;
-}
-.btn-header-logout:hover { background-color: #f3f4f6; color: #111827; }
-
 .btn-pause {
-  background-color: #374151;
+  background-color:  #1f2937;
   color: white;
   border: none;
+  border-bottom: 5px solid  var(--pk-gold, #c3a479);
+  border-radius: 4px;
   padding: 8px 15px;
-  border-radius: 8px;
   cursor: pointer;
   font-weight: bold;
   display: flex;
@@ -106,34 +103,14 @@
   gap: 8px;
 }
 
-/* === MAIN E IMAGEM DE FUNDO === */
 .dashboard-main {
   padding: 2rem;
   flex-grow: 1;
   overflow-x: auto;
-  position: relative; /* Necessário para a imagem de fundo funcionar */
+  position: relative;
   display: flex;
   flex-direction: column;
   gap: 2rem;
-}
-
-/* O SEGREDO DA IMAGEM DE FUNDO: Coloque o link da sua imagem no url() */
-.dashboard-main::before {
-  content: "";
-  position: fixed; /* Fixed para não quebrar a rolagem */
-  top: 0;
-  left: 0;
-  width: 100vw;
-  height: 100vh;
-  z-index: -1;
-  
-  /* Substitua pelo link da sua imagem real */
-  background-image: url('https://images.unsplash.com/photo-1497366216548-37526070297c?q=80&w=2069&auto=format&fit=crop'); 
-  background-size: cover;
-  background-position: center;
-  background-repeat: no-repeat;
-  
-  filter: blur(4px) brightness(40%);  
 }
 
 .dashboard-top-section {
@@ -142,47 +119,58 @@
   gap: 1rem;
 }
 
-/* === FILTROS === */
 .filters-bar {
   display: flex;
+  align-items: center;
+  text-align: center;
   gap: 1rem;
-  background-color: white;
-  padding: 1rem;
-  border-radius: 8px;
-  border: 1px solid #e5e7eb;
+  padding: 0.5rem 1rem;
+  border-radius: 5px;
+  background-color: rgba(255, 255, 255, 0.2);
+  backdrop-filter: blur(15px);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  position: relative; 
+  z-index: 50;
+  .custom-select-wrapper {
+    width: 100%;
+    margin-bottom: 0rem;
+  }
 }
-
+ 
 .filter-group {
   display: flex;
+  justify-content: center;
   align-items: center;
   gap: 0.5rem;
+  width: 300px;
 }
 
 .filter-group label {
+  display: flex;
   font-size: 0.85rem;
   font-weight: bold;
-  color: #374151;
+  color: white;
+  white-space: nowrap;
 }
 
 .filter-select {
   padding: 0.4rem;
   border-radius: 4px;
-  border: 1px solid #d1d5db;
 }
 
 .calendar-wrapper {
-  background-color: white;
   padding: 1.5rem;
-  border-radius: 8px;
-  border: 1px solid #e5e7eb;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+  border-radius: 5px;
+  background-color: rgba(255, 255, 255, 0.2);
+  backdrop-filter: blur(15px);
+  border: 1px solid rgba(255, 255, 255, 0.2);
 }
 
-/* === STATUS E TOASTS === */
 .status-container {
   text-align: center;
   padding: 3rem;
-  color: #f9fafb; /* Deixei branco para aparecer melhor no fundo escuro da imagem */
+  color: #f9fafb;
 }
 
 .status-container h2 {
