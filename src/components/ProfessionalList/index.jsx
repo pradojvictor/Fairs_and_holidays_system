@@ -4,8 +4,7 @@ import './index.css';
 
 export default function ProfessionalList({ professionals = [], events = [] }) {
   const [expandedId, setExpandedId] = useState(null);
-  
-  // NOVO: Estado para controlar a Gaveta inteira
+
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
 
   const formatDate = (dateString) => {
@@ -22,15 +21,10 @@ export default function ProfessionalList({ professionals = [], events = [] }) {
 
   return (
     <>
-      {/* Fundo escurecido que fecha a gaveta ao clicar fora */}
       {isDrawerOpen && (
         <div className="drawer-overlay" onClick={() => setIsDrawerOpen(false)} />
       )}
-
-      {/* A Gaveta: Se estiver aberta, adiciona a classe 'open' */}
       <div className={`prof-list-wrapper ${isDrawerOpen ? 'open' : ''}`}>
-        
-        {/* A BARRA PARA CLICAR E PUXAR */}
         <div className="drawer-header" onClick={() => setIsDrawerOpen(!isDrawerOpen)}>
           <div className="drawer-handle-pill"></div>
           <div className="drawer-title-row">
@@ -38,27 +32,24 @@ export default function ProfessionalList({ professionals = [], events = [] }) {
             <span>{isDrawerOpen ? '▼' : '▲'}</span>
           </div>
         </div>
-
-        {/* O CONTEÚDO DA LISTA */}
         <div className="prof-list-content">
           <div className="prof-cards-grid">
             {professionals.map(pro => {
               const proEvents = events
                 .filter(e => String(e.professionalId) === String(pro.id))
                 .sort((a, b) => new Date(a.startDate) - new Date(b.startDate));
-
               const isExpanded = expandedId === pro.id;
 
               return (
                 <div key={pro.id} className="prof-card">
                   <div className="prof-card-summary" onClick={() => toggleExpand(pro.id)}>
                     <div className="prof-info-main">
-                      <span 
+                      <span
                         style={{ backgroundColor: pro.baseColor, width: '16px', height: '16px', borderRadius: '50%' }}
                       />
                       <span className="prof-name">{pro.name}</span>
                     </div>
-                    
+
                     <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
                       <span className="event-count-badge">
                         {proEvents.length} {proEvents.length === 1 ? 'registro' : 'registros'}
@@ -101,7 +92,6 @@ export default function ProfessionalList({ professionals = [], events = [] }) {
             })}
           </div>
         </div>
-
       </div>
     </>
   );
