@@ -366,7 +366,7 @@ export default function BankSidebar({ isOpen, onClose, onDataUpdated, profession
             
             <div className="modal-actions">
               <button className="btn-modal-cancel" onClick={() => setDeleteLogModal({ isOpen: false, log: null, isFolga: false })} disabled={loading}>Cancelar</button>
-              <button className="btn-modal-confirm" style={{ backgroundColor: 'orange', color: '#111827' }} onClick={confirmDeleteLog} disabled={loading}>{loading ? 'Excluindo...' : 'Sim, Excluir Saldo'}</button>
+              <button className="btn-modal-confirm" onClick={confirmDeleteLog} disabled={loading}>{loading ? 'Excluindo...' : 'Sim, Excluir Saldo'}</button>
             </div>
           </div>
         </div>
