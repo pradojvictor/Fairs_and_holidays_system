@@ -14,13 +14,13 @@
 }
 
 .detail-modal-container {
-  background-color: white;
   width: 90%;
   max-width: 400px;
   border-radius: 12px;
   overflow: hidden;
-  background-color: rgba(255, 255, 255, 0.9);
   border: 1px solid rgba(255, 255, 255, 0.2);
+  background-color: rgba(255, 255, 255, 0.8);
+  backdrop-filter: blur(15px);
 }
 
 .detail-modal-header {
@@ -83,54 +83,54 @@
 
 .detail-modal-footer {
   padding: 1rem 1.5rem;
-  background-color: #f9fafb;
   display: flex;
   gap: 1rem;
+  background-color: rgba(255, 255, 255, 0.5);
+  backdrop-filter: blur(15px);
 }
 
 .btn-delete-event {
-  flex: 1;
-  padding: 0.75rem;
-  background-color: #dc2626;
+ padding: 0.5rem 1rem;
+  background-color: #1f2937;
   color: white;
   border: none;
-  border-radius: 16px;
+  border-bottom: 5px solid red;
+  border-radius: 4px;
   font-weight: bold;
   cursor: pointer;
-  transition: all 0.2s;
-}
-
-.btn-delete-event:hover {
-  background-color: #b91c1c;
-  color: white;
 }
 
 .btn-close-detail {
-  flex: 1;
-  padding: 0.75rem;
-  background-color: #ffffff;
-  color: #374151;
-  border: 1px solid #d1d5db;
-  border-radius: 16px;
+  padding: 0.5rem .9rem;
+  background-color: #1f2937;
+  color: white;
+  border: none;
+  border-bottom: 5px solid gray;
+  border-radius: 4px;
+  font-weight: bold;
   cursor: pointer;
-}
-
-.btn-close-detail:hover {
-  background-color: #a5a5a5;
 }
 
 .btn-edit-event {
-  flex: 1;
-  padding: 0.75rem;
-  background-color: #3b82f6;
+  padding: 0.5rem .9rem;
+  background-color: #1f2937;
   color: white;
   border: none;
-  border-radius: 16px;
+  border-bottom: 5px solid #3b82f6;;
+  border-radius: 4px;
   font-weight: bold;
   cursor: pointer;
-  transition: all 0.2s;
 }
 
+.btn-delete-event:hover {
+  background-color: red;
+}
+
+.btn-close-detail:hover {
+  background-color: gray;
+}
+
+
 .btn-edit-event:hover {
-  background-color: #74adf8;
+  background-color: #3b82f6;;
 }
