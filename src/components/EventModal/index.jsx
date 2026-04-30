@@ -6,10 +6,9 @@ import './index.css';
 export default function EventModal({ isOpen, onClose, professionals = [], events = [], onDataUpdated, eventToEdit }) {
   const [profId, setProfId] = useState('');
   const [type, setType] = useState('ferias');
-  const [reason, setReason] = useState('');
   const [startDate, setStartDate] = useState('');
   const [endDate, setEndDate] = useState('');
-  const [selectedLoteYear, setSelectedLoteYear] = useState(''); 
+  const [selectedLoteYear, setSelectedLoteYear] = useState('');
   const [calculatedDays, setCalculatedDays] = useState(0);
   const [loading, setLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
@@ -31,14 +30,12 @@ export default function EventModal({ isOpen, onClose, professionals = [], events
     if (eventToEdit) {
       setProfId(eventToEdit.professionalId);
       setType(eventToEdit.type);
-      setReason(eventToEdit.reason || '');
       setStartDate(eventToEdit.startDate);
       setEndDate(eventToEdit.endDate);
       setSelectedLoteYear(eventToEdit.loteYear || '');
     } else {
       setProfId('');
       setType('ferias');
-      setReason('');
       setStartDate('');
       setEndDate('');
       setSelectedLoteYear('');
@@ -83,10 +80,10 @@ export default function EventModal({ isOpen, onClose, professionals = [], events
 
         let saldoReal = saldoDoLote;
         if (eventToEdit && eventToEdit.type === 'ferias' && eventToEdit.loteYear === selectedLoteYear) {
-            const startE = new Date(eventToEdit.startDate);
-            const endE = new Date(eventToEdit.endDate);
-            const diffOriginal = Math.ceil(Math.abs(endE - startE) / (1000 * 60 * 60 * 24)) + 1;
-            saldoReal += diffOriginal;
+          const startE = new Date(eventToEdit.startDate);
+          const endE = new Date(eventToEdit.endDate);
+          const diffOriginal = Math.ceil(Math.abs(endE - startE) / (1000 * 60 * 60 * 24)) + 1;
+          saldoReal += diffOriginal;
         }
 
         if (calculatedDays > saldoReal) {
@@ -95,21 +92,19 @@ export default function EventModal({ isOpen, onClose, professionals = [], events
         }
       }
     } else if (type === 'folga') {
-
-       let saldoReal = saldoFolgasAtual;
-       if (eventToEdit && eventToEdit.type === 'folga') {
-          const startE = new Date(eventToEdit.startDate);
-          const endE = new Date(eventToEdit.endDate);
-          const diffOriginal = Math.ceil(Math.abs(endE - startE) / (1000 * 60 * 60 * 24)) + 1;
-          saldoReal += diffOriginal;
-       }
-       if (calculatedDays > saldoReal) {
-          isSaldoInsuficiente = true;
-          mensagemSaldo = `SALDO INSUFICIENTE: O funcionário tem apenas ${saldoReal} folga(s) registrada(s).`;
-       }
+      let saldoReal = saldoFolgasAtual;
+      if (eventToEdit && eventToEdit.type === 'folga') {
+        const startE = new Date(eventToEdit.startDate);
+        const endE = new Date(eventToEdit.endDate);
+        const diffOriginal = Math.ceil(Math.abs(endE - startE) / (1000 * 60 * 60 * 24)) + 1;
+        saldoReal += diffOriginal;
+      }
+      if (calculatedDays > saldoReal) {
+        isSaldoInsuficiente = true;
+        mensagemSaldo = `SALDO INSUFICIENTE: O funcionário tem apenas ${saldoReal} folga(s) registrada(s).`;
+      }
     }
   }
-
 
   const handleSubmit = async (e, forceSave = false) => {
     if (e) e.preventDefault();
@@ -118,7 +113,6 @@ export default function EventModal({ isOpen, onClose, professionals = [], events
     if (!profId) { setErrorMsg('Selecione um profissional.'); return; }
     if (startDate > endDate) { setErrorMsg('A data final não pode ser antes da inicial.'); return; }
     if (isSaldoInsuficiente) { setErrorMsg(mensagemSaldo); return; }
-    if (type === 'folga' && !reason.trim()) { setErrorMsg('Digite o motivo da folga (Ex: Banco, Eleição).'); return; }
 
     const hasPersonalConflict = events.some(existingEvent => {
       if (existingEvent.professionalId !== profId) return false;
@@ -128,7 +122,7 @@ export default function EventModal({ isOpen, onClose, professionals = [], events
 
     if (hasPersonalConflict) {
       setErrorMsg('Atenção: Este funcionário já possui uma ausência marcada neste período!');
-      return; 
+      return;
     }
 
     if (!forceSave) {
@@ -136,19 +130,19 @@ export default function EventModal({ isOpen, onClose, professionals = [], events
       if (currentCargoId) {
         const conflictingEvent = events.find(ev => {
           if (eventToEdit && ev.id === eventToEdit.id) return false;
-          if (String(ev.professionalId) === String(profId)) return false; 
+          if (String(ev.professionalId) === String(profId)) return false;
           const isOverlapping = (startDate <= ev.endDate) && (endDate >= ev.startDate);
           if (isOverlapping) {
-             const otherPro = professionals.find(p => String(p.id) === String(ev.professionalId));
-             return otherPro?.professionId === currentCargoId;
+            const otherPro = professionals.find(p => String(p.id) === String(ev.professionalId));
+            return otherPro?.professionId === currentCargoId;
           }
           return false;
         });
 
         if (conflictingEvent) {
-           const outroPro = professionals.find(p => String(p.id) === String(conflictingEvent.professionalId));
-           setConflictWarning(`Aviso: ${outroPro.name} (mesmo cargo) já possui ${conflictingEvent.type} neste período. Deseja confirmar mesmo assim?`);
-           return; 
+          const outroPro = professionals.find(p => String(p.id) === String(conflictingEvent.professionalId));
+          setConflictWarning(`Aviso: ${outroPro.name} (mesmo cargo) já possui ${conflictingEvent.type} neste período. Deseja confirmar mesmo assim?`);
+          return;
         }
       }
     }
@@ -159,15 +153,15 @@ export default function EventModal({ isOpen, onClose, professionals = [], events
     try {
       const currentData = await fetchGistData();
       const eventId = eventToEdit ? eventToEdit.id : `evt_${Date.now()}`;
-      
+
       const savedEvent = {
         id: eventId,
         professionalId: profId,
         type: type,
-        reason: reason.trim(), 
+        reason: '',
         startDate: startDate,
         endDate: endDate,
-        loteYear: type === 'ferias' ? selectedLoteYear : null 
+        loteYear: type === 'ferias' ? selectedLoteYear : null
       };
 
       if (eventToEdit) {
@@ -188,7 +182,7 @@ export default function EventModal({ isOpen, onClose, professionals = [], events
               id: `log_${eventId}`,
               type: 'saida',
               days: calculatedDays,
-              reason: `Uso no período: ${saidaFormatada} - Motivo: ${reason.trim()}`,
+              reason: `Uso no período: ${saidaFormatada}`,
               createdAt: new Date().toLocaleDateString('pt-BR'),
               targetDate: saidaFormatada
             };
@@ -223,6 +217,7 @@ export default function EventModal({ isOpen, onClose, professionals = [], events
       setLoading(false);
     }
   };
+
   return (
     <div className="event-modal-overlay">
       <div className="event-modal-container">
@@ -231,7 +226,7 @@ export default function EventModal({ isOpen, onClose, professionals = [], events
           <button onClick={onClose} className="btn-close-modal">&times;</button>
         </div>
         <form onSubmit={handleSubmit}>
-          
+
           <div className="form-group">
             <label>Profissional</label>
             <select className="form-select" value={profId} onChange={(e) => setProfId(e.target.value)} disabled={eventToEdit}>
@@ -249,6 +244,7 @@ export default function EventModal({ isOpen, onClose, professionals = [], events
               </div>
             </div>
           )}
+
           {profId && type === 'ferias' && (
             <div className="form-group" style={{ backgroundColor: '#f9fafb', padding: '10px', borderRadius: '6px', border: '1px solid #d1d5db' }}>
               <label style={{ color: 'orange', fontWeight: 'bold' }}>Selecione o Lote de Férias a Descontar:</label>
@@ -258,9 +254,9 @@ export default function EventModal({ isOpen, onClose, professionals = [], events
                 <select className="form-select" value={selectedLoteYear} onChange={(e) => setSelectedLoteYear(e.target.value)}>
                   <option value="">-- Selecione o Ano --</option>
                   {Object.values(saldosAtuais).map(saldo => (
-                     <option key={saldo.year} value={saldo.year} disabled={saldo.days <= 0 && (!eventToEdit || eventToEdit.loteYear !== saldo.year)}>
-                       {saldo.year} - Restam {saldo.days} dias ({saldo.category})
-                     </option>
+                    <option key={saldo.year} value={saldo.year} disabled={saldo.days <= 0 && (!eventToEdit || eventToEdit.loteYear !== saldo.year)}>
+                      {saldo.year} - Restam {saldo.days} dias ({saldo.category})
+                    </option>
                   ))}
                 </select>
               )}
@@ -268,10 +264,10 @@ export default function EventModal({ isOpen, onClose, professionals = [], events
           )}
 
           {profId && type === 'folga' && (
-             <div className="form-group" style={{ backgroundColor: '#f9fafb', padding: '10px', borderRadius: '6px', border: '1px solid #d1d5db', display: 'flex', justifyContent: 'space-between' }}>
-                <span style={{ fontSize: '0.85rem', fontWeight: 'bold' }}>Saldo Total de Folgas:</span>
-                <strong style={{ color: saldoFolgasAtual > 0 ? '#10b981' : '#ef4444' }}>{saldoFolgasAtual} dias</strong>
-             </div>
+            <div className="form-group" style={{ backgroundColor: '#f9fafb', padding: '10px', borderRadius: '6px', border: '1px solid #d1d5db', display: 'flex', justifyContent: 'space-between' }}>
+              <span style={{ fontSize: '0.85rem', fontWeight: 'bold' }}>Saldo Total de Folgas:</span>
+              <strong style={{ color: saldoFolgasAtual > 0 ? '#10b981' : '#ef4444' }}>{saldoFolgasAtual} dias</strong>
+            </div>
           )}
 
           {profId && (
@@ -290,13 +286,6 @@ export default function EventModal({ isOpen, onClose, professionals = [], events
           {calculatedDays > 0 && (
             <div style={{ textAlign: 'center', marginBottom: '1rem', fontSize: '0.9rem', fontWeight: 'bold' }}>
               Você está agendando e descontando: <span style={{ color: 'orange', fontSize: '1.1rem' }}>{calculatedDays} dia(s)</span>
-            </div>
-          )}
-
-          {profId && type === 'folga' && (
-            <div className="form-group">
-              <label>Motivo da Saída (Obrigatório para Folga)</label>
-              <input type="text" className="form-input" required placeholder="Ex: Abono, Plantão Extra..." value={reason} onChange={(e) => setReason(e.target.value)} />
             </div>
           )}
 
