@@ -8,8 +8,85 @@ html, body, #root {
   box-sizing: border-box;
 }
 
-/* Garante que o root também se comporte como uma coluna flexível para empurrar o layout */
 #root {
   display: flex;
   flex-direction: column;
+}
+
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background-color: rgba(255, 255, 255, 0.2);
+  border-radius: 10px;
+  transition: background-color 0.3s;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background-color: rgba(255, 165, 0, 0.6);
+}
+
+.column-scroll-content::-webkit-scrollbar,
+.custom-dropdown-menu::-webkit-scrollbar,
+.log-list::-webkit-scrollbar {
+  width: 5px;
+}
+
+.column-scroll-content::-webkit-scrollbar-track,
+.custom-dropdown-menu::-webkit-scrollbar-track,
+.log-list::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.column-scroll-content::-webkit-scrollbar-thumb,
+.custom-dropdown-menu::-webkit-scrollbar-thumb,
+.log-list::-webkit-scrollbar-thumb {
+  background-color: #4b5563;
+  border-radius: 10px;
+}
+
+.column-scroll-content::-webkit-scrollbar-thumb:hover,
+.custom-dropdown-menu::-webkit-scrollbar-thumb:hover,
+.log-list::-webkit-scrollbar-thumb:hover {
+  background-color: orange;
+}
+
+.absent-list::-webkit-scrollbar,
+.mobile-half-drawer.expanded::-webkit-scrollbar {
+  width: 5px;
+}
+
+.absent-list::-webkit-scrollbar-track,
+.mobile-half-drawer.expanded::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.absent-list::-webkit-scrollbar-thumb,
+.mobile-half-drawer.expanded::-webkit-scrollbar-thumb {
+  background-color: #d1d5db;
+  border-radius: 10px;
+}
+
+.absent-list::-webkit-scrollbar-thumb:hover,
+.mobile-half-drawer.expanded::-webkit-scrollbar-thumb:hover {
+  background-color: #9ca3af;
+}
+
+* {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(255, 255, 255, 0.3) transparent;
+}
+
+.column-scroll-content, .custom-dropdown-menu, .log-list {
+  scrollbar-color: #4b5563 transparent;
+}
+
+.absent-list, .mobile-half-drawer.expanded {
+  scrollbar-color: #d1d5db transparent;
 }
