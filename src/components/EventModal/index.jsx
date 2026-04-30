@@ -12,8 +12,8 @@ export default function EventModal({ isOpen, onClose, professionals = [], events
   const [calculatedDays, setCalculatedDays] = useState(0);
   const [loading, setLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
+  const [successMsg, setSuccessMsg] = useState('');
   const [conflictWarning, setConflictWarning] = useState(null);
-  // 👇 NOVO: O motivo volta, mas será obrigatório apenas para atestados
   const [reason, setReason] = useState('');
 
   useEffect(() => {
@@ -46,6 +46,7 @@ export default function EventModal({ isOpen, onClose, professionals = [], events
     }
     setConflictWarning(null);
     setErrorMsg('');
+    setSuccessMsg('');
   }, [eventToEdit, isOpen]);
 
   if (!isOpen) return null;
@@ -74,7 +75,6 @@ export default function EventModal({ isOpen, onClose, professionals = [], events
   let isSaldoInsuficiente = false;
   let mensagemSaldo = '';
 
-  // 👇 MÁGICA: Só verifica saldo se NÃO for atestado
   if (profId && calculatedDays > 0 && type !== 'atestado') {
     if (type === 'ferias') {
       if (!selectedLoteYear) {
@@ -93,7 +93,7 @@ export default function EventModal({ isOpen, onClose, professionals = [], events
 
         if (calculatedDays > saldoReal) {
           isSaldoInsuficiente = true;
-          mensagemSaldo = `SALDO INSUFICIENTE: O lote ${selectedLoteYear} tem apenas ${saldoReal} dia(s).`;
+          mensagemSaldo = `SALDO INSUFICIENTE: O lote ${selectedLoteYear} tem apenas ${saldoReal} dia(s). Reduza o período ou escolha outro lote. (Não misture lotes!)`;
         }
       }
     } else if (type === 'folga') {
@@ -119,7 +119,6 @@ export default function EventModal({ isOpen, onClose, professionals = [], events
     if (startDate > endDate) { setErrorMsg('A data final não pode ser antes da inicial.'); return; }
     if (isSaldoInsuficiente) { setErrorMsg(mensagemSaldo); return; }
     
-    // 👇 Exige motivo obrigatório para o atestado
     if (type === 'atestado' && !reason.trim()) { setErrorMsg('Para lançar um atestado, o MOTIVO (CID, Médico, etc) é obrigatório.'); return; }
 
     const hasPersonalConflict = events.some(existingEvent => {
@@ -166,7 +165,7 @@ export default function EventModal({ isOpen, onClose, professionals = [], events
         id: eventId,
         professionalId: profId,
         type: type,
-        reason: type === 'atestado' ? reason.trim() : '', // Só salva o motivo se for atestado
+        reason: type === 'atestado' ? reason.trim() : '',
         startDate: startDate,
         endDate: endDate,
         loteYear: type === 'ferias' ? selectedLoteYear : null 
@@ -178,7 +177,6 @@ export default function EventModal({ isOpen, onClose, professionals = [], events
         currentData.events = [...(currentData.events || []), savedEvent];
       }
 
-      // 👇 MÁGICA: Se for atestado, a gente pula o desconto do banco!
       const updatedProfessionals = currentData.professionals.map(pro => {
         if (pro.id === profId && type !== 'atestado') {
           let updatedFolgas = Array.isArray(pro.bancoFolgas) ? [...pro.bancoFolgas] : [];
@@ -197,7 +195,6 @@ export default function EventModal({ isOpen, onClose, professionals = [], events
             };
             updatedFolgas = updatedFolgas.filter(f => f.id !== `log_${eventId}`);
             updatedFolgas.push(logFolga);
-
           } else if (type === 'ferias') {
             const logFerias = {
               id: `log_${eventId}`,
@@ -218,7 +215,15 @@ export default function EventModal({ isOpen, onClose, professionals = [], events
       currentData.professionals = updatedProfessionals;
       await updateGistData(currentData);
       if (onDataUpdated) onDataUpdated();
-      onClose();
+      setSuccessMsg(type === 'atestado' 
+        ? 'Atestado salvo no histórico com sucesso!' 
+        : 'Ausência registrada e saldo atualizado!');
+        
+      setTimeout(() => {
+        setSuccessMsg('');
+        onClose();
+      }, 1500);
+
     } catch (error) {
       console.error(error);
       setErrorMsg('Erro ao salvar o agendamento e o saldo.');
@@ -252,7 +257,6 @@ export default function EventModal({ isOpen, onClose, professionals = [], events
               <div className="type-selector">
                 <div className={`type-option ferias ${type === 'ferias' ? 'active' : ''}`} onClick={() => setType('ferias')}>Férias</div>
                 <div className={`type-option folga ${type === 'folga' ? 'active' : ''}`} onClick={() => setType('folga')}>Folga</div>
-                {/* 👇 O NOVO BOTÃO DE ATESTADO FICA AQUI 👇 */}
                 <div className={`type-option atestado ${type === 'atestado' ? 'active' : ''}`} onClick={() => setType('atestado')}>Atestado</div>
               </div>
             </div>
@@ -302,7 +306,6 @@ export default function EventModal({ isOpen, onClose, professionals = [], events
             </div>
           )}
 
-          {/* 👇 EXIBE O CAMPO DE MOTIVO APENAS PARA ATESTADO 👇 */}
           {profId && type === 'atestado' && (
              <div className="form-group">
                 <label>Motivo do Atestado (Obrigatório)</label>
@@ -311,8 +314,13 @@ export default function EventModal({ isOpen, onClose, professionals = [], events
           )}
 
           {errorMsg && <p className="error-msg-modal" style={{ color: '#dc2626', backgroundColor: '#fee2e2', padding: '10px', borderRadius: '6px', fontSize: '0.85rem' }}>{errorMsg}</p>}
-          
-          {conflictWarning && (
+          {successMsg && (
+            <div style={{ backgroundColor: '#d1fae5', color: '#065f46', border: '1px solid #34d399', padding: '12px', borderRadius: '6px', textAlign: 'center', fontWeight: 'bold', marginBottom: '1rem', animation: 'fadeIn 0.3s ease' }}>
+              {successMsg}
+            </div>
+          )}
+
+          {conflictWarning && !successMsg && (
             <div className="conflict-warning-box">
               <p>⚠️ {conflictWarning}</p>
               <div className="conflict-actions">
@@ -322,7 +330,7 @@ export default function EventModal({ isOpen, onClose, professionals = [], events
             </div>
           )}
 
-          {!conflictWarning && (
+          {!conflictWarning && !successMsg && (
             <button type="submit" className="btn-submit-event" disabled={loading || !profId || isSaldoInsuficiente}>
               {loading ? 'Salvando...' : (eventToEdit ? (type === 'atestado' ? 'Atualizar Atestado' : 'Atualizar e Descontar') : (type === 'atestado' ? 'Salvar Atestado' : 'Confirmar e Descontar'))}
             </button>
