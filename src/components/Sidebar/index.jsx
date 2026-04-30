@@ -9,6 +9,8 @@ export default function Sidebar({ isOpen, onClose, onDataUpdated, professionals 
   const navigate = useNavigate();
   const [name, setName] = useState('');
   const [matricula, setMatricula] = useState('');
+  // 👇 NOVO ESTADO: Senha do funcionário 👇
+  const [password, setPassword] = useState('');
   const [color, setColor] = useState('#3b82f6');
   const [professionId, setProfessionId] = useState('');
   const [shift, setShift] = useState('dia_todo');
@@ -16,8 +18,10 @@ export default function Sidebar({ isOpen, onClose, onDataUpdated, professionals 
   const [editingId, setEditingId] = useState(null);
   const [loading, setLoading] = useState(false);
   const [feedback, setFeedback] = useState({ type: '', message: '' });
+  
   const [deleteModal, setDeleteModal] = useState({ isOpen: false, pro: null });
   const [deleteCargoModal, setDeleteCargoModal] = useState({ isOpen: false, cargo: null });
+
   const [newProfession, setNewProfession] = useState('');
   const [loadingProf, setLoadingProf] = useState(false);
   const [feedbackProf, setFeedbackProf] = useState({ type: '', message: '' });
@@ -33,6 +37,7 @@ export default function Sidebar({ isOpen, onClose, onDataUpdated, professionals 
     setEditingId(pro.id);
     setName(pro.name);
     setMatricula(pro.matricula || '');
+    setPassword(pro.password || ''); // <-- Puxa a senha se já existir
     setColor(pro.baseColor);
     setProfessionId(pro.professionId || '');
     setShift(pro.shift || 'dia_todo');
@@ -44,6 +49,7 @@ export default function Sidebar({ isOpen, onClose, onDataUpdated, professionals 
     setEditingId(null);
     setName('');
     setMatricula('');
+    setPassword(''); // <-- Limpa a senha
     setColor('#3b82f6');
     setProfessionId('');
     setShift('dia_todo');
@@ -58,9 +64,17 @@ export default function Sidebar({ isOpen, onClose, onDataUpdated, professionals 
 
     const matriculaLimpa = matricula.trim();
     const nomeLimpo = name.trim();
+    const senhaLimpa = password.trim(); // <-- Pega a senha limpa
 
     if (!matriculaLimpa) {
       setFeedback({ type: 'error', message: 'A matrícula não pode ficar em branco!' });
+      setLoading(false);
+      return;
+    }
+    
+    // 👇 Exige a senha na hora de salvar 👇
+    if (!senhaLimpa) {
+      setFeedback({ type: 'error', message: 'A senha de acesso é obrigatória!' });
       setLoading(false);
       return;
     }
@@ -83,7 +97,8 @@ export default function Sidebar({ isOpen, onClose, onDataUpdated, professionals 
           return;
         }
         currentData.professionals = currentData.professionals.map(p =>
-          p.id === editingId ? { ...p, name: nomeLimpo, matricula: matriculaLimpa, baseColor: color, professionId, shift, isSupervisor } : p
+          // 👇 Salva a senha na atualização 👇
+          p.id === editingId ? { ...p, name: nomeLimpo, matricula: matriculaLimpa, password: senhaLimpa, baseColor: color, professionId, shift, isSupervisor } : p
         );
         successMessage = 'Profissional atualizado com sucesso!';
       } else {
@@ -97,6 +112,7 @@ export default function Sidebar({ isOpen, onClose, onDataUpdated, professionals 
           id: `p_${Date.now()}`,
           name: nomeLimpo,
           matricula: matriculaLimpa,
+          password: senhaLimpa, // 👇 Salva a senha no novo cadastro 👇
           baseColor: color,
           professionId,
           shift,
@@ -243,6 +259,9 @@ export default function Sidebar({ isOpen, onClose, onDataUpdated, professionals 
                 <input type="text" value={name} onChange={(e) => setName(e.target.value)} placeholder="Ex: João Silva" required className="sidebar-input" />
                 <label>Matrícula ( Senha de Acesso )</label>
                 <input type="text" value={matricula} onChange={(e) => setMatricula(e.target.value)} placeholder="Ex: 12345" required className="sidebar-input" />
+                {/* 👇 NOVO CAMPO DE SENHA 👇 */}
+              <label>Senha de Acesso</label>
+              <input type="text" value={password} onChange={(e) => setPassword(e.target.value)} placeholder="Ex: 123456" required className="sidebar-input" />
                 <div className="custom-toggle-container" onClick={() => setIsSupervisor(!isSupervisor)}>
                   <div className="custom-toggle-track">
                     <div className={`custom-toggle-knob ${isSupervisor ? 'active' : ''}`}>

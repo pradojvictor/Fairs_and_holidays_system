@@ -6,12 +6,11 @@ import './index.css';
 export default function PublicDashboard() {
   const [isLoading, setIsLoading] = useState(true);
   const [dbData, setDbData] = useState({ professionals: [], events: [], professions: [] });
-
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [loggedInUser, setLoggedInUser] = useState(null);
   const [inputMatricula, setInputMatricula] = useState('');
+  const [inputPassword, setInputPassword] = useState('');
   const [loginError, setLoginError] = useState('');
-
   const [currentDate, setCurrentDate] = useState(new Date());
   const [selectedDay, setSelectedDay] = useState(new Date().getDate());
   const [isExpanded, setIsExpanded] = useState(false);
@@ -32,16 +31,18 @@ export default function PublicDashboard() {
     loadData();
   }, []);
 
-  const handleLogin = (e) => {
+const handleLogin = (e) => {
     e.preventDefault();
-    const user = dbData.professionals.find(p => p.matricula === inputMatricula.trim());
+    const user = dbData.professionals.find(p => 
+      p.matricula === inputMatricula.trim() && p.password === inputPassword.trim()
+    );
 
     if (user) {
       setLoggedInUser(user);
       setIsLoggedIn(true);
       setLoginError('');
     } else {
-      setLoginError('Matrícula não encontrada. Verifique com o RH.');
+      setLoginError('Matrícula ou senha incorretos.'); 
     }
   };
 
@@ -49,6 +50,7 @@ export default function PublicDashboard() {
     setIsLoggedIn(false);
     setLoggedInUser(null);
     setInputMatricula('');
+    setInputPassword('');
   };
 
   const year = currentDate.getFullYear();
@@ -154,6 +156,14 @@ export default function PublicDashboard() {
               placeholder="Número da Matrícula"
               value={inputMatricula}
               onChange={(e) => setInputMatricula(e.target.value)}
+              required
+              className="login-input"
+            />
+            <input
+              type="password"
+              placeholder="Sua Senha"
+              value={inputPassword}
+              onChange={(e) => setInputPassword(e.target.value)}
               required
               className="login-input"
             />
