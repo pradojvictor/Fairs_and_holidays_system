@@ -1,4 +1,5 @@
-import { useRef, useState } from 'react';
+// Arquivo: src/components/Sidebar.jsx
+import { useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { fetchGistData, updateGistData } from '../../services/githubApi';
 import CustomSelect from '../CustomSelect';
@@ -6,6 +7,7 @@ import './index.css';
 
 export default function Sidebar({ isOpen, onClose, onDataUpdated, professionals = [], professions = [], adminName, onOpenProfile }) {
   const navigate = useNavigate();
+  const formTopRef = useRef(null);
   const [name, setName] = useState('');
   const [matricula, setMatricula] = useState('');
   const [password, setPassword] = useState('');
@@ -23,8 +25,6 @@ export default function Sidebar({ isOpen, onClose, onDataUpdated, professionals 
   const [feedbackProf, setFeedbackProf] = useState({ type: '', message: '' });
   const [expandedCargoId, setExpandedCargoId] = useState(null);
   const [searchTerm, setSearchTerm] = useState('');
-
-  const formTopRef = useRef(null);
 
   const handleLogout = () => {
     localStorage.removeItem('isAuthenticated');
@@ -68,14 +68,14 @@ export default function Sidebar({ isOpen, onClose, onDataUpdated, professionals 
 
     const matriculaLimpa = matricula.trim();
     const nomeLimpo = name.trim();
-    const senhaLimpa = password.trim();
+    const senhaLimpa = password.trim(); 
 
     if (!matriculaLimpa) {
       setFeedback({ type: 'error', message: 'A matrícula não pode ficar em branco!' });
       setLoading(false);
       return;
     }
-
+    
     if (!senhaLimpa) {
       setFeedback({ type: 'error', message: 'A senha de acesso é obrigatória!' });
       setLoading(false);
@@ -100,7 +100,6 @@ export default function Sidebar({ isOpen, onClose, onDataUpdated, professionals 
           return;
         }
         currentData.professionals = currentData.professionals.map(p =>
-          // 👇 Salva a senha na atualização 👇
           p.id === editingId ? { ...p, name: nomeLimpo, matricula: matriculaLimpa, password: senhaLimpa, baseColor: color, professionId, shift, isSupervisor } : p
         );
         successMessage = 'Profissional atualizado com sucesso!';
@@ -115,7 +114,7 @@ export default function Sidebar({ isOpen, onClose, onDataUpdated, professionals 
           id: `p_${Date.now()}`,
           name: nomeLimpo,
           matricula: matriculaLimpa,
-          password: senhaLimpa, // 👇 Salva a senha no novo cadastro 👇
+          password: senhaLimpa,
           baseColor: color,
           professionId,
           shift,
@@ -245,6 +244,9 @@ export default function Sidebar({ isOpen, onClose, onDataUpdated, professionals 
     })
     .sort((a, b) => a.name.localeCompare(b.name));
 
+  // 👇 LÓGICA PARA ORDENAR OS CARGOS ALFABETICAMENTE 👇
+  const sortedProfessions = [...professions].sort((a, b) => a.name.localeCompare(b.name));
+
   return (
     <>
       <div className={`sidebar-overlay ${isOpen ? 'open' : ''}`} onClick={onClose} />
@@ -272,10 +274,13 @@ export default function Sidebar({ isOpen, onClose, onDataUpdated, professionals 
               <form onSubmit={handleSaveProfessional} className="sidebar-form">
                 <label>Nome do Funcionário</label>
                 <input type="text" value={name} onChange={(e) => setName(e.target.value)} placeholder="Ex: João Silva" required className="sidebar-input" />
-                <label>Matrícula ( Senha de Acesso )</label>
+                
+                <label>Matrícula do Funcionário</label>
                 <input type="text" value={matricula} onChange={(e) => setMatricula(e.target.value)} placeholder="Ex: 12345" required className="sidebar-input" />
+                
                 <label>Senha de Acesso</label>
                 <input type="text" value={password} onChange={(e) => setPassword(e.target.value)} placeholder="Ex: 123456" required className="sidebar-input" />
+                
                 <div className="custom-toggle-container" onClick={() => setIsSupervisor(!isSupervisor)}>
                   <div className="custom-toggle-track">
                     <div className={`custom-toggle-knob ${isSupervisor ? 'active' : ''}`}>
@@ -291,7 +296,8 @@ export default function Sidebar({ isOpen, onClose, onDataUpdated, professionals 
                   placeholder="-- Selecione o Cargo --"
                   value={professionId}
                   onChange={setProfessionId}
-                  options={professions.map(p => ({ value: p.id, label: p.name }))}
+                  /* 👇 AGORA USA A LISTA DE CARGOS ORDENADA 👇 */
+                  options={sortedProfessions.map(p => ({ value: p.id, label: p.name }))}
                 />
                 <CustomSelect
                   label="Turno de Trabalho"
@@ -309,7 +315,6 @@ export default function Sidebar({ isOpen, onClose, onDataUpdated, professionals 
                   variant="color"
                   value={color}
                   onChange={setColor}
-
                   options={colorOptionsWithCount}
                 />
                 <button type="submit" disabled={loading} className="btn-save">
@@ -329,7 +334,7 @@ export default function Sidebar({ isOpen, onClose, onDataUpdated, professionals 
                 <input
                   type="text"
                   className="sidebar-input search-pro-input"
-                  placeholder="Buscar por nome ou matrícula..."
+                  placeholder="🔍 Buscar por nome ou matrícula..."
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
                 />
@@ -406,10 +411,11 @@ export default function Sidebar({ isOpen, onClose, onDataUpdated, professionals 
               <div className="pro-list-container cargo-list-container">
                 <h4 className="pro-list-title">Cargos Cadastrados ({professions.length})</h4>
                 <div className="pro-list">
-                  {professions.length === 0 ? (
+                  {/* 👇 AGORA USA A LISTA DE CARGOS ORDENADA AQUI TAMBÉM 👇 */}
+                  {sortedProfessions.length === 0 ? (
                     <p className="empty-msg">Nenhum cargo criado.</p>
                   ) : (
-                    professions.map(p => {
+                    sortedProfessions.map(p => {
                       const profsInCargo = professionals.filter(pro => pro.professionId === p.id);
                       const count = profsInCargo.length;
                       const isExpanded = expandedCargoId === p.id;
