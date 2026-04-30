@@ -22,6 +22,7 @@ export default function Sidebar({ isOpen, onClose, onDataUpdated, professionals 
   const [loadingProf, setLoadingProf] = useState(false);
   const [feedbackProf, setFeedbackProf] = useState({ type: '', message: '' });
   const [expandedCargoId, setExpandedCargoId] = useState(null);
+  const [searchTerm, setSearchTerm] = useState('');
 
   const handleLogout = () => {
     localStorage.removeItem('isAuthenticated');
@@ -161,9 +162,9 @@ export default function Sidebar({ isOpen, onClose, onDataUpdated, professionals 
 
   const requestDeleteCargo = (cargo, count) => {
     if (count > 0) {
-      setFeedbackProf({ 
-        type: 'error', 
-        message: `ATENÇÃO: Você não pode excluir o cargo "${cargo.name}" pois existem ${count} funcionário(s) vinculados a ele. Altere o cargo deles primeiro.` 
+      setFeedbackProf({
+        type: 'error',
+        message: `ATENÇÃO: Você não pode excluir o cargo "${cargo.name}" pois existem ${count} funcionário(s) vinculados a ele. Altere o cargo deles primeiro.`
       });
       setTimeout(() => setFeedbackProf({ type: '', message: '' }), 7000);
       return;
@@ -178,7 +179,7 @@ export default function Sidebar({ isOpen, onClose, onDataUpdated, professionals 
       const currentData = await fetchGistData();
       currentData.professions = currentData.professions.filter(p => p.id !== id);
       await updateGistData(currentData);
-      
+
       if (onDataUpdated) onDataUpdated();
       setDeleteCargoModal({ isOpen: false, cargo: null });
       setFeedbackProf({ type: 'success', message: 'Cargo excluído permanentemente!' });
@@ -199,6 +200,16 @@ export default function Sidebar({ isOpen, onClose, onDataUpdated, professionals 
     '#8BC34A', '#689F38', '#33691E', '#AFB42B', '#FFB300', '#FF8F00', '#F57F17', '#E65100',
     '#FF9800', '#F57C00', '#FF5722', '#BF360C', '#795548', '#4E342E', '#607D8B', '#263238', '#424242', '#000000'
   ];
+
+  // 👇 LÓGICA DE BUSCA E ORDENAÇÃO ALFABÉTICA 👇
+  const filteredAndSortedProfessionals = [...professionals]
+    .filter(pro => {
+      const term = searchTerm.toLowerCase();
+      const matchName = pro.name.toLowerCase().includes(term);
+      const matchMatricula = pro.matricula && pro.matricula.toLowerCase().includes(term);
+      return matchName || matchMatricula;
+    })
+    .sort((a, b) => a.name.localeCompare(b.name));
 
   return (
     <>
@@ -271,13 +282,23 @@ export default function Sidebar({ isOpen, onClose, onDataUpdated, professionals 
                 <div className={`feedback-toast ${feedback.type}`}>{feedback.message}</div>
               )}
             </form>
+
             <div className="pro-list-container">
               <h4 className="pro-list-title">Equipe Cadastrada ({professionals.length})</h4>
+
+              <input
+                type="text"
+                className="sidebar-input search-pro-input"
+                placeholder="Buscar por nome ou matrícula..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+              />
+
               <div className="pro-list">
-                {professionals.length === 0 ? (
-                  <p className="empty-msg">Nenhum cadastrado ainda.</p>
+                {filteredAndSortedProfessionals.length === 0 ? (
+                  <p className="empty-msg">Nenhum profissional encontrado para "{searchTerm}"</p>
                 ) : (
-                  professionals.map(pro => (
+                  filteredAndSortedProfessionals.map(pro => (
                     <div key={pro.id} className="pro-item">
                       <div className="pro-info">
                         <div className="pro-color" style={{ backgroundColor: pro.baseColor }}></div>
@@ -286,7 +307,7 @@ export default function Sidebar({ isOpen, onClose, onDataUpdated, professionals 
                             {pro.name}
                             {pro.isSupervisor && <span title="Supervisor" className="pro-supervisor-icon">
                               <svg clipRule="evenodd" fillRule="evenodd" strokeLinejoin="round" strokeMiterlimit={2} viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                                <path d="m11.322 2.923c.126-.259.39-.423.678-.423.289 0 .552.164.678.423.974 1.998 2.65 5.44 2.65 5.44s3.811.524 6.022.829c.403.055.65.396.65.747 0 .19-.072.383-.231.536-1.61 1.538-4.382 4.191-4.382 4.191s.677 3.767 1.069 5.952c.083.462-.275.882-.742.882-.122 0-.244-.029-.355-.089-1.968-1.048-5.359-2.851-5.359-2.851s-3.391 1.803-5.359 2.851c-.111.06-.234.089-.356.089-.465 0-.825-.421-.741-.882.393-2.185 1.07-5.952 1.07-5.952s-2.773-2.653-4.382-4.191c-.16-.153-.232-.346-.232-.535 0-.352.249-.694.651-.748 2.211-.305 6.021-.829 6.021-.829s1.677-3.442 2.65-5.44z" fillRule="nonzero"/>
+                                <path d="m11.322 2.923c.126-.259.39-.423.678-.423.289 0 .552.164.678.423.974 1.998 2.65 5.44 2.65 5.44s3.811.524 6.022.829c.403.055.65.396.65.747 0 .19-.072.383-.231.536-1.61 1.538-4.382 4.191-4.382 4.191s.677 3.767 1.069 5.952c.083.462-.275.882-.742.882-.122 0-.244-.029-.355-.089-1.968-1.048-5.359-2.851-5.359-2.851s-3.391 1.803-5.359 2.851c-.111.06-.234.089-.356.089-.465 0-.825-.421-.741-.882.393-2.185 1.07-5.952 1.07-5.952s-2.773-2.653-4.382-4.191c-.16-.153-.232-.346-.232-.535 0-.352.249-.694.651-.748 2.211-.305 6.021-.829 6.021-.829s1.677-3.442 2.65-5.44z" fillRule="nonzero" />
                               </svg>
                             </span>}
                           </span>
@@ -328,7 +349,7 @@ export default function Sidebar({ isOpen, onClose, onDataUpdated, professionals 
                   disabled={loadingProf}
                 />
                 <button type="submit" disabled={loadingProf} className="btn-save btn-add-cargo">
-                  {loadingProf ? '⏳' : <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"><path d="M24 10h-10v-10h-4v10h-10v4h10v10h4v-10h10z"/></svg>}
+                  {loadingProf ? '⏳' : <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"><path d="M24 10h-10v-10h-4v10h-10v4h10v10h4v-10h10z" /></svg>}
                 </button>
               </div>
               {feedbackProf.message && (
@@ -359,9 +380,9 @@ export default function Sidebar({ isOpen, onClose, onDataUpdated, professionals 
                               {count}
                             </span>
                           </div>
-                          <button 
-                            onClick={(e) => { e.stopPropagation(); requestDeleteCargo(p, count); }} 
-                            className="btn-icon delete btn-delete-cargo" 
+                          <button
+                            onClick={(e) => { e.stopPropagation(); requestDeleteCargo(p, count); }}
+                            className="btn-icon delete btn-delete-cargo"
                             title="Excluir Cargo"
                           >
                             <svg clipRule="evenodd" fillRule="evenodd" strokeLinejoin="round" strokeMiterlimit={2} viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
@@ -402,6 +423,7 @@ export default function Sidebar({ isOpen, onClose, onDataUpdated, professionals 
           </div>
         </div>
       </div>
+
       {deleteModal.isOpen && (
         <div className="modal-overlay-custom">
           <div className="modal-container">
