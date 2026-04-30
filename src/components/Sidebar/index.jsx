@@ -1,4 +1,3 @@
-// Arquivo: src/components/Sidebar.jsx
 import { useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { fetchGistData, updateGistData } from '../../services/githubApi';
@@ -42,7 +41,7 @@ export default function Sidebar({ isOpen, onClose, onDataUpdated, professionals 
     setShift(pro.shift || 'dia_todo');
     setIsSupervisor(pro.isSupervisor || false);
     setFeedback({ type: '', message: '' });
-    
+
     setTimeout(() => {
       if (formTopRef.current) {
         formTopRef.current.scrollIntoView({ behavior: 'smooth', block: 'start' });
@@ -221,6 +220,18 @@ export default function Sidebar({ isOpen, onClose, onDataUpdated, professionals 
     '#FF9800', '#F57C00', '#FF5722', '#BF360C', '#795548', '#4E342E', '#607D8B', '#263238', '#424242', '#000000'
   ];
 
+  const colorUsageCount = professionals.reduce((acc, pro) => {
+    if (pro.baseColor) {
+      acc[pro.baseColor] = (acc[pro.baseColor] || 0) + 1;
+    }
+    return acc;
+  }, {});
+
+  const colorOptionsWithCount = PRESET_COLORS.map(colorHex => ({
+    value: colorHex,
+    count: colorUsageCount[colorHex] || 0
+  }));
+
   const removeAccents = (str) => {
     return str.normalize('NFD').replace(/[\u0300-\u036f]/g, '');
   };
@@ -298,7 +309,8 @@ export default function Sidebar({ isOpen, onClose, onDataUpdated, professionals 
                   variant="color"
                   value={color}
                   onChange={setColor}
-                  options={PRESET_COLORS}
+
+                  options={colorOptionsWithCount}
                 />
                 <button type="submit" disabled={loading} className="btn-save">
                   {loading ? 'Processando...' : (editingId ? 'Atualizar Dados' : 'Salvar Profissional')}

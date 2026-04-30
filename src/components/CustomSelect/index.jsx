@@ -1,15 +1,14 @@
-// Arquivo: src/components/CustomSelect.jsx
 import React, { useState, useRef, useEffect } from 'react';
 import './index.css';
 
-export default function CustomSelect({ 
-  label, 
-  options = [], 
-  value, 
-  onChange, 
+export default function CustomSelect({
+  label,
+  options = [],
+  value,
+  onChange,
   placeholder = '-- Selecione --',
   variant = 'text',
-  customThemeClass = '' 
+  customThemeClass = ''
 }) {
   const [isOpen, setIsOpen] = useState(false);
   const dropdownRef = useRef(null);
@@ -45,7 +44,7 @@ export default function CustomSelect({
       {label && <label className="custom-select-label">{label}</label>}
 
       <div className="custom-dropdown-container">
-        <div 
+        <div
           className={`custom-dropdown-trigger ${isOpen ? 'open' : ''}`}
           onClick={() => setIsOpen(!isOpen)}
         >
@@ -57,26 +56,33 @@ export default function CustomSelect({
           <div className="custom-dropdown-menu">
             {variant === 'color' ? (
               <div className="color-palette">
-                {options.map(c => (
-                  <div
-                    key={c}
-                    className={`color-swatch ${value === c ? 'selected' : ''}`}
-                    style={{ backgroundColor: c }}
-                    onClick={() => { onChange(c); setIsOpen(false); }}
-                    title={c}
-                  />
-                ))}
+                {options.map(opt => {
+                  const hex = typeof opt === 'string' ? opt : opt.value;
+                  const count = typeof opt === 'string' ? 0 : (opt.count || 0);
+
+                  return (
+                    <div
+                      key={hex}
+                      className={`color-swatch ${value === hex ? 'selected' : ''}`}
+                      style={{ backgroundColor: hex }}
+                      onClick={() => { onChange(hex); setIsOpen(false); }}
+                      title={`${hex} ${count > 0 ? `(Usada ${count}x)` : ''}`}
+                    >
+                      {count > 0 && <span className="color-swatch-count">{count}</span>}
+                    </div>
+                  );
+                })}
               </div>
             ) : (
               <ul className="custom-dropdown-list">
-                <li 
+                <li
                   className={`custom-dropdown-option ${!value ? 'selected' : ''}`}
                   onClick={() => { onChange(''); setIsOpen(false); }}
                 >
                   {placeholder}
                 </li>
                 {options.map((opt) => (
-                  <li 
+                  <li
                     key={opt.value}
                     className={`custom-dropdown-option ${value === opt.value ? 'selected' : ''}`}
                     onClick={() => { onChange(opt.value); setIsOpen(false); }}
