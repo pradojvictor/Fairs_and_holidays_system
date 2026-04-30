@@ -1,5 +1,5 @@
 // Arquivo: src/components/Sidebar.jsx
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { fetchGistData, updateGistData } from '../../services/githubApi';
 import CustomSelect from '../CustomSelect';
@@ -25,6 +25,8 @@ export default function Sidebar({ isOpen, onClose, onDataUpdated, professionals 
   const [expandedCargoId, setExpandedCargoId] = useState(null);
   const [searchTerm, setSearchTerm] = useState('');
 
+  const formTopRef = useRef(null);
+
   const handleLogout = () => {
     localStorage.removeItem('isAuthenticated');
     navigate('/login');
@@ -40,6 +42,12 @@ export default function Sidebar({ isOpen, onClose, onDataUpdated, professionals 
     setShift(pro.shift || 'dia_todo');
     setIsSupervisor(pro.isSupervisor || false);
     setFeedback({ type: '', message: '' });
+    
+    setTimeout(() => {
+      if (formTopRef.current) {
+        formTopRef.current.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }
+    }, 100);
   };
 
   const cancelEdit = () => {
@@ -68,7 +76,7 @@ export default function Sidebar({ isOpen, onClose, onDataUpdated, professionals 
       setLoading(false);
       return;
     }
-    
+
     if (!senhaLimpa) {
       setFeedback({ type: 'error', message: 'A senha de acesso é obrigatória!' });
       setLoading(false);
@@ -246,7 +254,7 @@ export default function Sidebar({ isOpen, onClose, onDataUpdated, professionals 
 
         <div className="sidebar-split-layout">
           <div className="sidebar-column">
-            <h3 className="sidebar-title">
+            <h3 className="sidebar-title" ref={formTopRef}>
               <span>{editingId ? 'Editar Profissional' : 'Novo Profissional'}</span>
             </h3>
             <div className="column-scroll-content">
@@ -255,8 +263,8 @@ export default function Sidebar({ isOpen, onClose, onDataUpdated, professionals 
                 <input type="text" value={name} onChange={(e) => setName(e.target.value)} placeholder="Ex: João Silva" required className="sidebar-input" />
                 <label>Matrícula ( Senha de Acesso )</label>
                 <input type="text" value={matricula} onChange={(e) => setMatricula(e.target.value)} placeholder="Ex: 12345" required className="sidebar-input" />
-              <label>Senha de Acesso</label>
-              <input type="text" value={password} onChange={(e) => setPassword(e.target.value)} placeholder="Ex: 123456" required className="sidebar-input" />
+                <label>Senha de Acesso</label>
+                <input type="text" value={password} onChange={(e) => setPassword(e.target.value)} placeholder="Ex: 123456" required className="sidebar-input" />
                 <div className="custom-toggle-container" onClick={() => setIsSupervisor(!isSupervisor)}>
                   <div className="custom-toggle-track">
                     <div className={`custom-toggle-knob ${isSupervisor ? 'active' : ''}`}>
