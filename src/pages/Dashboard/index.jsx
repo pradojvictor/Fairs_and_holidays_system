@@ -175,7 +175,7 @@ export default function Dashboard() {
         </div>
 
         <div className="header-actions">
-          <h2 className="dashboard-title">Calendário de Ausências CAPS II LESTE</h2>
+          <h2 className="dashboard-title">controle de férias e folgas</h2>
         </div>
         <button className="btn-pause" onClick={() => setIsResting(true)}>Pausar Sistema</button>
       </header>
