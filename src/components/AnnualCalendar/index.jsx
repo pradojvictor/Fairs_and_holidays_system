@@ -92,7 +92,7 @@ export default function AnnualCalendar({ professionals = [], events = [], onEven
     <div className="calendar-container">
 
       <div className="calendar-drawer-header" onClick={() => setIsExpanded(!isExpanded)}>
-        <h3 className="calendar-drawer-title">🗓️ Escala Anual ({currentYear})</h3>
+        <h3 className="calendar-drawer-title">Escala Anual <strong>{currentYear}</strong></h3>
         <button className="btn-toggle-calendar">
           {isExpanded ? 'Ver Menos ▲' : 'Expandir Ano Completo ▼'}
         </button>
@@ -172,7 +172,7 @@ export default function AnnualCalendar({ professionals = [], events = [], onEven
       <div className={`legend-drawer-wrapper ${isLegendExpanded ? 'expanded' : ''}`}>
         <div className="legend-drawer-header" onClick={() => setIsLegendExpanded(!isLegendExpanded)}>
           <h4 className="legend-drawer-title">
-            🎨 Legenda da Equipe ({professionals.length} profissionais)
+            Legenda da Equipe ({professionals.length} profissionais)
           </h4>
           <div className="legend-drawer-actions">
             {!isLegendExpanded && (
