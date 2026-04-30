@@ -201,11 +201,15 @@ export default function Sidebar({ isOpen, onClose, onDataUpdated, professionals 
     '#FF9800', '#F57C00', '#FF5722', '#BF360C', '#795548', '#4E342E', '#607D8B', '#263238', '#424242', '#000000'
   ];
 
+  const removeAccents = (str) => {
+    return str.normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+  };
+
   const filteredAndSortedProfessionals = [...professionals]
     .filter(pro => {
-      const term = searchTerm.toLowerCase();
-      const matchName = pro.name.toLowerCase().includes(term);
-      const matchMatricula = pro.matricula && pro.matricula.toLowerCase().includes(term);
+      const term = removeAccents(searchTerm.toLowerCase());
+      const matchName = removeAccents(pro.name.toLowerCase()).includes(term);
+      const matchMatricula = pro.matricula && removeAccents(pro.matricula.toLowerCase()).includes(term);
       return matchName || matchMatricula;
     })
     .sort((a, b) => a.name.localeCompare(b.name));
