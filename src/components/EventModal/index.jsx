@@ -218,6 +218,10 @@ export default function EventModal({ isOpen, onClose, professionals = [], events
     }
   };
 
+  const sortedProfessionals = [...professionals].sort((a, b) =>
+    a.name.localeCompare(b.name)
+  );
+
   return (
     <div className="event-modal-overlay">
       <div className="event-modal-container">
@@ -229,9 +233,11 @@ export default function EventModal({ isOpen, onClose, professionals = [], events
 
           <div className="form-group">
             <label>Profissional</label>
-            <select className="form-select" value={profId} onChange={(e) => setProfId(e.target.value)} disabled={eventToEdit}>
+            <select className="form-select list-Prof" value={profId} onChange={(e) => setProfId(e.target.value)} disabled={eventToEdit}>
               <option value="">-- Selecione o funcionário --</option>
-              {professionals.map(pro => <option key={pro.id} value={pro.id}>{pro.name}</option>)}
+              {sortedProfessionals.map(pro => (
+                <option key={pro.id} value={pro.id}>{pro.name}</option>
+              ))}
             </select>
           </div>
 
