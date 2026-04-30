@@ -14,6 +14,8 @@ export default function BankSidebar({ isOpen, onClose, onDataUpdated, profession
   const [feriasYear, setFeriasYear] = useState(new Date().getFullYear().toString());
   const [feriasType, setFeriasType] = useState('Individual');
   const [feriasDays, setFeriasDays] = useState('');
+  const [searchTerm, setSearchTerm] = useState('');
+
   const selectedPro = professionals.find(p => p.id === selectedProId);
   const showFeedback = (type, message, duration = 5000) => {
     setFeedback({ type, message });
@@ -55,6 +57,7 @@ export default function BankSidebar({ isOpen, onClose, onDataUpdated, profession
       setLoading(false);
     }
   };
+
   const handleAddFerias = async (e) => {
     e.preventDefault();
     if (!selectedProId || !feriasYear || !feriasType || !feriasDays) return;
@@ -92,6 +95,7 @@ export default function BankSidebar({ isOpen, onClose, onDataUpdated, profession
       setLoading(false);
     }
   };
+
   const requestDeleteLog = (logItem, isFolga) => {
     if (logItem.type === 'saida') {
       const eventIdFromLog = logItem.id.replace('log_', ''); 
@@ -119,6 +123,7 @@ export default function BankSidebar({ isOpen, onClose, onDataUpdated, profession
     }
     setDeleteLogModal({ isOpen: true, log: logItem, isFolga: isFolga });
   };
+
   const confirmDeleteLog = async () => {
     setLoading(true);
     const logItem = deleteLogModal.log;
@@ -152,6 +157,7 @@ export default function BankSidebar({ isOpen, onClose, onDataUpdated, profession
     if (!pro?.bancoFolgas || !Array.isArray(pro.bancoFolgas)) return 0;
     return pro.bancoFolgas.reduce((acc, log) => log.type === 'entrada' ? acc + log.days : acc - log.days, 0);
   };
+
   const getSaldosFerias = (pro) => {
     if (!pro?.bancoFerias || !Array.isArray(pro.bancoFerias)) return {};
     const saldos = {};
@@ -162,6 +168,21 @@ export default function BankSidebar({ isOpen, onClose, onDataUpdated, profession
     });
     return saldos;
   };
+
+  const removeAccents = (str) => {
+    return str ? str.normalize('NFD').replace(/[\u0300-\u036f]/g, '') : '';
+  };
+
+  const filteredAndSortedProfessionals = [...professionals]
+    .filter(pro => {
+      const term = removeAccents(searchTerm.toLowerCase());
+      const matchName = removeAccents(pro.name.toLowerCase()).includes(term);
+      const matchMatricula = pro.matricula && removeAccents(pro.matricula.toLowerCase()).includes(term);
+      return matchName || matchMatricula;
+    })
+    .sort((a, b) => a.name.localeCompare(b.name));
+
+
   return (
     <>
       <div className={`sidebar-overlay ${isOpen ? 'open' : ''}`} onClick={onClose} />
@@ -176,26 +197,38 @@ export default function BankSidebar({ isOpen, onClose, onDataUpdated, profession
         <div className="sidebar-split-layout bank-3-columns">
           <div className="sidebar-column">
             <h3 className="sidebar-title">1. Funcionário</h3>
-            <div className="pro-list" style={{ marginTop: '1rem' }}>
-              {professionals.map(pro => {
-                const saldosFerias = getSaldosFerias(pro);
-                const anosComSaldo = Object.keys(saldosFerias).filter(ano => saldosFerias[ano].days > 0).length;
-                return (
-                  <div 
-                    key={pro.id} 
-                    className={`pro-item bank-pro-item ${selectedProId === pro.id ? 'active' : ''}`}
-                    onClick={() => setSelectedProId(pro.id)}
-                  >
-                    <div className="pro-info">
-                      <div className="pro-color" style={{ backgroundColor: pro.baseColor }}></div>
-                      <div className="pro-info-text">
-                        <span className="pro-name" style={{ color: selectedProId === pro.id ? 'orange' : 'white' }}>{pro.name}</span>
-                        <span className="pro-matricula">{getSaldoFolgas(pro)} Folga(s) • Férias em {anosComSaldo} ano(s)</span>
+            <input 
+              type="text" 
+              className="sidebar-input search-pro-input" 
+              placeholder="Buscar nome ou matrícula..." 
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              style={{ marginTop: '1rem', marginBottom: '0.5rem' }}
+            />
+            <div className="pro-list">
+              {filteredAndSortedProfessionals.length === 0 ? (
+                <p className="empty-msg">Nenhum funcionário encontrado.</p>
+              ) : (
+                filteredAndSortedProfessionals.map(pro => {
+                  const saldosFerias = getSaldosFerias(pro);
+                  const anosComSaldo = Object.keys(saldosFerias).filter(ano => saldosFerias[ano].days > 0).length;
+                  return (
+                    <div 
+                      key={pro.id} 
+                      className={`pro-item bank-pro-item ${selectedProId === pro.id ? 'active' : ''}`}
+                      onClick={() => setSelectedProId(pro.id)}
+                    >
+                      <div className="pro-info">
+                        <div className="pro-color" style={{ backgroundColor: pro.baseColor }}></div>
+                        <div className="pro-info-text">
+                          <span className="pro-name" style={{ color: selectedProId === pro.id ? 'orange' : 'white' }}>{pro.name}</span>
+                          <span className="pro-matricula">{getSaldoFolgas(pro)} Folga(s) • Férias em {anosComSaldo} ano(s)</span>
+                        </div>
                       </div>
                     </div>
-                  </div>
-                );
-              })}
+                  );
+                })
+              )}
             </div>
           </div>
           <div className="sidebar-column">
