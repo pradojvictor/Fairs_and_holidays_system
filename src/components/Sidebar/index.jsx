@@ -201,7 +201,6 @@ export default function Sidebar({ isOpen, onClose, onDataUpdated, professionals 
     '#FF9800', '#F57C00', '#FF5722', '#BF360C', '#795548', '#4E342E', '#607D8B', '#263238', '#424242', '#000000'
   ];
 
-  // 👇 LÓGICA DE BUSCA E ORDENAÇÃO ALFABÉTICA 👇
   const filteredAndSortedProfessionals = [...professionals]
     .filter(pro => {
       const term = searchTerm.toLowerCase();
@@ -215,6 +214,7 @@ export default function Sidebar({ isOpen, onClose, onDataUpdated, professionals 
     <>
       <div className={`sidebar-overlay ${isOpen ? 'open' : ''}`} onClick={onClose} />
       <div className={`sidebar-container ${isOpen ? 'open' : ''}`}>
+
         <div className="sidebar-header">
           <h2>Painel Administrativo</h2>
           <div className="sidebar-header-actions">
@@ -227,199 +227,210 @@ export default function Sidebar({ isOpen, onClose, onDataUpdated, professionals 
             </button>
           </div>
         </div>
+
         <div className="sidebar-split-layout">
           <div className="sidebar-column">
             <h3 className="sidebar-title">
               <span>{editingId ? 'Editar Profissional' : 'Novo Profissional'}</span>
             </h3>
-            <form onSubmit={handleSaveProfessional} className="sidebar-form">
-              <label>Nome do Funcionário</label>
-              <input type="text" value={name} onChange={(e) => setName(e.target.value)} placeholder="Ex: João Silva" required className="sidebar-input" />
-              <label>Matrícula ( Senha de Acesso )</label>
-              <input type="text" value={matricula} onChange={(e) => setMatricula(e.target.value)} placeholder="Ex: 12345" required className="sidebar-input" />
-              <div className="custom-toggle-container" onClick={() => setIsSupervisor(!isSupervisor)}>
-                <div className="custom-toggle-track">
-                  <div className={`custom-toggle-knob ${isSupervisor ? 'active' : ''}`}>
-                    {isSupervisor && <span className="custom-toggle-text">Supervisor</span>}
+            <div className="column-scroll-content">
+              <form onSubmit={handleSaveProfessional} className="sidebar-form">
+                <label>Nome do Funcionário</label>
+                <input type="text" value={name} onChange={(e) => setName(e.target.value)} placeholder="Ex: João Silva" required className="sidebar-input" />
+                <label>Matrícula ( Senha de Acesso )</label>
+                <input type="text" value={matricula} onChange={(e) => setMatricula(e.target.value)} placeholder="Ex: 12345" required className="sidebar-input" />
+                <div className="custom-toggle-container" onClick={() => setIsSupervisor(!isSupervisor)}>
+                  <div className="custom-toggle-track">
+                    <div className={`custom-toggle-knob ${isSupervisor ? 'active' : ''}`}>
+                      {isSupervisor && <span className="custom-toggle-text">Supervisor</span>}
+                    </div>
+                  </div>
+                  <div className="custom-toggle-labels">
+                    <span>Pode ver a escala da equipe.</span>
                   </div>
                 </div>
-                <div className="custom-toggle-labels">
-                  <span>Pode ver a escala da equipe.</span>
-                </div>
-              </div>
-              <CustomSelect
-                label="Cargo / Profissão"
-                placeholder="-- Selecione o Cargo --"
-                value={professionId}
-                onChange={setProfessionId}
-                options={professions.map(p => ({ value: p.id, label: p.name }))}
-              />
-              <CustomSelect
-                label="Turno de Trabalho"
-                placeholder="-- Selecione o Turno --"
-                value={shift}
-                onChange={setShift}
-                options={[
-                  { value: 'manhã', label: 'Manhã' },
-                  { value: 'tarde', label: 'Tarde' },
-                  { value: 'dia_todo', label: 'Dia Todo (Ambos)' }
-                ]}
-              />
-              <CustomSelect
-                label="Cor no Calendário"
-                variant="color"
-                value={color}
-                onChange={setColor}
-                options={PRESET_COLORS}
-              />
-              <button type="submit" disabled={loading} className="btn-save">
-                {loading ? 'Processando...' : (editingId ? 'Atualizar Dados' : 'Salvar Profissional')}
-              </button>
-              {editingId && (
-                <button type="button" onClick={cancelEdit} className="btn-cancel" disabled={loading}>Cancelar Edição</button>
-              )}
-              {feedback.message && (
-                <div className={`feedback-toast ${feedback.type}`}>{feedback.message}</div>
-              )}
-            </form>
-
-            <div className="pro-list-container">
-              <h4 className="pro-list-title">Equipe Cadastrada ({professionals.length})</h4>
-
-              <input
-                type="text"
-                className="sidebar-input search-pro-input"
-                placeholder="Buscar por nome ou matrícula..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-              />
-
-              <div className="pro-list">
-                {filteredAndSortedProfessionals.length === 0 ? (
-                  <p className="empty-msg">Nenhum profissional encontrado para "{searchTerm}"</p>
-                ) : (
-                  filteredAndSortedProfessionals.map(pro => (
-                    <div key={pro.id} className="pro-item">
-                      <div className="pro-info">
-                        <div className="pro-color" style={{ backgroundColor: pro.baseColor }}></div>
-                        <div className="pro-info-text">
-                          <span className="pro-name">
-                            {pro.name}
-                            {pro.isSupervisor && <span title="Supervisor" className="pro-supervisor-icon">
-                              <svg clipRule="evenodd" fillRule="evenodd" strokeLinejoin="round" strokeMiterlimit={2} viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                                <path d="m11.322 2.923c.126-.259.39-.423.678-.423.289 0 .552.164.678.423.974 1.998 2.65 5.44 2.65 5.44s3.811.524 6.022.829c.403.055.65.396.65.747 0 .19-.072.383-.231.536-1.61 1.538-4.382 4.191-4.382 4.191s.677 3.767 1.069 5.952c.083.462-.275.882-.742.882-.122 0-.244-.029-.355-.089-1.968-1.048-5.359-2.851-5.359-2.851s-3.391 1.803-5.359 2.851c-.111.06-.234.089-.356.089-.465 0-.825-.421-.741-.882.393-2.185 1.07-5.952 1.07-5.952s-2.773-2.653-4.382-4.191c-.16-.153-.232-.346-.232-.535 0-.352.249-.694.651-.748 2.211-.305 6.021-.829 6.021-.829s1.677-3.442 2.65-5.44z" fillRule="nonzero" />
-                              </svg>
-                            </span>}
-                          </span>
-                          <span className="pro-matricula">Mat: {pro.matricula || 'S/N'}</span>
-                        </div>
-                      </div>
-                      <div className="pro-actions">
-                        <button onClick={() => handleEditClick(pro)} className="btn-icon edit" title="Editar">
-                          <svg clipRule="evenodd" fillRule="evenodd" strokeLinejoin="round" strokeMiterlimit={2} viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                            <path d="m11.239 15.533c-1.045 3.004-1.238 3.451-1.238 3.84 0 .441.385.627.627.627.272 0 1.108-.301 3.829-1.249zm.888-.888 3.22 3.22 6.408-6.401c.163-.163.245-.376.245-.591 0-.213-.082-.427-.245-.591-.58-.579-1.458-1.457-2.039-2.036-.163-.163-.377-.245-.591-.245-.213 0-.428.082-.592.245zm-3.127-.895c0-.402-.356-.75-.75-.75-2.561 0-2.939 0-5.5 0-.394 0-.75.348-.75.75s.356.75.75.75h5.5c.394 0 .75-.348.75-.75zm5-3c0-.402-.356-.75-.75-.75-2.561 0-7.939 0-10.5 0-.394 0-.75.348-.75.75s.356.75.75.75h10.5c.394 0 .75-.348.75-.75zm0-3c0-.402-.356-.75-.75-.75-2.561 0-7.939 0-10.5 0-.394 0-.75.348-.75.75s.356.75.75.75h10.5c.394 0 .75-.348.75-.75zm0-3c0-.402-.356-.75-.75-.75-2.561 0-7.939 0-10.5 0-.394 0-.75.348-.75.75s.356.75.75.75h10.5c.394 0 .75-.348.75-.75z" fillRule="nonzero" />
-                          </svg>
-                        </button>
-                        <button onClick={() => requestDelete(pro)} className="btn-icon delete" title="Excluir">
-                          <svg clipRule="evenodd" fillRule="evenodd" strokeLinejoin="round" strokeMiterlimit={2} viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                            <path d="m20.015 6.506h-16v14.423c0 .591.448 1.071 1 1.071h14c.552 0 1-.48 1-1.071 0-3.905 0-14.423 0-14.423zm-5.75 2.494c.414 0 .75.336.75.75v8.5c0 .414-.336.75-.75.75s-.75-.336-.75-.75v-8.5c0-.414.336-.75.75-.75zm-4.5 0c.414 0 .75.336.75.75v8.5c0 .414-.336.75-.75.75s-.75-.336-.75-.75v-8.5c0-.414.336-.75.75-.75zm-.75-5v-1c0-.535.474-1 1-1h4c.526 0 1 .465 1 1v1h5.254c.412 0 .746.335.746.747s-.334.747-.746.747h-16.507c-.413 0-.747-.335-.747-.747s.334-.747.747-.747zm4.5 0v-.5h-3v.5z" fillRule="nonzero" />
-                          </svg>
-                        </button>
-                      </div>
-                    </div>
-                  ))
+                <CustomSelect
+                  label="Cargo / Profissão"
+                  placeholder="-- Selecione o Cargo --"
+                  value={professionId}
+                  onChange={setProfessionId}
+                  options={professions.map(p => ({ value: p.id, label: p.name }))}
+                />
+                <CustomSelect
+                  label="Turno de Trabalho"
+                  placeholder="-- Selecione o Turno --"
+                  value={shift}
+                  onChange={setShift}
+                  options={[
+                    { value: 'manhã', label: 'Manhã' },
+                    { value: 'tarde', label: 'Tarde' },
+                    { value: 'dia_todo', label: 'Dia Todo (Ambos)' }
+                  ]}
+                />
+                <CustomSelect
+                  label="Cor no Calendário"
+                  variant="color"
+                  value={color}
+                  onChange={setColor}
+                  options={PRESET_COLORS}
+                />
+                <button type="submit" disabled={loading} className="btn-save">
+                  {loading ? 'Processando...' : (editingId ? 'Atualizar Dados' : 'Salvar Profissional')}
+                </button>
+                {editingId && (
+                  <button type="button" onClick={cancelEdit} className="btn-cancel" disabled={loading}>Cancelar Edição</button>
                 )}
-              </div>
-            </div>
-          </div>
-          <div className="sidebar-column">
-            <h3 className="sidebar-title">
-              <span>Gerenciar Cargos</span>
-            </h3>
-            <form onSubmit={handleAddProfession} className="sidebar-form">
-              <label>Nome do Cargo</label>
-              <div className="cargo-input-group">
+                {feedback.message && (
+                  <div className={`feedback-toast ${feedback.type}`}>{feedback.message}</div>
+                )}
+              </form>
+
+              <div className="pro-list-container">
+                <h4 className="pro-list-title">Equipe Cadastrada ({professionals.length})</h4>
+
                 <input
                   type="text"
-                  value={newProfession}
-                  onChange={(e) => setNewProfession(e.target.value)}
-                  placeholder="Ex: Enfermagem..."
-                  required
-                  className="sidebar-input no-margin"
-                  disabled={loadingProf}
+                  className="sidebar-input search-pro-input"
+                  placeholder="Buscar por nome ou matrícula..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
                 />
-                <button type="submit" disabled={loadingProf} className="btn-save btn-add-cargo">
-                  {loadingProf ? '⏳' : <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"><path d="M24 10h-10v-10h-4v10h-10v4h10v10h4v-10h10z" /></svg>}
-                </button>
-              </div>
-              {feedbackProf.message && (
-                <div className={`feedback-toast ${feedbackProf.type}`}>
-                  {feedbackProf.message}
-                </div>
-              )}
-            </form>
-            <div className="pro-list-container cargo-list-container">
-              <h4 className="pro-list-title">Cargos Cadastrados ({professions.length})</h4>
-              <div className="pro-list">
-                {professions.length === 0 ? (
-                  <p className="empty-msg">Nenhum cargo criado.</p>
-                ) : (
-                  professions.map(p => {
-                    const profsInCargo = professionals.filter(pro => pro.professionId === p.id);
-                    const count = profsInCargo.length;
-                    const isExpanded = expandedCargoId === p.id;
-                    return (
-                      <div key={p.id} className="cargo-accordion-wrapper">
-                        <div className={`pro-item cargo-item ${isExpanded ? 'expanded' : ''}`}>
-                          <div className="cargo-item-main" onClick={() => setExpandedCargoId(isExpanded ? null : p.id)} style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                            <span className="cargo-name">
-                              {p.name}
-                              <span className="cargo-arrow">{isExpanded ? '▲' : '▼'}</span>
+
+                <div className="pro-list">
+                  {filteredAndSortedProfessionals.length === 0 ? (
+                    <p className="empty-msg">Nenhum profissional encontrado para "{searchTerm}"</p>
+                  ) : (
+                    filteredAndSortedProfessionals.map(pro => (
+                      <div key={pro.id} className="pro-item">
+                        <div className="pro-info">
+                          <div className="pro-color" style={{ backgroundColor: pro.baseColor }}></div>
+                          <div className="pro-info-text">
+                            <span className="pro-name">
+                              {pro.name}
+                              {pro.isSupervisor && <span title="Supervisor" className="pro-supervisor-icon">
+                                <svg clipRule="evenodd" fillRule="evenodd" strokeLinejoin="round" strokeMiterlimit={2} viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                                  <path d="m11.322 2.923c.126-.259.39-.423.678-.423.289 0 .552.164.678.423.974 1.998 2.65 5.44 2.65 5.44s3.811.524 6.022.829c.403.055.65.396.65.747 0 .19-.072.383-.231.536-1.61 1.538-4.382 4.191-4.382 4.191s.677 3.767 1.069 5.952c.083.462-.275.882-.742.882-.122 0-.244-.029-.355-.089-1.968-1.048-5.359-2.851-5.359-2.851s-3.391 1.803-5.359 2.851c-.111.06-.234.089-.356.089-.465 0-.825-.421-.741-.882.393-2.185 1.07-5.952 1.07-5.952s-2.773-2.653-4.382-4.191c-.16-.153-.232-.346-.232-.535 0-.352.249-.694.651-.748 2.211-.305 6.021-.829 6.021-.829s1.677-3.442 2.65-5.44z" fillRule="nonzero" />
+                                </svg>
+                              </span>}
                             </span>
-                            <span className={`cargo-badge ${count > 0 ? 'active' : ''}`} title={`${count} profissional(is) neste cargo`}>
-                              {count}
-                            </span>
+                            <span className="pro-matricula">Mat: {pro.matricula || 'S/N'}</span>
                           </div>
-                          <button
-                            onClick={(e) => { e.stopPropagation(); requestDeleteCargo(p, count); }}
-                            className="btn-icon delete btn-delete-cargo"
-                            title="Excluir Cargo"
-                          >
+                        </div>
+                        <div className="pro-actions">
+                          <button onClick={() => handleEditClick(pro)} className="btn-icon edit" title="Editar">
+                            <svg clipRule="evenodd" fillRule="evenodd" strokeLinejoin="round" strokeMiterlimit={2} viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                              <path d="m11.239 15.533c-1.045 3.004-1.238 3.451-1.238 3.84 0 .441.385.627.627.627.272 0 1.108-.301 3.829-1.249zm.888-.888 3.22 3.22 6.408-6.401c.163-.163.245-.376.245-.591 0-.213-.082-.427-.245-.591-.58-.579-1.458-1.457-2.039-2.036-.163-.163-.377-.245-.591-.245-.213 0-.428.082-.592.245zm-3.127-.895c0-.402-.356-.75-.75-.75-2.561 0-2.939 0-5.5 0-.394 0-.75.348-.75.75s.356.75.75.75h5.5c.394 0 .75-.348.75-.75zm5-3c0-.402-.356-.75-.75-.75-2.561 0-7.939 0-10.5 0-.394 0-.75.348-.75.75s.356.75.75.75h10.5c.394 0 .75-.348.75-.75zm0-3c0-.402-.356-.75-.75-.75-2.561 0-7.939 0-10.5 0-.394 0-.75.348-.75.75s.356.75.75.75h10.5c.394 0 .75-.348.75-.75zm0-3c0-.402-.356-.75-.75-.75-2.561 0-7.939 0-10.5 0-.394 0-.75.348-.75.75s.356.75.75.75h10.5c.394 0 .75-.348.75-.75z" fillRule="nonzero" />
+                            </svg>
+                          </button>
+                          <button onClick={() => requestDelete(pro)} className="btn-icon delete" title="Excluir">
                             <svg clipRule="evenodd" fillRule="evenodd" strokeLinejoin="round" strokeMiterlimit={2} viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
                               <path d="m20.015 6.506h-16v14.423c0 .591.448 1.071 1 1.071h14c.552 0 1-.48 1-1.071 0-3.905 0-14.423 0-14.423zm-5.75 2.494c.414 0 .75.336.75.75v8.5c0 .414-.336.75-.75.75s-.75-.336-.75-.75v-8.5c0-.414.336-.75.75-.75zm-4.5 0c.414 0 .75.336.75.75v8.5c0 .414-.336.75-.75.75s-.75-.336-.75-.75v-8.5c0-.414.336-.75.75-.75zm-.75-5v-1c0-.535.474-1 1-1h4c.526 0 1 .465 1 1v1h5.254c.412 0 .746.335.746.747s-.334.747-.746.747h-16.507c-.413 0-.747-.335-.747-.747s.334-.747.747-.747zm4.5 0v-.5h-3v.5z" fillRule="nonzero" />
                             </svg>
                           </button>
                         </div>
-                        {isExpanded && (
-                          <div className="cargo-expanded-content">
-                            {count === 0 ? (
-                              <span className="cargo-empty-msg">Nenhum funcionário neste cargo.</span>
-                            ) : (
-                              <ul className="cargo-pro-list">
-                                {profsInCargo.map(pro => (
-                                  <li key={pro.id} className="cargo-pro-item">
-                                    <span className="cargo-pro-color" style={{ backgroundColor: pro.baseColor }}></span>
-                                    <span>
-                                      {pro.name}
-                                      <span className="cargo-pro-shift">
-                                        ({pro.shift === 'dia_todo' ? 'Dia Todo' : pro.shift})
-                                      </span>
-                                    </span>
-                                  </li>
-                                ))}
-                              </ul>
-                            )}
-                          </div>
-                        )}
                       </div>
-                    );
-                  })
-                )}
+                    ))
+                  )}
+                </div>
               </div>
             </div>
-            <button onClick={handleLogout} className="btn-logout mt-auto">
-              Sair do Sistema
-            </button>
+          </div>
+
+          <div className="sidebar-column">
+
+            <h3 className="sidebar-title">
+              <span>Gerenciar Cargos</span>
+            </h3>
+            <div className="column-scroll-content">
+              <form onSubmit={handleAddProfession} className="sidebar-form">
+                <label>Nome do Cargo</label>
+                <div className="cargo-input-group">
+                  <input
+                    type="text"
+                    value={newProfession}
+                    onChange={(e) => setNewProfession(e.target.value)}
+                    placeholder="Ex: Enfermagem..."
+                    required
+                    className="sidebar-input no-margin"
+                    disabled={loadingProf}
+                  />
+                  <button type="submit" disabled={loadingProf} className="btn-save btn-add-cargo">
+                    {loadingProf ? '⏳' : <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"><path d="M24 10h-10v-10h-4v10h-10v4h10v10h4v-10h10z" /></svg>}
+                  </button>
+                </div>
+                {feedbackProf.message && (
+                  <div className={`feedback-toast ${feedbackProf.type}`}>
+                    {feedbackProf.message}
+                  </div>
+                )}
+              </form>
+
+              <div className="pro-list-container cargo-list-container">
+                <h4 className="pro-list-title">Cargos Cadastrados ({professions.length})</h4>
+                <div className="pro-list">
+                  {professions.length === 0 ? (
+                    <p className="empty-msg">Nenhum cargo criado.</p>
+                  ) : (
+                    professions.map(p => {
+                      const profsInCargo = professionals.filter(pro => pro.professionId === p.id);
+                      const count = profsInCargo.length;
+                      const isExpanded = expandedCargoId === p.id;
+                      return (
+                        <div key={p.id} className="cargo-accordion-wrapper">
+                          <div className={`pro-item cargo-item ${isExpanded ? 'expanded' : ''}`}>
+                            <div className="cargo-item-main" onClick={() => setExpandedCargoId(isExpanded ? null : p.id)} style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                              <span className="cargo-name">
+                                {p.name}
+                                <span className="cargo-arrow">{isExpanded ? '▲' : '▼'}</span>
+                              </span>
+                              <span className={`cargo-badge ${count > 0 ? 'active' : ''}`} title={`${count} profissional(is) neste cargo`}>
+                                {count}
+                              </span>
+                            </div>
+                            <button
+                              onClick={(e) => { e.stopPropagation(); requestDeleteCargo(p, count); }}
+                              className="btn-icon delete btn-delete-cargo"
+                              title="Excluir Cargo"
+                            >
+                              <svg clipRule="evenodd" fillRule="evenodd" strokeLinejoin="round" strokeMiterlimit={2} viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                                <path d="m20.015 6.506h-16v14.423c0 .591.448 1.071 1 1.071h14c.552 0 1-.48 1-1.071 0-3.905 0-14.423 0-14.423zm-5.75 2.494c.414 0 .75.336.75.75v8.5c0 .414-.336.75-.75.75s-.75-.336-.75-.75v-8.5c0-.414.336-.75.75-.75zm-4.5 0c.414 0 .75.336.75.75v8.5c0 .414-.336.75-.75.75s-.75-.336-.75-.75v-8.5c0-.414.336-.75.75-.75zm-.75-5v-1c0-.535.474-1 1-1h4c.526 0 1 .465 1 1v1h5.254c.412 0 .746.335.746.747s-.334.747-.746.747h-16.507c-.413 0-.747-.335-.747-.747s.334-.747.747-.747zm4.5 0v-.5h-3v.5z" fillRule="nonzero" />
+                              </svg>
+                            </button>
+                          </div>
+                          {isExpanded && (
+                            <div className="cargo-expanded-content">
+                              {count === 0 ? (
+                                <span className="cargo-empty-msg">Nenhum funcionário neste cargo.</span>
+                              ) : (
+                                <ul className="cargo-pro-list">
+                                  {profsInCargo.map(pro => (
+                                    <li key={pro.id} className="cargo-pro-item">
+                                      <span className="cargo-pro-color" style={{ backgroundColor: pro.baseColor }}></span>
+                                      <span>
+                                        {pro.name}
+                                        <span className="cargo-pro-shift">
+                                          ({pro.shift === 'dia_todo' ? 'Dia Todo' : pro.shift})
+                                        </span>
+                                      </span>
+                                    </li>
+                                  ))}
+                                </ul>
+                              )}
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })
+                  )}
+                </div>
+              </div>
+            </div>
+            <div className="sidebar-column-footer">
+              <button onClick={handleLogout} className="btn-logout">
+                Sair do Sistema
+              </button>
+            </div>
+
           </div>
         </div>
       </div>

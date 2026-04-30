@@ -16,7 +16,13 @@
   pointer-events: auto;
 }
 
+.sidebar-column-footer {
+  display: flex;
+  justify-content: right;
+}
+
 .sidebar-container {
+  user-select: none;
   position: fixed;
   top: 20px;
   left: -1300px;
