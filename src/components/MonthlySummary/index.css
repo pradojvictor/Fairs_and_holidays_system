@@ -399,6 +399,29 @@
   font-weight: bold;
 }
 
+/* Cores do botão no formulário Modal */
+.type-option.active.atestado {
+  background-color: #f3e8ff;
+  border-color: #a855f7;
+  color: #7e22ce;
+}
+
+/* Cores das etiquetas no resumo e na lista pública */
+.type-tag.atestado, .admin-tag.atestado {
+  background-color: #f3e8ff;
+  color: #7e22ce;
+}
+
+/* Cor da caixinha de indicadores do Resumo Mensal */
+.indicator-box.atestados {
+  background-color: #f3e8ff;
+  border: 1px solid #d8b4fe;
+}
+
+.indicator-box.atestados .ind-number {
+  color: #7e22ce;
+}
+
 @media (max-width: 768px) {
   .summary-container {
     grid-template-columns: 1fr;

@@ -72,7 +72,9 @@ export default function ProfessionalList({ professionals = [], events = [] }) {
                               <li key={event.id} className="detail-item">
                                 <span className={`status-dot ${isPast ? 'past' : 'future'}`} title={isPast ? "Já ocorreu" : "Programado"} />
                                 <div className="detail-text">
-                                  <span className="detail-title">{event.type}</span>
+                                  <span className="detail-title">
+                                    {event.type === 'ferias' ? 'Férias' : event.type === 'folga' ? 'Folga' : 'Atestado'}
+                                  </span>
                                   <span className="detail-dates">
                                     De {formatDate(event.startDate)} até {formatDate(event.endDate)}
                                   </span>

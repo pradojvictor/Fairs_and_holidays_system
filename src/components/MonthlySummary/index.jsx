@@ -38,6 +38,7 @@ export default function MonthlySummary({ professionals = [], events = [], profes
 
   const feriasCount = currentMonthEvents.filter(e => e.type === 'ferias').length;
   const folgasCount = currentMonthEvents.filter(e => e.type === 'folga').length;
+  const atestadosCount = currentMonthEvents.filter(e => e.type === 'atestado').length;
 
   const blanks = Array.from({ length: firstDayIndex }, (_, i) => i);
   const days = Array.from({ length: daysInMonth }, (_, i) => i + 1);
@@ -75,11 +76,13 @@ export default function MonthlySummary({ professionals = [], events = [], profes
       if (turnoFormatado === 'tarde') turnoFormatado = 'Tarde';
 
       const key = `${cargo} | Turno: ${turnoFormatado}`;
-      if (!report[key]) report[key] = { total: 0, ferias: 0, folgas: 0 };
+      // Atualize a linha abaixo para ter "atestados: 0"
+      if (!report[key]) report[key] = { total: 0, ferias: 0, folgas: 0, atestados: 0 };
 
       report[key].total += 1;
       if (e.type === 'ferias') report[key].ferias += 1;
       if (e.type === 'folga') report[key].folgas += 1;
+      if (e.type === 'atestado') report[key].atestados += 1; // <- ADD ISTO
     });
     return report;
   };
@@ -148,6 +151,11 @@ export default function MonthlySummary({ professionals = [], events = [], profes
               <span className="ind-number">{folgasCount}</span>
               <span className="ind-label">Folgas</span>
             </div>
+            {/* 👇 ADD A CAIXA DO ATESTADO 👇 */}
+            <div className="indicator-box atestados">
+              <span className="ind-number">{atestadosCount}</span>
+              <span className="ind-label">Atestados</span>
+            </div>
           </div>
         </div>
 
@@ -169,7 +177,9 @@ export default function MonthlySummary({ professionals = [], events = [], profes
                       <div className="admin-pro-info">
                         <div className="admin-pro-main">
                           <span className="admin-pro-name">{pro?.name || 'Desconhecido'}</span>
-                          <span className={`admin-tag ${e.type}`}>{e.type === 'ferias' ? 'FÉRIAS' : 'FOLGA'}</span>
+                          <span className={`admin-tag ${e.type}`}>
+                            {e.type === 'ferias' ? 'FÉRIAS' : e.type === 'folga' ? 'FOLGA' : 'ATESTADO'}
+                          </span>
                         </div>
                         <div className="admin-pro-sub">{cargo} • {shift}</div>
                       </div>
@@ -196,7 +206,9 @@ export default function MonthlySummary({ professionals = [], events = [], profes
                       <div className="admin-pro-info">
                         <div className="admin-pro-main">
                           <span className="admin-pro-name">{pro?.name || 'Desconhecido'}</span>
-                          <span className={`admin-tag ${e.type}`}>{e.type === 'ferias' ? 'FÉRIAS' : 'FOLGA'}</span>
+                          <span className={`admin-tag ${e.type}`}>
+                            {e.type === 'ferias' ? 'FÉRIAS' : e.type === 'folga' ? 'FOLGA' : 'ATESTADO'}
+                          </span>
                         </div>
                         <div className="admin-pro-sub" style={{ fontWeight: 'bold', color: '#374151', marginBottom: '2px' }}>
                           {formatPeriod(e.startDate, e.endDate)}
@@ -233,7 +245,7 @@ export default function MonthlySummary({ professionals = [], events = [], profes
                           {data.total} ausência{data.total > 1 ? 's' : ''}
                         </span>
                         <div className="impact-details">
-                          ({data.ferias} Férias, {data.folgas} Folgas)
+                          ({data.ferias} Férias, {data.folgas} Folgas, {data.atestados} Atestados)
                         </div>
                       </div>
                     </div>

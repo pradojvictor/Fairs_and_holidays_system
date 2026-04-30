@@ -24,8 +24,8 @@ export default function EventDetailModal({ isOpen, event, professional, onClose,
 
           <div className="detail-info-group">
             <span className="detail-label">Tipo</span>
-            <span className="detail-value" style={{ color: event.type === 'folga' ? '#ef4444' : professional.baseColor }}>
-              {event.type === 'folga' ? 'Folga' : 'Férias'}
+            <span className="detail-value" style={{ color: event.type === 'folga' ? '#ef4444' : event.type === 'atestado' ? '#7e22ce' : professional.baseColor }}>
+              {event.type === 'ferias' ? 'Férias' : event.type === 'folga' ? 'Folga' : 'Atestado'}
             </span>
           </div>
 

@@ -171,7 +171,7 @@ export default function Dashboard() {
           <button className="btn-menu" onClick={() => setIsSidebarOpen(true)}>☰ Painel Administrativo</button>
           <button className="btn-bank" onClick={() => setIsBankSidebarOpen(true)}>Banco de Férias</button>
           <button className="btn-share" onClick={handleShare}>Compartilhar Link</button>
-          <button className="btn-new-event" onClick={handleOpenNewEvent}>+ Nova Ausência</button>
+          <button className="btn-new-event" onClick={handleOpenNewEvent}>Nova Ausência</button>
         </div>
 
         <div className="header-actions">
@@ -229,7 +229,8 @@ export default function Dashboard() {
                     options={[
                       { value: '', label: 'Todos' },
                       { value: 'ferias', label: 'Apenas Férias' },
-                      { value: 'folga', label: 'Apenas Folgas' }
+                      { value: 'folga', label: 'Apenas Folgas' },
+                      { value: 'atestado', label: 'Apenas Atestados' } // <- ADD ISTO
                     ]}
                     customThemeClass="filter-select"
                   />

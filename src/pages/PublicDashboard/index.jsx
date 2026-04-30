@@ -265,7 +265,7 @@ export default function PublicDashboard() {
                           <div className="pro-info-box">
                             <div className="pro-main-line">
                               <span className="pro-name">{isSuper ? pro.name : "Sua Escala"}</span>
-                              <span className={`type-tag ${ev.type}`}>{ev.type === 'ferias' ? 'FÉRIAS' : 'FOLGA'}</span>
+                              <span className={`type-tag ${ev.type}`}>{ev.type === 'ferias' ? 'FÉRIAS' : ev.type === 'folga' ? 'FOLGA' : 'ATESTADO'}</span>
                             </div>
                             <div className="pro-sub-line">
                               {cargo} • {pro.shift === 'dia_todo' ? 'Dia Todo' : pro.shift}
@@ -292,7 +292,7 @@ export default function PublicDashboard() {
                       <div className="pro-info-box">
                         <div className="pro-main-line">
                           <span className="pro-name">{isSuper ? pro.name : "Ausência Agendada"}</span>
-                          <span className={`type-tag ${ev.type}`}>{ev.type === 'ferias' ? 'FÉRIAS' : 'FOLGA'}</span>
+                          <span className={`type-tag ${ev.type}`}>{ev.type === 'ferias' ? 'FÉRIAS' : ev.type === 'folga' ? 'FOLGA' : 'ATESTADO'}</span>
                         </div>
                         <div className="pro-sub-line bold-dark">
                           {formatPeriod(ev.startDate, ev.endDate)}
@@ -319,7 +319,7 @@ export default function PublicDashboard() {
                       <div className="pro-info-box">
                         <div className="pro-main-line">
                           <span className="pro-name">{isSuper ? pro.name : "Ausência"}</span>
-                          <span className={`type-tag ${ev.type}`}>{ev.type === 'ferias' ? 'FÉRIAS' : 'FOLGA'}</span>
+                          <span className={`type-tag ${ev.type}`}>{ev.type === 'ferias' ? 'FÉRIAS' : ev.type === 'folga' ? 'FOLGA' : 'ATESTADO'}</span>
                         </div>
                         <div className="pro-sub-line bold-dark">
                           {formatAnnualPeriod(ev.startDate, ev.endDate)}

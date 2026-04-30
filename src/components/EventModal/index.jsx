@@ -8,11 +8,13 @@ export default function EventModal({ isOpen, onClose, professionals = [], events
   const [type, setType] = useState('ferias');
   const [startDate, setStartDate] = useState('');
   const [endDate, setEndDate] = useState('');
-  const [selectedLoteYear, setSelectedLoteYear] = useState('');
+  const [selectedLoteYear, setSelectedLoteYear] = useState(''); 
   const [calculatedDays, setCalculatedDays] = useState(0);
   const [loading, setLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
   const [conflictWarning, setConflictWarning] = useState(null);
+  // 👇 NOVO: O motivo volta, mas será obrigatório apenas para atestados
+  const [reason, setReason] = useState('');
 
   useEffect(() => {
     if (startDate && endDate) {
@@ -33,12 +35,14 @@ export default function EventModal({ isOpen, onClose, professionals = [], events
       setStartDate(eventToEdit.startDate);
       setEndDate(eventToEdit.endDate);
       setSelectedLoteYear(eventToEdit.loteYear || '');
+      setReason(eventToEdit.reason || '');
     } else {
       setProfId('');
       setType('ferias');
       setStartDate('');
       setEndDate('');
       setSelectedLoteYear('');
+      setReason('');
     }
     setConflictWarning(null);
     setErrorMsg('');
@@ -70,7 +74,8 @@ export default function EventModal({ isOpen, onClose, professionals = [], events
   let isSaldoInsuficiente = false;
   let mensagemSaldo = '';
 
-  if (profId && calculatedDays > 0) {
+  // 👇 MÁGICA: Só verifica saldo se NÃO for atestado
+  if (profId && calculatedDays > 0 && type !== 'atestado') {
     if (type === 'ferias') {
       if (!selectedLoteYear) {
         isSaldoInsuficiente = true;
@@ -80,29 +85,29 @@ export default function EventModal({ isOpen, onClose, professionals = [], events
 
         let saldoReal = saldoDoLote;
         if (eventToEdit && eventToEdit.type === 'ferias' && eventToEdit.loteYear === selectedLoteYear) {
-          const startE = new Date(eventToEdit.startDate);
-          const endE = new Date(eventToEdit.endDate);
-          const diffOriginal = Math.ceil(Math.abs(endE - startE) / (1000 * 60 * 60 * 24)) + 1;
-          saldoReal += diffOriginal;
+            const startE = new Date(eventToEdit.startDate);
+            const endE = new Date(eventToEdit.endDate);
+            const diffOriginal = Math.ceil(Math.abs(endE - startE) / (1000 * 60 * 60 * 24)) + 1;
+            saldoReal += diffOriginal;
         }
 
         if (calculatedDays > saldoReal) {
           isSaldoInsuficiente = true;
-          mensagemSaldo = `SALDO INSUFICIENTE: O lote ${selectedLoteYear} tem apenas ${saldoReal} dia(s). Reduza o período ou escolha outro lote. (Não misture lotes!)`;
+          mensagemSaldo = `SALDO INSUFICIENTE: O lote ${selectedLoteYear} tem apenas ${saldoReal} dia(s).`;
         }
       }
     } else if (type === 'folga') {
-      let saldoReal = saldoFolgasAtual;
-      if (eventToEdit && eventToEdit.type === 'folga') {
-        const startE = new Date(eventToEdit.startDate);
-        const endE = new Date(eventToEdit.endDate);
-        const diffOriginal = Math.ceil(Math.abs(endE - startE) / (1000 * 60 * 60 * 24)) + 1;
-        saldoReal += diffOriginal;
-      }
-      if (calculatedDays > saldoReal) {
-        isSaldoInsuficiente = true;
-        mensagemSaldo = `SALDO INSUFICIENTE: O funcionário tem apenas ${saldoReal} folga(s) registrada(s).`;
-      }
+       let saldoReal = saldoFolgasAtual;
+       if (eventToEdit && eventToEdit.type === 'folga') {
+          const startE = new Date(eventToEdit.startDate);
+          const endE = new Date(eventToEdit.endDate);
+          const diffOriginal = Math.ceil(Math.abs(endE - startE) / (1000 * 60 * 60 * 24)) + 1;
+          saldoReal += diffOriginal;
+       }
+       if (calculatedDays > saldoReal) {
+          isSaldoInsuficiente = true;
+          mensagemSaldo = `SALDO INSUFICIENTE: O funcionário tem apenas ${saldoReal} folga(s) registrada(s).`;
+       }
     }
   }
 
@@ -113,6 +118,9 @@ export default function EventModal({ isOpen, onClose, professionals = [], events
     if (!profId) { setErrorMsg('Selecione um profissional.'); return; }
     if (startDate > endDate) { setErrorMsg('A data final não pode ser antes da inicial.'); return; }
     if (isSaldoInsuficiente) { setErrorMsg(mensagemSaldo); return; }
+    
+    // 👇 Exige motivo obrigatório para o atestado
+    if (type === 'atestado' && !reason.trim()) { setErrorMsg('Para lançar um atestado, o MOTIVO (CID, Médico, etc) é obrigatório.'); return; }
 
     const hasPersonalConflict = events.some(existingEvent => {
       if (existingEvent.professionalId !== profId) return false;
@@ -122,7 +130,7 @@ export default function EventModal({ isOpen, onClose, professionals = [], events
 
     if (hasPersonalConflict) {
       setErrorMsg('Atenção: Este funcionário já possui uma ausência marcada neste período!');
-      return;
+      return; 
     }
 
     if (!forceSave) {
@@ -130,19 +138,19 @@ export default function EventModal({ isOpen, onClose, professionals = [], events
       if (currentCargoId) {
         const conflictingEvent = events.find(ev => {
           if (eventToEdit && ev.id === eventToEdit.id) return false;
-          if (String(ev.professionalId) === String(profId)) return false;
+          if (String(ev.professionalId) === String(profId)) return false; 
           const isOverlapping = (startDate <= ev.endDate) && (endDate >= ev.startDate);
           if (isOverlapping) {
-            const otherPro = professionals.find(p => String(p.id) === String(ev.professionalId));
-            return otherPro?.professionId === currentCargoId;
+             const otherPro = professionals.find(p => String(p.id) === String(ev.professionalId));
+             return otherPro?.professionId === currentCargoId;
           }
           return false;
         });
 
         if (conflictingEvent) {
-          const outroPro = professionals.find(p => String(p.id) === String(conflictingEvent.professionalId));
-          setConflictWarning(`Aviso: ${outroPro.name} (mesmo cargo) já possui ${conflictingEvent.type} neste período. Deseja confirmar mesmo assim?`);
-          return;
+           const outroPro = professionals.find(p => String(p.id) === String(conflictingEvent.professionalId));
+           setConflictWarning(`Aviso: ${outroPro.name} (mesmo cargo) já possui ${conflictingEvent.type} neste período. Deseja confirmar mesmo assim?`);
+           return; 
         }
       }
     }
@@ -153,15 +161,15 @@ export default function EventModal({ isOpen, onClose, professionals = [], events
     try {
       const currentData = await fetchGistData();
       const eventId = eventToEdit ? eventToEdit.id : `evt_${Date.now()}`;
-
+      
       const savedEvent = {
         id: eventId,
         professionalId: profId,
         type: type,
-        reason: '',
+        reason: type === 'atestado' ? reason.trim() : '', // Só salva o motivo se for atestado
         startDate: startDate,
         endDate: endDate,
-        loteYear: type === 'ferias' ? selectedLoteYear : null
+        loteYear: type === 'ferias' ? selectedLoteYear : null 
       };
 
       if (eventToEdit) {
@@ -170,8 +178,9 @@ export default function EventModal({ isOpen, onClose, professionals = [], events
         currentData.events = [...(currentData.events || []), savedEvent];
       }
 
+      // 👇 MÁGICA: Se for atestado, a gente pula o desconto do banco!
       const updatedProfessionals = currentData.professionals.map(pro => {
-        if (pro.id === profId) {
+        if (pro.id === profId && type !== 'atestado') {
           let updatedFolgas = Array.isArray(pro.bancoFolgas) ? [...pro.bancoFolgas] : [];
           let updatedFerias = Array.isArray(pro.bancoFerias) ? [...pro.bancoFerias] : [];
 
@@ -182,11 +191,10 @@ export default function EventModal({ isOpen, onClose, professionals = [], events
               id: `log_${eventId}`,
               type: 'saida',
               days: calculatedDays,
-              reason: `Uso no período: ${saidaFormatada}`,
+              reason: `Uso no período: ${saidaFormatada}`, 
               createdAt: new Date().toLocaleDateString('pt-BR'),
               targetDate: saidaFormatada
             };
-
             updatedFolgas = updatedFolgas.filter(f => f.id !== `log_${eventId}`);
             updatedFolgas.push(logFolga);
 
@@ -206,6 +214,7 @@ export default function EventModal({ isOpen, onClose, professionals = [], events
         }
         return pro;
       });
+
       currentData.professionals = updatedProfessionals;
       await updateGistData(currentData);
       if (onDataUpdated) onDataUpdated();
@@ -218,9 +227,7 @@ export default function EventModal({ isOpen, onClose, professionals = [], events
     }
   };
 
-  const sortedProfessionals = [...professionals].sort((a, b) =>
-    a.name.localeCompare(b.name)
-  );
+  const sortedProfessionals = [...professionals].sort((a, b) => a.name.localeCompare(b.name));
 
   return (
     <div className="event-modal-overlay">
@@ -230,14 +237,12 @@ export default function EventModal({ isOpen, onClose, professionals = [], events
           <button onClick={onClose} className="btn-close-modal">&times;</button>
         </div>
         <form onSubmit={handleSubmit}>
-
+          
           <div className="form-group">
             <label>Profissional</label>
-            <select className="form-select list-Prof" value={profId} onChange={(e) => setProfId(e.target.value)} disabled={eventToEdit}>
+            <select className="form-select" value={profId} onChange={(e) => setProfId(e.target.value)} disabled={eventToEdit}>
               <option value="">-- Selecione o funcionário --</option>
-              {sortedProfessionals.map(pro => (
-                <option key={pro.id} value={pro.id}>{pro.name}</option>
-              ))}
+              {sortedProfessionals.map(pro => <option key={pro.id} value={pro.id}>{pro.name}</option>)}
             </select>
           </div>
 
@@ -247,6 +252,8 @@ export default function EventModal({ isOpen, onClose, professionals = [], events
               <div className="type-selector">
                 <div className={`type-option ferias ${type === 'ferias' ? 'active' : ''}`} onClick={() => setType('ferias')}>Férias</div>
                 <div className={`type-option folga ${type === 'folga' ? 'active' : ''}`} onClick={() => setType('folga')}>Folga</div>
+                {/* 👇 O NOVO BOTÃO DE ATESTADO FICA AQUI 👇 */}
+                <div className={`type-option atestado ${type === 'atestado' ? 'active' : ''}`} onClick={() => setType('atestado')}>Atestado</div>
               </div>
             </div>
           )}
@@ -260,9 +267,9 @@ export default function EventModal({ isOpen, onClose, professionals = [], events
                 <select className="form-select" value={selectedLoteYear} onChange={(e) => setSelectedLoteYear(e.target.value)}>
                   <option value="">-- Selecione o Ano --</option>
                   {Object.values(saldosAtuais).map(saldo => (
-                    <option key={saldo.year} value={saldo.year} disabled={saldo.days <= 0 && (!eventToEdit || eventToEdit.loteYear !== saldo.year)}>
-                      {saldo.year} - Restam {saldo.days} dias ({saldo.category})
-                    </option>
+                     <option key={saldo.year} value={saldo.year} disabled={saldo.days <= 0 && (!eventToEdit || eventToEdit.loteYear !== saldo.year)}>
+                       {saldo.year} - Restam {saldo.days} dias ({saldo.category})
+                     </option>
                   ))}
                 </select>
               )}
@@ -270,10 +277,10 @@ export default function EventModal({ isOpen, onClose, professionals = [], events
           )}
 
           {profId && type === 'folga' && (
-            <div className="form-group" style={{ backgroundColor: '#f9fafb', padding: '10px', borderRadius: '6px', border: '1px solid #d1d5db', display: 'flex', justifyContent: 'space-between' }}>
-              <span style={{ fontSize: '0.85rem', fontWeight: 'bold' }}>Saldo Total de Folgas:</span>
-              <strong style={{ color: saldoFolgasAtual > 0 ? '#10b981' : '#ef4444' }}>{saldoFolgasAtual} dias</strong>
-            </div>
+             <div className="form-group" style={{ backgroundColor: '#f9fafb', padding: '10px', borderRadius: '6px', border: '1px solid #d1d5db', display: 'flex', justifyContent: 'space-between' }}>
+                <span style={{ fontSize: '0.85rem', fontWeight: 'bold' }}>Saldo Total de Folgas:</span>
+                <strong style={{ color: saldoFolgasAtual > 0 ? '#10b981' : '#ef4444' }}>{saldoFolgasAtual} dias</strong>
+             </div>
           )}
 
           {profId && (
@@ -291,11 +298,20 @@ export default function EventModal({ isOpen, onClose, professionals = [], events
 
           {calculatedDays > 0 && (
             <div style={{ textAlign: 'center', marginBottom: '1rem', fontSize: '0.9rem', fontWeight: 'bold' }}>
-              Você está agendando e descontando: <span style={{ color: 'orange', fontSize: '1.1rem' }}>{calculatedDays} dia(s)</span>
+              Você está agendando {type !== 'atestado' && 'e descontando'}: <span style={{ color: 'orange', fontSize: '1.1rem' }}>{calculatedDays} dia(s)</span>
             </div>
           )}
 
+          {/* 👇 EXIBE O CAMPO DE MOTIVO APENAS PARA ATESTADO 👇 */}
+          {profId && type === 'atestado' && (
+             <div className="form-group">
+                <label>Motivo do Atestado (Obrigatório)</label>
+                <input type="text" className="form-input" required placeholder="Ex: Retorno Médico, CID J01..." value={reason} onChange={(e) => setReason(e.target.value)} />
+             </div>
+          )}
+
           {errorMsg && <p className="error-msg-modal" style={{ color: '#dc2626', backgroundColor: '#fee2e2', padding: '10px', borderRadius: '6px', fontSize: '0.85rem' }}>{errorMsg}</p>}
+          
           {conflictWarning && (
             <div className="conflict-warning-box">
               <p>⚠️ {conflictWarning}</p>
@@ -308,7 +324,7 @@ export default function EventModal({ isOpen, onClose, professionals = [], events
 
           {!conflictWarning && (
             <button type="submit" className="btn-submit-event" disabled={loading || !profId || isSaldoInsuficiente}>
-              {loading ? 'Salvando...' : (eventToEdit ? 'Atualizar e Descontar' : 'Confirmar e Descontar')}
+              {loading ? 'Salvando...' : (eventToEdit ? (type === 'atestado' ? 'Atualizar Atestado' : 'Atualizar e Descontar') : (type === 'atestado' ? 'Salvar Atestado' : 'Confirmar e Descontar'))}
             </button>
           )}
         </form>
