@@ -10,8 +10,11 @@ export default function AnnualCalendar({ professionals = [], events = [], onEven
   const currentYear = new Date().getFullYear();
   const [holidays, setHolidays] = useState([]);
   const [isExpanded, setIsExpanded] = useState(false);
-  const sliderRef = useRef(null);
   const [isLegendExpanded, setIsLegendExpanded] = useState(false);
+  const sliderRef = useRef(null);
+  const [isDragging, setIsDragging] = useState(false);
+  const [startX, setStartX] = useState(0);
+  const [scrollLeft, setScrollLeft] = useState(0);
 
   useEffect(() => {
     const fetchHolidays = async () => {
@@ -62,6 +65,29 @@ export default function AnnualCalendar({ professionals = [], events = [], onEven
     return holidays.find(h => h.date === dateString);
   };
 
+  const handleMouseDown = (e) => {
+    if (isExpanded) return;
+    setIsDragging(true);
+    setStartX(e.pageX - sliderRef.current.offsetLeft);
+    setScrollLeft(sliderRef.current.scrollLeft);
+  };
+
+  const handleMouseLeave = () => {
+    setIsDragging(false);
+  };
+
+  const handleMouseUp = () => {
+    setIsDragging(false);
+  };
+
+  const handleMouseMove = (e) => {
+    if (!isDragging || isExpanded) return;
+    e.preventDefault();
+    const x = e.pageX - sliderRef.current.offsetLeft;
+    const walk = (x - startX) * 1.5;
+    sliderRef.current.scrollLeft = scrollLeft - walk;
+  };
+
   return (
     <div className="calendar-container">
 
@@ -72,7 +98,14 @@ export default function AnnualCalendar({ professionals = [], events = [], onEven
         </button>
       </div>
 
-      <div className={`months-wrapper ${isExpanded ? 'expanded' : 'slider'}`} ref={sliderRef}>
+      <div
+        className={`months-wrapper ${isExpanded ? 'expanded' : 'slider'} ${isDragging ? 'dragging' : ''}`}
+        ref={sliderRef}
+        onMouseDown={handleMouseDown}
+        onMouseLeave={handleMouseLeave}
+        onMouseUp={handleMouseUp}
+        onMouseMove={handleMouseMove}
+      >
         {meses.map((nomeMes, indexMes) => {
           const daysCount = getDaysInMonth(indexMes, currentYear);
           const daysArray = Array.from({ length: daysCount }, (_, i) => i + 1);
@@ -139,7 +172,7 @@ export default function AnnualCalendar({ professionals = [], events = [], onEven
       <div className={`legend-drawer-wrapper ${isLegendExpanded ? 'expanded' : ''}`}>
         <div className="legend-drawer-header" onClick={() => setIsLegendExpanded(!isLegendExpanded)}>
           <h4 className="legend-drawer-title">
-            Legenda da Equipe ( {professionals.length} profissionais )
+            🎨 Legenda da Equipe ({professionals.length} profissionais)
           </h4>
           <div className="legend-drawer-actions">
             {!isLegendExpanded && (
