@@ -1,6 +1,7 @@
 // Arquivo: src/components/EventModal.jsx
 import { useEffect, useState } from 'react';
 import { fetchGistData, updateGistData } from '../../services/githubApi';
+import CustomSelect from '../CustomSelect';
 import './index.css';
 
 export default function EventModal({ isOpen, onClose, professionals = [], events = [], onDataUpdated, eventToEdit }) {
@@ -8,13 +9,19 @@ export default function EventModal({ isOpen, onClose, professionals = [], events
   const [type, setType] = useState('ferias');
   const [startDate, setStartDate] = useState('');
   const [endDate, setEndDate] = useState('');
-  const [selectedLoteYear, setSelectedLoteYear] = useState(''); 
+  const [selectedLoteYear, setSelectedLoteYear] = useState('');
   const [calculatedDays, setCalculatedDays] = useState(0);
   const [loading, setLoading] = useState(false);
-  const [errorMsg, setErrorMsg] = useState('');
-  const [successMsg, setSuccessMsg] = useState('');
   const [conflictWarning, setConflictWarning] = useState(null);
   const [reason, setReason] = useState('');
+  const [feedback, setFeedback] = useState({ type: '', message: '' });
+
+  const showFeedback = (type, message, duration = 4000) => {
+    setFeedback({ type, message });
+    if (duration) {
+      setTimeout(() => setFeedback({ type: '', message: '' }), duration);
+    }
+  };
 
   useEffect(() => {
     if (startDate && endDate) {
@@ -45,8 +52,7 @@ export default function EventModal({ isOpen, onClose, professionals = [], events
       setReason('');
     }
     setConflictWarning(null);
-    setErrorMsg('');
-    setSuccessMsg('');
+    setFeedback({ type: '', message: '' });
   }, [eventToEdit, isOpen]);
 
   if (!isOpen) return null;
@@ -85,10 +91,10 @@ export default function EventModal({ isOpen, onClose, professionals = [], events
 
         let saldoReal = saldoDoLote;
         if (eventToEdit && eventToEdit.type === 'ferias' && eventToEdit.loteYear === selectedLoteYear) {
-            const startE = new Date(eventToEdit.startDate);
-            const endE = new Date(eventToEdit.endDate);
-            const diffOriginal = Math.ceil(Math.abs(endE - startE) / (1000 * 60 * 60 * 24)) + 1;
-            saldoReal += diffOriginal;
+          const startE = new Date(eventToEdit.startDate);
+          const endE = new Date(eventToEdit.endDate);
+          const diffOriginal = Math.ceil(Math.abs(endE - startE) / (1000 * 60 * 60 * 24)) + 1;
+          saldoReal += diffOriginal;
         }
 
         if (calculatedDays > saldoReal) {
@@ -97,29 +103,32 @@ export default function EventModal({ isOpen, onClose, professionals = [], events
         }
       }
     } else if (type === 'folga') {
-       let saldoReal = saldoFolgasAtual;
-       if (eventToEdit && eventToEdit.type === 'folga') {
-          const startE = new Date(eventToEdit.startDate);
-          const endE = new Date(eventToEdit.endDate);
-          const diffOriginal = Math.ceil(Math.abs(endE - startE) / (1000 * 60 * 60 * 24)) + 1;
-          saldoReal += diffOriginal;
-       }
-       if (calculatedDays > saldoReal) {
-          isSaldoInsuficiente = true;
-          mensagemSaldo = `SALDO INSUFICIENTE: O funcionário tem apenas ${saldoReal} folga(s) registrada(s).`;
-       }
+      let saldoReal = saldoFolgasAtual;
+      if (eventToEdit && eventToEdit.type === 'folga') {
+        const startE = new Date(eventToEdit.startDate);
+        const endE = new Date(eventToEdit.endDate);
+        const diffOriginal = Math.ceil(Math.abs(endE - startE) / (1000 * 60 * 60 * 24)) + 1;
+        saldoReal += diffOriginal;
+      }
+      if (calculatedDays > saldoReal) {
+        isSaldoInsuficiente = true;
+        mensagemSaldo = `SALDO INSUFICIENTE: O funcionário tem apenas ${saldoReal} folga(s) registrada(s).`;
+      }
     }
   }
 
   const handleSubmit = async (e, forceSave = false) => {
     if (e) e.preventDefault();
-    setErrorMsg('');
+    setFeedback({ type: '', message: '' });
 
-    if (!profId) { setErrorMsg('Selecione um profissional.'); return; }
-    if (startDate > endDate) { setErrorMsg('A data final não pode ser antes da inicial.'); return; }
-    if (isSaldoInsuficiente) { setErrorMsg(mensagemSaldo); return; }
-    
-    if (type === 'atestado' && !reason.trim()) { setErrorMsg('Para lançar um atestado, o MOTIVO (CID, Médico, etc) é obrigatório.'); return; }
+    if (!profId) { showFeedback('error', 'Selecione um profissional.'); return; }
+    if (startDate > endDate) { showFeedback('error', 'A data final não pode ser antes da inicial.'); return; }
+    if (isSaldoInsuficiente) { showFeedback('error', mensagemSaldo); return; }
+
+    if (type === 'atestado' && !reason.trim()) {
+      showFeedback('error', 'Para lançar um atestado, o MOTIVO (CID, Médico, etc) é obrigatório.');
+      return;
+    }
 
     const hasPersonalConflict = events.some(existingEvent => {
       if (existingEvent.professionalId !== profId) return false;
@@ -128,8 +137,8 @@ export default function EventModal({ isOpen, onClose, professionals = [], events
     });
 
     if (hasPersonalConflict) {
-      setErrorMsg('Atenção: Este funcionário já possui uma ausência marcada neste período!');
-      return; 
+      showFeedback('error', 'Atenção: Este funcionário já possui uma ausência marcada neste período!');
+      return;
     }
 
     if (!forceSave) {
@@ -137,19 +146,19 @@ export default function EventModal({ isOpen, onClose, professionals = [], events
       if (currentCargoId) {
         const conflictingEvent = events.find(ev => {
           if (eventToEdit && ev.id === eventToEdit.id) return false;
-          if (String(ev.professionalId) === String(profId)) return false; 
+          if (String(ev.professionalId) === String(profId)) return false;
           const isOverlapping = (startDate <= ev.endDate) && (endDate >= ev.startDate);
           if (isOverlapping) {
-             const otherPro = professionals.find(p => String(p.id) === String(ev.professionalId));
-             return otherPro?.professionId === currentCargoId;
+            const otherPro = professionals.find(p => String(p.id) === String(ev.professionalId));
+            return otherPro?.professionId === currentCargoId;
           }
           return false;
         });
 
         if (conflictingEvent) {
-           const outroPro = professionals.find(p => String(p.id) === String(conflictingEvent.professionalId));
-           setConflictWarning(`Aviso: ${outroPro.name} (mesmo cargo) já possui ${conflictingEvent.type} neste período. Deseja confirmar mesmo assim?`);
-           return; 
+          const outroPro = professionals.find(p => String(p.id) === String(conflictingEvent.professionalId));
+          setConflictWarning(`Aviso: ${outroPro.name} (mesmo cargo) já possui ${conflictingEvent.type} neste período. Deseja confirmar mesmo assim?`);
+          return;
         }
       }
     }
@@ -160,7 +169,7 @@ export default function EventModal({ isOpen, onClose, professionals = [], events
     try {
       const currentData = await fetchGistData();
       const eventId = eventToEdit ? eventToEdit.id : `evt_${Date.now()}`;
-      
+
       const savedEvent = {
         id: eventId,
         professionalId: profId,
@@ -168,7 +177,7 @@ export default function EventModal({ isOpen, onClose, professionals = [], events
         reason: type === 'atestado' ? reason.trim() : '',
         startDate: startDate,
         endDate: endDate,
-        loteYear: type === 'ferias' ? selectedLoteYear : null 
+        loteYear: type === 'ferias' ? selectedLoteYear : null
       };
 
       if (eventToEdit) {
@@ -189,12 +198,13 @@ export default function EventModal({ isOpen, onClose, professionals = [], events
               id: `log_${eventId}`,
               type: 'saida',
               days: calculatedDays,
-              reason: `Uso no período: ${saidaFormatada}`, 
+              reason: `Uso no período: ${saidaFormatada}`,
               createdAt: new Date().toLocaleDateString('pt-BR'),
               targetDate: saidaFormatada
             };
             updatedFolgas = updatedFolgas.filter(f => f.id !== `log_${eventId}`);
             updatedFolgas.push(logFolga);
+
           } else if (type === 'ferias') {
             const logFerias = {
               id: `log_${eventId}`,
@@ -215,24 +225,31 @@ export default function EventModal({ isOpen, onClose, professionals = [], events
       currentData.professionals = updatedProfessionals;
       await updateGistData(currentData);
       if (onDataUpdated) onDataUpdated();
-      setSuccessMsg(type === 'atestado' 
-        ? 'Atestado salvo no histórico com sucesso!' 
-        : 'Ausência registrada e saldo atualizado!');
-        
+
+      showFeedback('success', type === 'atestado'
+        ? 'Atestado salvo no histórico com sucesso!'
+        : 'Ausência registrada e saldo atualizado!', 1500);
+
       setTimeout(() => {
-        setSuccessMsg('');
         onClose();
       }, 1500);
 
     } catch (error) {
       console.error(error);
-      setErrorMsg('Erro ao salvar o agendamento e o saldo.');
+      showFeedback('error', 'Erro ao salvar o agendamento e o saldo.');
     } finally {
       setLoading(false);
     }
   };
 
   const sortedProfessionals = [...professionals].sort((a, b) => a.name.localeCompare(b.name));
+
+  const lotesOptions = Object.values(saldosAtuais)
+    .filter(saldo => saldo.days > 0 || (eventToEdit && eventToEdit.loteYear === saldo.year))
+    .map(saldo => ({
+      value: saldo.year,
+      label: `${saldo.year} - Restam ${saldo.days} dias (${saldo.category})`
+    }));
 
   return (
     <div className="event-modal-overlay">
@@ -242,97 +259,104 @@ export default function EventModal({ isOpen, onClose, professionals = [], events
           <button onClick={onClose} className="btn-close-modal">&times;</button>
         </div>
         <form onSubmit={handleSubmit}>
-          
-          <div className="form-group">
-            <label>Profissional</label>
-            <select className="form-select" value={profId} onChange={(e) => setProfId(e.target.value)} disabled={eventToEdit}>
-              <option value="">-- Selecione o funcionário --</option>
-              {sortedProfessionals.map(pro => <option key={pro.id} value={pro.id}>{pro.name}</option>)}
-            </select>
-          </div>
+          {eventToEdit ? (
+            <div className="form-group">
+              <label>Profissional (Não editável)</label>
+              <input type="text" className="sidebar-input" value={currentPro?.name || ''} disabled />
+            </div>
+          ) : (
+            <CustomSelect
+              label="Profissional"
+              placeholder="-- Selecione o funcionário --"
+              value={profId}
+              onChange={setProfId}
+              options={sortedProfessionals.map(pro => ({ value: pro.id, label: pro.name }))}
+            />
+          )}
 
           {profId && (
-            <div className="form-group">
-              <label>Tipo de Ausência</label>
-              <div className="type-selector">
-                <div className={`type-option ferias ${type === 'ferias' ? 'active' : ''}`} onClick={() => setType('ferias')}>Férias</div>
-                <div className={`type-option folga ${type === 'folga' ? 'active' : ''}`} onClick={() => setType('folga')}>Folga</div>
-                <div className={`type-option atestado ${type === 'atestado' ? 'active' : ''}`} onClick={() => setType('atestado')}>Atestado</div>
-              </div>
-            </div>
+            <CustomSelect
+              label="Tipo de Ausência"
+              value={type}
+              onChange={setType}
+              options={[
+                { value: 'ferias', label: 'Férias' },
+                { value: 'folga', label: 'Folga' },
+                { value: 'atestado', label: 'Atestado' }
+              ]}
+            />
           )}
 
           {profId && type === 'ferias' && (
-            <div className="form-group" style={{ backgroundColor: '#f9fafb', padding: '10px', borderRadius: '6px', border: '1px solid #d1d5db' }}>
-              <label style={{ color: 'orange', fontWeight: 'bold' }}>Selecione o Lote de Férias a Descontar:</label>
-              {Object.keys(saldosAtuais).length === 0 ? (
-                <p style={{ fontSize: '0.85rem', color: '#ef4444' }}>Este funcionário não tem férias lançadas no banco.</p>
+            <div className="bank-card" style={{ padding: '1rem', marginBottom: '1.2rem' }}>
+              <h4 style={{ color: 'orange', marginBottom: '0.8rem', fontSize: '0.9rem' }}>Lote de Férias a Descontar:</h4>
+              {lotesOptions.length === 0 ? (
+                <p style={{ fontSize: '0.85rem', color: '#ef4444', margin: 0 }}>Este funcionário não tem férias no banco.</p>
               ) : (
-                <select className="form-select" value={selectedLoteYear} onChange={(e) => setSelectedLoteYear(e.target.value)}>
-                  <option value="">-- Selecione o Ano --</option>
-                  {Object.values(saldosAtuais).map(saldo => (
-                     <option key={saldo.year} value={saldo.year} disabled={saldo.days <= 0 && (!eventToEdit || eventToEdit.loteYear !== saldo.year)}>
-                       {saldo.year} - Restam {saldo.days} dias ({saldo.category})
-                     </option>
-                  ))}
-                </select>
+                <CustomSelect
+                  value={selectedLoteYear}
+                  onChange={setSelectedLoteYear}
+                  placeholder="-- Selecione o Ano --"
+                  options={lotesOptions}
+                />
               )}
             </div>
           )}
 
           {profId && type === 'folga' && (
-             <div className="form-group" style={{ backgroundColor: '#f9fafb', padding: '10px', borderRadius: '6px', border: '1px solid #d1d5db', display: 'flex', justifyContent: 'space-between' }}>
-                <span style={{ fontSize: '0.85rem', fontWeight: 'bold' }}>Saldo Total de Folgas:</span>
-                <strong style={{ color: saldoFolgasAtual > 0 ? '#10b981' : '#ef4444' }}>{saldoFolgasAtual} dias</strong>
-             </div>
+            <div className="bank-card" style={{ padding: '1rem', marginBottom: '1.2rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <span style={{ fontSize: '0.9rem', color: 'white' }}>Saldo Total de Folgas:</span>
+              <strong style={{ color: saldoFolgasAtual > 0 ? '#10b981' : '#ef4444', fontSize: '1.2rem' }}>{saldoFolgasAtual} dias</strong>
+            </div>
           )}
 
           {profId && (
             <div className="date-row">
               <div className="form-group" style={{ flex: 1 }}>
                 <label>Data de Início</label>
-                <input type="date" className="form-input" required value={startDate} onChange={(e) => setStartDate(e.target.value)} />
+                <input type="date" className="sidebar-input no-margin" required value={startDate} onChange={(e) => setStartDate(e.target.value)} />
               </div>
               <div className="form-group" style={{ flex: 1 }}>
                 <label>Data de Retorno</label>
-                <input type="date" className="form-input" required value={endDate} onChange={(e) => setEndDate(e.target.value)} />
+                <input type="date" className="sidebar-input no-margin" required value={endDate} onChange={(e) => setEndDate(e.target.value)} />
               </div>
             </div>
           )}
 
           {calculatedDays > 0 && (
-            <div style={{ textAlign: 'center', marginBottom: '1rem', fontSize: '0.9rem', fontWeight: 'bold' }}>
-              Você está agendando {type !== 'atestado' && 'e descontando'}: <span style={{ color: 'orange', fontSize: '1.1rem' }}>{calculatedDays} dia(s)</span>
+            <div className="bank-card" style={{ textAlign: 'center', marginBottom: '1.2rem', padding: '1rem' }}>
+              <span style={{ color: '#d1d5db', fontSize: '0.9rem' }}>
+                Agendando {type !== 'atestado' && 'e descontando'}:
+              </span> <strong style={{ color: 'orange', fontSize: '1.2rem' }}>{calculatedDays} dia(s)</strong>
             </div>
           )}
 
           {profId && type === 'atestado' && (
-             <div className="form-group">
-                <label>Motivo do Atestado (Obrigatório)</label>
-                <input type="text" className="form-input" required placeholder="Ex: Retorno Médico, CID J01..." value={reason} onChange={(e) => setReason(e.target.value)} />
-             </div>
-          )}
-
-          {errorMsg && <p className="error-msg-modal" style={{ color: '#dc2626', backgroundColor: '#fee2e2', padding: '10px', borderRadius: '6px', fontSize: '0.85rem' }}>{errorMsg}</p>}
-          {successMsg && (
-            <div style={{ backgroundColor: '#d1fae5', color: '#065f46', border: '1px solid #34d399', padding: '12px', borderRadius: '6px', textAlign: 'center', fontWeight: 'bold', marginBottom: '1rem', animation: 'fadeIn 0.3s ease' }}>
-              {successMsg}
+            <div className="form-group">
+              <label>Motivo do Atestado (Obrigatório)</label>
+              <input type="text" className="sidebar-input" required placeholder="Ex: Retorno Médico, CID J01..." value={reason} onChange={(e) => setReason(e.target.value)} />
             </div>
           )}
 
-          {conflictWarning && !successMsg && (
-            <div className="conflict-warning-box">
-              <p>⚠️ {conflictWarning}</p>
-              <div className="conflict-actions">
-                <button type="button" onClick={() => handleSubmit(null, true)} className="btn-force-save">Salvar mesmo assim</button>
-                <button type="button" onClick={() => setConflictWarning(null)} className="btn-cancel-warning">Revisar</button>
+          {feedback.message && (
+            <div className={`feedback-toast ${feedback.type}`} style={{ marginBottom: '1rem' }}>
+              {feedback.message}
+            </div>
+          )}
+
+          {conflictWarning && !feedback.message && (
+            <div className="bank-card" style={{ borderLeft: '4px solid #f59e0b', padding: '1rem', marginBottom: '1rem' }}>
+              <p style={{ color: '#fcd34d', margin: '0 0 1rem 0', fontSize: '0.9rem' }}>⚠️ {conflictWarning}</p>
+              <div style={{ display: 'flex', gap: '1rem' }}>
+                <button type="button" onClick={() => handleSubmit(null, true)} className="btn-save" style={{ backgroundColor: '#4b5563' }}>Salvar Mesmo Assim</button>
+                <button type="button" onClick={() => setConflictWarning(null)} className="btn-cancel" style={{ margin: 0, color: '#ef4444', borderColor: '#ef4444' }}>Revisar</button>
               </div>
             </div>
           )}
 
-          {!conflictWarning && !successMsg && (
-            <button type="submit" className="btn-submit-event" disabled={loading || !profId || isSaldoInsuficiente}>
-              {loading ? 'Salvando...' : (eventToEdit ? (type === 'atestado' ? 'Atualizar Atestado' : 'Atualizar e Descontar') : (type === 'atestado' ? 'Salvar Atestado' : 'Confirmar e Descontar'))}
+          {!conflictWarning && (
+            <button type="submit" className="btn-save" disabled={loading || !profId || isSaldoInsuficiente} style={{ marginTop: '1rem' }}>
+              {loading ? 'Processando...' : (eventToEdit ? (type === 'atestado' ? 'Atualizar Atestado' : 'Atualizar e Descontar') : (type === 'atestado' ? 'Salvar Atestado' : 'Confirmar e Descontar'))}
             </button>
           )}
         </form>

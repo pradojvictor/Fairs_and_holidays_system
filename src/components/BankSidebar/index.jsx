@@ -208,7 +208,7 @@ export default function BankSidebar({ isOpen, onClose, onDataUpdated, profession
                   <div className={`feedback-toast ${feedback.type}`} style={{ marginBottom: '1rem' }}>{feedback.message}</div>
                 )}
                 <div className="bank-card">
-                  <h4>🗓️ Crédito de Folgas</h4>
+                  <h4>Crédito de Folgas</h4>
                   <form onSubmit={handleAddFolga} className="bank-form-column">
                     <input type="number" placeholder="Quantidade de Dias" className="sidebar-input" value={folgaDays} onChange={(e) => setFolgaDays(e.target.value)} disabled={loading} min="1" required />
                     <input type="text" placeholder="Motivo (Ex: Plantão 12/05)" className="sidebar-input" value={folgaReason} onChange={(e) => setFolgaReason(e.target.value)} disabled={loading} required />
@@ -216,7 +216,7 @@ export default function BankSidebar({ isOpen, onClose, onDataUpdated, profession
                   </form>
                 </div>
                 <div className="bank-card" style={{ marginTop: '1.5rem' }}>
-                  <h4>🏖️ Crédito de Férias</h4>
+                  <h4>Crédito de Férias</h4>
                   <form onSubmit={handleAddFerias} className="bank-form-column">
                     <div style={{ display: 'flex', gap: '10px' }}>
                       <div style={{ flex: 1 }}>
