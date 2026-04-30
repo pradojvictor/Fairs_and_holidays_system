@@ -221,7 +221,7 @@ export default function Dashboard() {
                     customThemeClass="filter-select"
                   />
                 </div>
-                <div className="filter-group" >
+                <div className="filter-group filter-group-type" >
                   <label>Filtrar Tipo:</label>
                   <CustomSelect
                     value={filterType}
