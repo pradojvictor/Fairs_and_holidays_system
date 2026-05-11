@@ -274,7 +274,7 @@ const handleLogin = (e) => {
                           <div className="pro-color-bar" style={{ backgroundColor: pro.baseColor }}></div>
                           <div className="pro-info-box">
                             <div className="pro-main-line">
-                              <span className="pro-name">{isSuper ? pro.name : "Sua Escala"}</span>
+                              <span className="pro-name-dashPublic">{isSuper ? pro.name : "Sua Escala"}</span>
                               <span className={`type-tag ${ev.type}`}>{ev.type === 'ferias' ? 'FÉRIAS' : ev.type === 'folga' ? 'FOLGA' : 'ATESTADO'}</span>
                             </div>
                             <div className="pro-sub-line">
@@ -301,7 +301,7 @@ const handleLogin = (e) => {
                       <div className="pro-color-bar" style={{ backgroundColor: pro.baseColor }}></div>
                       <div className="pro-info-box">
                         <div className="pro-main-line">
-                          <span className="pro-name">{isSuper ? pro.name : "Ausência Agendada"}</span>
+                          <span className="pro-name-dashPublic">{isSuper ? pro.name : "Ausência Agendada"}</span>
                           <span className={`type-tag ${ev.type}`}>{ev.type === 'ferias' ? 'FÉRIAS' : ev.type === 'folga' ? 'FOLGA' : 'ATESTADO'}</span>
                         </div>
                         <div className="pro-sub-line bold-dark">
@@ -328,7 +328,7 @@ const handleLogin = (e) => {
                       <div className="pro-color-bar" style={{ backgroundColor: pro.baseColor }}></div>
                       <div className="pro-info-box">
                         <div className="pro-main-line">
-                          <span className="pro-name">{isSuper ? pro.name : "Ausência"}</span>
+                          <span className="pro-name-dashPublic">{isSuper ? pro.name : "Ausência"}</span>
                           <span className={`type-tag ${ev.type}`}>{ev.type === 'ferias' ? 'FÉRIAS' : ev.type === 'folga' ? 'FOLGA' : 'ATESTADO'}</span>
                         </div>
                         <div className="pro-sub-line bold-dark">

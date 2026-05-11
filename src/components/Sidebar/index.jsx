@@ -10,6 +10,7 @@ export default function Sidebar({ isOpen, onClose, onDataUpdated, professionals 
   const formTopRef = useRef(null);
   const [name, setName] = useState('');
   const [matricula, setMatricula] = useState('');
+  const [matricula2, setMatricula2] = useState('');
   const [password, setPassword] = useState('');
   const [color, setColor] = useState('#3b82f6');
   const [professionId, setProfessionId] = useState('');
@@ -18,8 +19,10 @@ export default function Sidebar({ isOpen, onClose, onDataUpdated, professionals 
   const [editingId, setEditingId] = useState(null);
   const [loading, setLoading] = useState(false);
   const [feedback, setFeedback] = useState({ type: '', message: '' });
+  
   const [deleteModal, setDeleteModal] = useState({ isOpen: false, pro: null });
   const [deleteCargoModal, setDeleteCargoModal] = useState({ isOpen: false, cargo: null });
+
   const [newProfession, setNewProfession] = useState('');
   const [loadingProf, setLoadingProf] = useState(false);
   const [feedbackProf, setFeedbackProf] = useState({ type: '', message: '' });
@@ -35,6 +38,7 @@ export default function Sidebar({ isOpen, onClose, onDataUpdated, professionals 
     setEditingId(pro.id);
     setName(pro.name);
     setMatricula(pro.matricula || '');
+    setMatricula2(pro.matricula2 || '');
     setPassword(pro.password || '');
     setColor(pro.baseColor);
     setProfessionId(pro.professionId || '');
@@ -53,6 +57,7 @@ export default function Sidebar({ isOpen, onClose, onDataUpdated, professionals 
     setEditingId(null);
     setName('');
     setMatricula('');
+    setMatricula2('');
     setPassword('');
     setColor('#3b82f6');
     setProfessionId('');
@@ -67,11 +72,12 @@ export default function Sidebar({ isOpen, onClose, onDataUpdated, professionals 
     setFeedback({ type: '', message: '' });
 
     const matriculaLimpa = matricula.trim();
+    const matricula2Limpa = matricula2.trim();
     const nomeLimpo = name.trim();
     const senhaLimpa = password.trim(); 
 
     if (!matriculaLimpa) {
-      setFeedback({ type: 'error', message: 'A matrícula não pode ficar em branco!' });
+      setFeedback({ type: 'error', message: 'A matrícula de login não pode ficar em branco!' });
       setLoading(false);
       return;
     }
@@ -95,18 +101,18 @@ export default function Sidebar({ isOpen, onClose, onDataUpdated, professionals 
       if (editingId) {
         const matriculaExiste = currentData.professionals?.some(p => p.matricula === matriculaLimpa && p.id !== editingId);
         if (matriculaExiste) {
-          setFeedback({ type: 'error', message: 'Esta matrícula já está sendo usada por outro funcionário!' });
+          setFeedback({ type: 'error', message: 'Esta matrícula principal já está sendo usada por outro funcionário!' });
           setLoading(false);
           return;
         }
         currentData.professionals = currentData.professionals.map(p =>
-          p.id === editingId ? { ...p, name: nomeLimpo, matricula: matriculaLimpa, password: senhaLimpa, baseColor: color, professionId, shift, isSupervisor } : p
+          p.id === editingId ? { ...p, name: nomeLimpo, matricula: matriculaLimpa, matricula2: matricula2Limpa, password: senhaLimpa, baseColor: color, professionId, shift, isSupervisor } : p
         );
         successMessage = 'Profissional atualizado com sucesso!';
       } else {
         const matriculaExiste = currentData.professionals?.some(p => p.matricula === matriculaLimpa);
         if (matriculaExiste) {
-          setFeedback({ type: 'error', message: 'Erro: Já existe um funcionário com esta matrícula!' });
+          setFeedback({ type: 'error', message: 'Erro: Já existe um funcionário com esta matrícula principal!' });
           setLoading(false);
           return;
         }
@@ -114,6 +120,7 @@ export default function Sidebar({ isOpen, onClose, onDataUpdated, professionals 
           id: `p_${Date.now()}`,
           name: nomeLimpo,
           matricula: matriculaLimpa,
+          matricula2: matricula2Limpa,
           password: senhaLimpa,
           baseColor: color,
           professionId,
@@ -240,11 +247,12 @@ export default function Sidebar({ isOpen, onClose, onDataUpdated, professionals 
       const term = removeAccents(searchTerm.toLowerCase());
       const matchName = removeAccents(pro.name.toLowerCase()).includes(term);
       const matchMatricula = pro.matricula && removeAccents(pro.matricula.toLowerCase()).includes(term);
-      return matchName || matchMatricula;
+      const matchMatricula2 = pro.matricula2 && removeAccents(pro.matricula2.toLowerCase()).includes(term);
+      
+      return matchName || matchMatricula || matchMatricula2;
     })
     .sort((a, b) => a.name.localeCompare(b.name));
 
-  // 👇 LÓGICA PARA ORDENAR OS CARGOS ALFABETICAMENTE 👇
   const sortedProfessions = [...professions].sort((a, b) => a.name.localeCompare(b.name));
 
   return (
@@ -272,11 +280,20 @@ export default function Sidebar({ isOpen, onClose, onDataUpdated, professionals 
             </h3>
             <div className="column-scroll-content">
               <form onSubmit={handleSaveProfessional} className="sidebar-form">
+                
                 <label>Nome do Funcionário</label>
                 <input type="text" value={name} onChange={(e) => setName(e.target.value)} placeholder="Ex: João Silva" required className="sidebar-input" />
                 
-                <label>Matrícula do Funcionário</label>
-                <input type="text" value={matricula} onChange={(e) => setMatricula(e.target.value)} placeholder="Ex: 12345" required className="sidebar-input" />
+                <div style={{ display: 'flex', gap: '10px', marginBottom: '1rem' }}>
+                  <div style={{ flex: 1 }}>
+                    <label>Matrícula (Login)</label>
+                    <input type="text" value={matricula} onChange={(e) => setMatricula(e.target.value)} placeholder="Ex: 12345" required className="sidebar-input no-margin" />
+                  </div>
+                  <div style={{ flex: 1 }}>
+                    <label>2ª Matr. (Opcional)</label>
+                    <input type="text" value={matricula2} onChange={(e) => setMatricula2(e.target.value)} placeholder="Ex: 67890" className="sidebar-input no-margin" />
+                  </div>
+                </div>
                 
                 <label>Senha de Acesso</label>
                 <input type="text" value={password} onChange={(e) => setPassword(e.target.value)} placeholder="Ex: 123456" required className="sidebar-input" />
@@ -296,7 +313,6 @@ export default function Sidebar({ isOpen, onClose, onDataUpdated, professionals 
                   placeholder="-- Selecione o Cargo --"
                   value={professionId}
                   onChange={setProfessionId}
-                  /* 👇 AGORA USA A LISTA DE CARGOS ORDENADA 👇 */
                   options={sortedProfessions.map(p => ({ value: p.id, label: p.name }))}
                 />
                 <CustomSelect
@@ -356,7 +372,7 @@ export default function Sidebar({ isOpen, onClose, onDataUpdated, professionals 
                                 </svg>
                               </span>}
                             </span>
-                            <span className="pro-matricula">Mat: {pro.matricula || 'S/N'}</span>
+                            <span className="pro-matricula">Mat: {pro.matricula || 'S/N'} {pro.matricula2 ? ` | Sec: ${pro.matricula2}` : ''}</span>
                           </div>
                         </div>
                         <div className="pro-actions">
@@ -380,7 +396,6 @@ export default function Sidebar({ isOpen, onClose, onDataUpdated, professionals 
           </div>
 
           <div className="sidebar-column">
-
             <h3 className="sidebar-title">
               <span>Gerenciar Cargos</span>
             </h3>
@@ -411,7 +426,6 @@ export default function Sidebar({ isOpen, onClose, onDataUpdated, professionals 
               <div className="pro-list-container cargo-list-container">
                 <h4 className="pro-list-title">Cargos Cadastrados ({professions.length})</h4>
                 <div className="pro-list">
-                  {/* 👇 AGORA USA A LISTA DE CARGOS ORDENADA AQUI TAMBÉM 👇 */}
                   {sortedProfessions.length === 0 ? (
                     <p className="empty-msg">Nenhum cargo criado.</p>
                   ) : (
@@ -474,7 +488,6 @@ export default function Sidebar({ isOpen, onClose, onDataUpdated, professionals 
                 Sair do Sistema
               </button>
             </div>
-
           </div>
         </div>
       </div>
