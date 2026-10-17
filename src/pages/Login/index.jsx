@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { fetchGistData } from '../../services/githubApi';
+import { login } from '../../services/githubApi';
 import './index.css';
 
 export default function Login() {
@@ -16,20 +16,15 @@ export default function Login() {
     setError('');
     setLoading(true);
     try {
-      const data = await fetchGistData();
-      if (data.auth.username === username && data.auth.password === password) {
-        localStorage.setItem('isAuthenticated', 'true');
-        setIsExiting(true);
-        setTimeout(() => {
-          navigate('/');
-        }, 600); 
-      } else {
-        setError('Usuário ou senha incorretos.');
-        setLoading(false);
-      }
+      await login({ tipo: 'admin', usuario: username, senha: password });
+      setIsExiting(true);
+      setTimeout(() => {
+        navigate('/');
+      }, 600);
     } catch (err) {
-      setError('Erro ao conectar com o servidor. Tente novamente.');
-      console.error(err);
+      if (err.status === 401) setError('Usuário ou senha incorretos.');
+      else if (err.status === 429) setError(err.message);
+      else setError('Erro ao conectar com o servidor. Tente novamente.');
       setLoading(false);
     }
   };

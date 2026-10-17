@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { fetchGistData, updateGistData } from '../../services/githubApi';
+import { fetchGistData, runOperation } from '../../services/githubApi';
 import Sidebar from '../../components/Sidebar';
 import AnnualCalendar from '../../components/AnnualCalendar';
 import EventModal from '../../components/EventModal';
@@ -33,7 +33,7 @@ export default function Dashboard() {
   const [eventToEdit, setEventToEdit] = useState(null);
 
   const [isAdminProfileOpen, setIsAdminProfileOpen] = useState(false);
-  const [adminData, setAdminData] = useState({ username: 'Administrador', password: '' });
+  const [adminData, setAdminData] = useState({ username: 'Administrador' });
 
   const [eventToDelete, setEventToDelete] = useState(null);
 
@@ -45,9 +45,17 @@ export default function Dashboard() {
     setIsLoading(true);
     try {
       const data = await fetchGistData();
+      if (data.perfil?.papel !== 'admin') {
+        navigate('/login', { replace: true });
+        return;
+      }
       setDbData({ professionals: data.professionals || [], events: data.events || [], professions: data.professions || [] });
-      if (data.auth) setAdminData(data.auth);
+      setAdminData({ username: data.perfil.username });
     } catch (err) {
+      if (err.status === 401) {
+        navigate('/login', { replace: true });
+        return;
+      }
       setError('Erro ao carregar os dados.');
     } finally {
       setIsLoading(false);
@@ -55,11 +63,6 @@ export default function Dashboard() {
   };
 
   useEffect(() => { loadData(); }, []);
-
-  const handleLogout = () => {
-    localStorage.removeItem('isAuthenticated');
-    navigate('/login');
-  };
 
   const handleShare = async () => {
     const publicUrl = `${window.location.origin}/calendario`;
@@ -92,18 +95,8 @@ export default function Dashboard() {
 
     setIsLoading(true);
     try {
-      const currentData = await fetchGistData();
-      const updatedEvents = (currentData.events || []).filter(e => String(e.id) !== String(eventToDelete));
-
-      const updatedProfessionals = currentData.professionals.map(pro => {
-        const newFolgas = (pro.bancoFolgas || []).filter(f => f.id !== `log_${eventToDelete}`);
-        const newFerias = (pro.bancoFerias || []).filter(f => f.id !== `log_${eventToDelete}`);
-        return { ...pro, bancoFolgas: newFolgas, bancoFerias: newFerias };
-      });
-
-      const newData = { ...currentData, events: updatedEvents, professionals: updatedProfessionals };
-
-      await updateGistData(newData);
+      // O servidor tira o evento e o desconto ligado a ele (log_<id>) dos bancos.
+      await runOperation('evento.excluir', { id: String(eventToDelete) });
 
       setSelectedEvent(null);
       setEventToDelete(null);
@@ -111,7 +104,7 @@ export default function Dashboard() {
 
     } catch (err) {
       console.error("Falha ao deletar evento:", err);
-      alert("Erro ao remover o evento. Verifique sua conexão.");
+      alert(err.message || "Erro ao remover o evento. Verifique sua conexão.");
     } finally {
       setIsLoading(false);
     }

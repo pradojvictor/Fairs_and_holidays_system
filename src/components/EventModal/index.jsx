@@ -1,6 +1,6 @@
 // Arquivo: src/components/EventModal.jsx
 import { useEffect, useState } from 'react';
-import { fetchGistData, updateGistData } from '../../services/githubApi';
+import { runOperation } from '../../services/githubApi';
 import CustomSelect from '../CustomSelect';
 import './index.css';
 
@@ -167,63 +167,16 @@ export default function EventModal({ isOpen, onClose, professionals = [], events
     setLoading(true);
 
     try {
-      const currentData = await fetchGistData();
-      const eventId = eventToEdit ? eventToEdit.id : `evt_${Date.now()}`;
-
-      const savedEvent = {
-        id: eventId,
+      // O servidor grava a ausência e o desconto no banco (log_<id>) no mesmo documento.
+      await runOperation('evento.salvar', {
+        ...(eventToEdit ? { id: eventToEdit.id } : {}),
         professionalId: profId,
         type: type,
         reason: type === 'atestado' ? reason.trim() : '',
         startDate: startDate,
         endDate: endDate,
         loteYear: type === 'ferias' ? selectedLoteYear : null
-      };
-
-      if (eventToEdit) {
-        currentData.events = currentData.events.map(e => e.id === eventToEdit.id ? savedEvent : e);
-      } else {
-        currentData.events = [...(currentData.events || []), savedEvent];
-      }
-
-      const updatedProfessionals = currentData.professionals.map(pro => {
-        if (pro.id === profId && type !== 'atestado') {
-          let updatedFolgas = Array.isArray(pro.bancoFolgas) ? [...pro.bancoFolgas] : [];
-          let updatedFerias = Array.isArray(pro.bancoFerias) ? [...pro.bancoFerias] : [];
-
-          const saidaFormatada = `${startDate.split('-').reverse().join('/')} a ${endDate.split('-').reverse().join('/')}`;
-
-          if (type === 'folga') {
-            const logFolga = {
-              id: `log_${eventId}`,
-              type: 'saida',
-              days: calculatedDays,
-              reason: `Uso no período: ${saidaFormatada}`,
-              createdAt: new Date().toLocaleDateString('pt-BR'),
-              targetDate: saidaFormatada
-            };
-            updatedFolgas = updatedFolgas.filter(f => f.id !== `log_${eventId}`);
-            updatedFolgas.push(logFolga);
-
-          } else if (type === 'ferias') {
-            const logFerias = {
-              id: `log_${eventId}`,
-              type: 'saida',
-              year: selectedLoteYear,
-              days: calculatedDays,
-              createdAt: new Date().toLocaleDateString('pt-BR'),
-              targetDate: saidaFormatada
-            };
-            updatedFerias = updatedFerias.filter(f => f.id !== `log_${eventId}`);
-            updatedFerias.push(logFerias);
-          }
-          return { ...pro, bancoFolgas: updatedFolgas, bancoFerias: updatedFerias };
-        }
-        return pro;
       });
-
-      currentData.professionals = updatedProfessionals;
-      await updateGistData(currentData);
       if (onDataUpdated) onDataUpdated();
 
       showFeedback('success', type === 'atestado'
@@ -236,7 +189,7 @@ export default function EventModal({ isOpen, onClose, professionals = [], events
 
     } catch (error) {
       console.error(error);
-      showFeedback('error', 'Erro ao salvar o agendamento e o saldo.');
+      showFeedback('error', error.message || 'Erro ao salvar o agendamento e o saldo.');
     } finally {
       setLoading(false);
     }

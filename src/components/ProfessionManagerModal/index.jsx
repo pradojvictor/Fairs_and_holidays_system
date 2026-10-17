@@ -1,6 +1,6 @@
 // Arquivo: src/components/ProfessionManagerModal.jsx
 import React, { useState } from 'react';
-import { fetchGistData, updateGistData } from '../../services/githubApi';
+import { runOperation } from '../../services/githubApi';
 import './index.css';
 
 export default function ProfessionManagerModal({ isOpen, onClose, professions = [], onDataUpdated }) {
@@ -16,11 +16,7 @@ export default function ProfessionManagerModal({ isOpen, onClose, professions = 
     setLoading(true);
     setFeedback({ type: '', message: '' }); 
     try {
-      const currentData = await fetchGistData();
-      const newCargo = { id: `cargo_${Date.now()}`, name: newProfession.trim() };
-      currentData.professions = [...(currentData.professions || []), newCargo];
-      
-      await updateGistData(currentData);
+      await runOperation('cargo.criar', { name: newProfession.trim() });
       setNewProfession('');
       if (onDataUpdated) onDataUpdated();
       
@@ -31,7 +27,7 @@ export default function ProfessionManagerModal({ isOpen, onClose, professions = 
       }, 3000);
     } catch (error) {
       console.error(error);
-      setFeedback({ type: 'error', message: 'Erro ao salvar o cargo.' });
+      setFeedback({ type: 'error', message: error.message || 'Erro ao salvar o cargo.' });
     } finally {
       setLoading(false);
     }

@@ -1,0 +1,6 @@
+# O CLI da Vercel não lê o .gitignore: sem este arquivo, o `vercel --prod` enviaria o .env
+# (com o GITHUB_TOKEN) junto com o código. As variáveis de produção ficam no painel da Vercel.
+.env
+.env.*
+!.env.example
+AUDITORIA-SEGURANCA-*.md

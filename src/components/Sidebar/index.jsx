@@ -1,7 +1,7 @@
 // Arquivo: src/components/Sidebar.jsx
 import { useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { fetchGistData, updateGistData } from '../../services/githubApi';
+import { logout, runOperation } from '../../services/githubApi';
 import CustomSelect from '../CustomSelect';
 import './index.css';
 
@@ -29,8 +29,9 @@ export default function Sidebar({ isOpen, onClose, onDataUpdated, professionals 
   const [expandedCargoId, setExpandedCargoId] = useState(null);
   const [searchTerm, setSearchTerm] = useState('');
 
-  const handleLogout = () => {
-    localStorage.removeItem('isAuthenticated');
+  const handleLogout = async () => {
+    // Mesmo que o servidor não responda, o cookie some e a tela volta ao login.
+    await logout().catch(() => {});
     navigate('/login');
   };
 
@@ -39,7 +40,8 @@ export default function Sidebar({ isOpen, onClose, onDataUpdated, professionals 
     setName(pro.name);
     setMatricula(pro.matricula || '');
     setMatricula2(pro.matricula2 || '');
-    setPassword(pro.password || '');
+    // A senha atual não volta do servidor; em branco, ela continua a mesma.
+    setPassword('');
     setColor(pro.baseColor);
     setProfessionId(pro.professionId || '');
     setShift(pro.shift || 'dia_todo');
@@ -82,7 +84,7 @@ export default function Sidebar({ isOpen, onClose, onDataUpdated, professionals 
       return;
     }
     
-    if (!senhaLimpa) {
+    if (!editingId && !senhaLimpa) {
       setFeedback({ type: 'error', message: 'A senha de acesso é obrigatória!' });
       setLoading(false);
       return;
@@ -95,48 +97,25 @@ export default function Sidebar({ isOpen, onClose, onDataUpdated, professionals 
     }
 
     try {
-      const currentData = await fetchGistData();
-      let successMessage = '';
-
-      if (editingId) {
-        const matriculaExiste = currentData.professionals?.some(p => p.matricula === matriculaLimpa && p.id !== editingId);
-        if (matriculaExiste) {
-          setFeedback({ type: 'error', message: 'Esta matrícula principal já está sendo usada por outro funcionário!' });
-          setLoading(false);
-          return;
-        }
-        currentData.professionals = currentData.professionals.map(p =>
-          p.id === editingId ? { ...p, name: nomeLimpo, matricula: matriculaLimpa, matricula2: matricula2Limpa, password: senhaLimpa, baseColor: color, professionId, shift, isSupervisor } : p
-        );
-        successMessage = 'Profissional atualizado com sucesso!';
-      } else {
-        const matriculaExiste = currentData.professionals?.some(p => p.matricula === matriculaLimpa);
-        if (matriculaExiste) {
-          setFeedback({ type: 'error', message: 'Erro: Já existe um funcionário com esta matrícula principal!' });
-          setLoading(false);
-          return;
-        }
-        const newProfessional = {
-          id: `p_${Date.now()}`,
-          name: nomeLimpo,
-          matricula: matriculaLimpa,
-          matricula2: matricula2Limpa,
-          password: senhaLimpa,
-          baseColor: color,
-          professionId,
-          shift,
-          isSupervisor
-        };
-        currentData.professionals = [...(currentData.professionals || []), newProfessional];
-        successMessage = 'Novo profissional cadastrado!';
-      }
-      await updateGistData(currentData);
+      // Matrícula repetida e cargo inexistente são conferidos no servidor; a senha vira hash lá.
+      await runOperation('profissional.salvar', {
+        ...(editingId ? { id: editingId } : {}),
+        name: nomeLimpo,
+        matricula: matriculaLimpa,
+        matricula2: matricula2Limpa,
+        senha: senhaLimpa,
+        baseColor: color,
+        professionId,
+        shift,
+        isSupervisor
+      });
+      const successMessage = editingId ? 'Profissional atualizado com sucesso!' : 'Novo profissional cadastrado!';
       cancelEdit();
       setFeedback({ type: 'success', message: successMessage });
       if (onDataUpdated) onDataUpdated();
       setTimeout(() => setFeedback({ type: '', message: '' }), 4000);
     } catch (error) {
-      setFeedback({ type: 'error', message: 'Erro ao salvar os dados.' });
+      setFeedback({ type: 'error', message: error.message || 'Erro ao salvar os dados.' });
     } finally {
       setLoading(false);
     }
@@ -147,10 +126,7 @@ export default function Sidebar({ isOpen, onClose, onDataUpdated, professionals 
     const id = deleteModal.pro.id;
     setLoading(true);
     try {
-      const currentData = await fetchGistData();
-      currentData.professionals = currentData.professionals.filter(p => p.id !== id);
-      currentData.events = (currentData.events || []).filter(e => e.professionalId !== id);
-      await updateGistData(currentData);
+      await runOperation('profissional.excluir', { id });
       if (editingId === id) cancelEdit();
       if (onDataUpdated) onDataUpdated();
       setDeleteModal({ isOpen: false, pro: null });
@@ -158,7 +134,7 @@ export default function Sidebar({ isOpen, onClose, onDataUpdated, professionals 
       setTimeout(() => setFeedback({ type: '', message: '' }), 4000);
     } catch (error) {
       setDeleteModal({ isOpen: false, pro: null });
-      setFeedback({ type: 'error', message: 'Erro ao tentar excluir.' });
+      setFeedback({ type: 'error', message: error.message || 'Erro ao tentar excluir.' });
     } finally {
       setLoading(false);
     }
@@ -170,16 +146,13 @@ export default function Sidebar({ isOpen, onClose, onDataUpdated, professionals 
     setLoadingProf(true);
     setFeedbackProf({ type: '', message: '' });
     try {
-      const currentData = await fetchGistData();
-      const newCargo = { id: `cargo_${Date.now()}`, name: newProfession.trim() };
-      currentData.professions = [...(currentData.professions || []), newCargo];
-      await updateGistData(currentData);
+      await runOperation('cargo.criar', { name: newProfession.trim() });
       setNewProfession('');
       if (onDataUpdated) onDataUpdated();
       setFeedbackProf({ type: 'success', message: 'Cargo salvo com sucesso!' });
       setTimeout(() => setFeedbackProf({ type: '', message: '' }), 3000);
     } catch (error) {
-      setFeedbackProf({ type: 'error', message: 'Erro ao salvar o cargo.' });
+      setFeedbackProf({ type: 'error', message: error.message || 'Erro ao salvar o cargo.' });
     } finally {
       setLoadingProf(false);
     }
@@ -201,9 +174,7 @@ export default function Sidebar({ isOpen, onClose, onDataUpdated, professionals 
     const id = deleteCargoModal.cargo.id;
     setLoadingProf(true);
     try {
-      const currentData = await fetchGistData();
-      currentData.professions = currentData.professions.filter(p => p.id !== id);
-      await updateGistData(currentData);
+      await runOperation('cargo.excluir', { id });
 
       if (onDataUpdated) onDataUpdated();
       setDeleteCargoModal({ isOpen: false, cargo: null });
@@ -211,7 +182,7 @@ export default function Sidebar({ isOpen, onClose, onDataUpdated, professionals 
       setTimeout(() => setFeedbackProf({ type: '', message: '' }), 4000);
     } catch (error) {
       setDeleteCargoModal({ isOpen: false, cargo: null });
-      setFeedbackProf({ type: 'error', message: 'Erro ao tentar excluir cargo.' });
+      setFeedbackProf({ type: 'error', message: error.message || 'Erro ao tentar excluir cargo.' });
     } finally {
       setLoadingProf(false);
     }
@@ -295,8 +266,8 @@ export default function Sidebar({ isOpen, onClose, onDataUpdated, professionals 
                   </div>
                 </div>
                 
-                <label>Senha de Acesso</label>
-                <input type="text" value={password} onChange={(e) => setPassword(e.target.value)} placeholder="Ex: 123456" required className="sidebar-input" />
+                <label>{editingId ? 'Nova Senha (em branco mantém a atual)' : 'Senha de Acesso'}</label>
+                <input type="text" autoComplete="off" value={password} onChange={(e) => setPassword(e.target.value)} placeholder={editingId ? 'Deixe em branco para manter' : 'Mínimo de 6 caracteres'} required={!editingId} minLength={6} className="sidebar-input" />
                 
                 <div className="custom-toggle-container" onClick={() => setIsSupervisor(!isSupervisor)}>
                   <div className="custom-toggle-track">

@@ -17,6 +17,7 @@ dist-ssr
 .env.local
 .env
 .env*
+!.env.example
 
 # Editor directories and files
 .vscode/*
@@ -29,3 +30,7 @@ dist-ssr
 *.sln
 *.sw?
 .vercel
+
+# Auditoria de segurança: descreve falhas abertas de outros sistemas.
+# O repositório é público — este arquivo fica só na máquina.
+AUDITORIA-SEGURANCA-*.md

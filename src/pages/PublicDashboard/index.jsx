@@ -1,6 +1,6 @@
 // Arquivo: src/pages/PublicDashboard.jsx
 import { useState, useEffect } from 'react';
-import { fetchGistData } from '../../services/githubApi';
+import { fetchGistData, login, logout } from '../../services/githubApi';
 import './index.css';
 
 export default function PublicDashboard() {
@@ -14,43 +14,50 @@ export default function PublicDashboard() {
   const [currentDate, setCurrentDate] = useState(new Date());
   const [selectedDay, setSelectedDay] = useState(new Date().getDate());
   const [isExpanded, setIsExpanded] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  // A sessão mora num cookie HttpOnly: quem diz se ela existe, e o que ela pode ver, é o
+  // servidor. Colaborador recebe só a própria escala; supervisor, a da equipe.
+  const loadSession = async () => {
+    const data = await fetchGistData();
+    if (data.perfil?.papel !== 'colaborador') return;
+    setDbData({
+      professionals: data.professionals || [],
+      events: data.events || [],
+      professions: data.professions || []
+    });
+    setLoggedInUser(data.perfil);
+    setIsLoggedIn(true);
+  };
 
   useEffect(() => {
-    const loadData = async () => {
-      setIsLoading(true);
-      try {
-        const data = await fetchGistData();
-        setDbData({
-          professionals: data.professionals || [],
-          events: data.events || [],
-          professions: data.professions || []
-        });
-      } catch (err) { console.error(err); }
-      finally { setIsLoading(false); }
-    };
-    loadData();
+    loadSession()
+      .catch((err) => { if (err.status !== 401) console.error(err); })
+      .finally(() => setIsLoading(false));
   }, []);
 
-const handleLogin = (e) => {
+  const handleLogin = async (e) => {
     e.preventDefault();
-    const user = dbData.professionals.find(p => 
-      p.matricula === inputMatricula.trim() && p.password === inputPassword.trim()
-    );
-
-    if (user) {
-      setLoggedInUser(user);
-      setIsLoggedIn(true);
-      setLoginError('');
-    } else {
-      setLoginError('Matrícula ou senha incorretos.'); 
+    setIsSubmitting(true);
+    setLoginError('');
+    try {
+      await login({ tipo: 'colaborador', matricula: inputMatricula.trim(), senha: inputPassword });
+      await loadSession();
+      setInputPassword('');
+    } catch (err) {
+      setLoginError(err.status === 401 ? 'Matrícula ou senha incorretos.' : err.message);
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
-  const handleLogout = () => {
+  const handleLogout = async () => {
+    await logout().catch(() => {});
     setIsLoggedIn(false);
     setLoggedInUser(null);
     setInputMatricula('');
     setInputPassword('');
+    setDbData({ professionals: [], events: [], professions: [] });
   };
 
   const year = currentDate.getFullYear();
@@ -168,8 +175,8 @@ const handleLogin = (e) => {
               className="login-input"
             />
             {loginError && <p className="login-error">{loginError}</p>}
-            <button type="submit" className="login-btn">
-              Acessar Escala
+            <button type="submit" className="login-btn" disabled={isSubmitting}>
+              {isSubmitting ? 'Entrando...' : 'Acessar Escala'}
             </button>
           </form>
         </div>

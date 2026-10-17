@@ -1,10 +1,11 @@
 import { useState, useEffect } from 'react';
-import { fetchGistData, updateGistData } from '../../services/githubApi';
+import { runOperation } from '../../services/githubApi';
 import './index.css';
 
 
 export default function AdminProfileModal({ isOpen, onClose, currentAdmin, onDataUpdated }) {
   const [name, setName] = useState('');
+  const [currentPassword, setCurrentPassword] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [feedback, setFeedback] = useState({ type: '', message: '' });
@@ -12,7 +13,8 @@ export default function AdminProfileModal({ isOpen, onClose, currentAdmin, onDat
   useEffect(() => {
     if (isOpen) {
       setName(currentAdmin?.username || 'Administrador');
-      setPassword(currentAdmin?.password || '');
+      setCurrentPassword('');
+      setPassword('');
       setFeedback({ type: '', message: '' });
     }
   }, [isOpen, currentAdmin]);
@@ -31,12 +33,14 @@ export default function AdminProfileModal({ isOpen, onClose, currentAdmin, onDat
     }
 
     try {
-      const currentData = await fetchGistData();
-      currentData.auth = {
+      // Mexer na credencial pede a senha atual: uma sessão esquecida aberta não tranca o dono para fora.
+      await runOperation('admin.perfil', {
         username: name.trim(),
-        password: password.trim()
-      };
-      await updateGistData(currentData);
+        senhaAtual: currentPassword,
+        novaSenha: password.trim()
+      });
+      setCurrentPassword('');
+      setPassword('');
       if (onDataUpdated) onDataUpdated();
       setFeedback({ type: 'success', message: 'Perfil atualizado com sucesso!' });
       setTimeout(() => {
@@ -44,7 +48,7 @@ export default function AdminProfileModal({ isOpen, onClose, currentAdmin, onDat
       }, 1500);
     } catch (error) {
       console.error(error);
-      setFeedback({ type: 'error', message: 'Erro ao salvar os dados.' });
+      setFeedback({ type: 'error', message: error.message || 'Erro ao salvar os dados.' });
     } finally {
       setLoading(false);
     }
@@ -72,15 +76,25 @@ export default function AdminProfileModal({ isOpen, onClose, currentAdmin, onDat
           <div className="form-group">
             <label>Nova Senha</label>
             <input 
-              type="text"
+              type="password"
+              autoComplete="new-password"
               className="form-input" 
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               placeholder="Deixe em branco para manter a atual"
+              minLength={8}
             />
-            <p style={{ fontSize: '0.75rem', color: '#9ca3af', marginTop: '0.25rem' }}>
-              Nota: Certifique-se de atualizar seu arquivo de Login para validar esta nova senha.
-            </p>
+          </div>
+          <div className="form-group">
+            <label>Senha Atual (obrigatória para salvar)</label>
+            <input 
+              type="password"
+              autoComplete="current-password"
+              className="form-input" 
+              value={currentPassword}
+              onChange={(e) => setCurrentPassword(e.target.value)}
+              required
+            />
           </div>
           {feedback.message && (
             <p style={{ 

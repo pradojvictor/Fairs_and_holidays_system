@@ -1,6 +1,6 @@
 // Arquivo: src/components/BankSidebar.jsx
 import { useState } from 'react';
-import { fetchGistData, updateGistData } from '../../services/githubApi';
+import { runOperation } from '../../services/githubApi';
 import CustomSelect from '../CustomSelect';
 import './index.css';
 
@@ -30,29 +30,17 @@ export default function BankSidebar({ isOpen, onClose, onDataUpdated, profession
     }
     setLoading(true);
     try {
-      const currentData = await fetchGistData();
-      const newFolgaRecord = {
-        id: `folga_${Date.now()}`,
-        type: 'entrada',
+      await runOperation('banco.folga.adicionar', {
+        professionalId: selectedProId,
         days: Math.abs(Number(folgaDays)),
-        reason: folgaReason.trim(),
-        createdAt: new Date().toLocaleDateString('pt-BR'),
-        targetDate: null
-      };
-      const updatedProfessionals = currentData.professionals.map(pro => {
-        if (pro.id === selectedProId) {
-          const currentFolgas = Array.isArray(pro.bancoFolgas) ? pro.bancoFolgas : [];
-          return { ...pro, bancoFolgas: [...currentFolgas, newFolgaRecord] };
-        }
-        return pro;
+        reason: folgaReason.trim()
       });
-      await updateGistData({ ...currentData, professionals: updatedProfessionals });
       setFolgaDays('');
       setFolgaReason('');
       if (onDataUpdated) onDataUpdated();
       showFeedback('success', 'Entrada de folga registrada!');
     } catch (error) {
-      showFeedback('error', 'Erro ao registrar folga.');
+      showFeedback('error', error.message || 'Erro ao registrar folga.');
     } finally {
       setLoading(false);
     }
@@ -68,29 +56,17 @@ export default function BankSidebar({ isOpen, onClose, onDataUpdated, profession
     }
     setLoading(true);
     try {
-      const currentData = await fetchGistData();
-      const newFeriasRecord = {
-        id: `ferias_${Date.now()}`,
-        type: 'entrada',
+      await runOperation('banco.ferias.adicionar', {
+        professionalId: selectedProId,
         year: feriasYear,
         category: feriasType,
-        days: Math.abs(Number(feriasDays)),
-        createdAt: new Date().toLocaleDateString('pt-BR'),
-        targetDate: null
-      };
-      const updatedProfessionals = currentData.professionals.map(pro => {
-        if (pro.id === selectedProId) {
-          const currentFerias = Array.isArray(pro.bancoFerias) ? pro.bancoFerias : [];
-          return { ...pro, bancoFerias: [...currentFerias, newFeriasRecord] };
-        }
-        return pro;
+        days: Math.abs(Number(feriasDays))
       });
-      await updateGistData({ ...currentData, professionals: updatedProfessionals });
       setFeriasDays('');
       if (onDataUpdated) onDataUpdated();
       showFeedback('success', 'Férias armazenadas com sucesso!');
     } catch (error) {
-      showFeedback('error', 'Erro ao salvar férias.');
+      showFeedback('error', error.message || 'Erro ao salvar férias.');
     } finally {
       setLoading(false);
     }
@@ -130,23 +106,16 @@ export default function BankSidebar({ isOpen, onClose, onDataUpdated, profession
     const isFolga = deleteLogModal.isFolga;
 
     try {
-      const currentData = await fetchGistData();
-      const updatedProfessionals = currentData.professionals.map(pro => {
-        if (pro.id === selectedProId) {
-          if (isFolga) {
-            return { ...pro, bancoFolgas: pro.bancoFolgas.filter(f => f.id !== logItem.id) };
-          } else {
-            return { ...pro, bancoFerias: pro.bancoFerias.filter(f => f.id !== logItem.id) };
-          }
-        }
-        return pro;
+      await runOperation('banco.registro.excluir', {
+        professionalId: selectedProId,
+        banco: isFolga ? 'folgas' : 'ferias',
+        id: logItem.id
       });
-      await updateGistData({ ...currentData, professionals: updatedProfessionals });
       if (onDataUpdated) onDataUpdated();
       setDeleteLogModal({ isOpen: false, log: null, isFolga: false });
       showFeedback('success', 'Registro removido do histórico!');
     } catch (error) {
-      showFeedback('error', 'Erro ao remover registro.');
+      showFeedback('error', error.message || 'Erro ao remover registro.');
       setDeleteLogModal({ isOpen: false, log: null, isFolga: false });
     } finally {
       setLoading(false);
