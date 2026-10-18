@@ -1,8 +1,9 @@
 // POST /api/operacao — toda escrita do sistema, uma operação por pedido: { op, dados }.
 // Só o admin escreve. Operação fora de OPERACOES é recusada antes de ler o Gist.
 import { z } from 'zod';
-import { alterarDados, lerGist } from './_lib/gist.js';
+import { alterarArquivoConferindo, alterarDados, lerGist } from './_lib/gist.js';
 import { ErroPedido, corpoJson, rota, validar } from './_lib/http.js';
+import { ARQUIVO_NOTIFICACOES, lerEstadoNotificacoes, registrarHistorico } from './_lib/notificacoes.js';
 import { OPERACOES } from './_lib/operacoes.js';
 import { encerrarSessoes, resolverSessao, temCookieDeSessao } from './_lib/sessao.js';
 
@@ -38,6 +39,16 @@ export default rota({
     // sessões antigas valeriam até vencer (8h).
     if (efeito.encerrar) {
       await encerrarSessoes(efeito.encerrar).catch((erro) => console.error('Encerrar sessões:', erro));
+    }
+    // Registro na central de notificações (ex.: férias lançadas). Os dados já estão gravados;
+    // se o registro falhar, fica no log e a operação não volta atrás.
+    if (efeito.notificar?.length) {
+      await alterarArquivoConferindo(
+        ARQUIVO_NOTIFICACOES,
+        (leitura) => lerEstadoNotificacoes(leitura.arquivos?.[ARQUIVO_NOTIFICACOES]),
+        (estado) => registrarHistorico(estado, efeito.notificar),
+        (estado) => efeito.notificar.every((e) => estado.historico.some((h) => h.id === e.id)),
+      ).catch((erro) => console.error('Registrar notificação:', erro));
     }
     return res.status(200).json({ ok: true });
   },

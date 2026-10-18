@@ -2,6 +2,7 @@
 import { useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { logout, runOperation } from '../../services/githubApi';
+import { anoSugerido, dataBR, ehData, hojeISO, periodoAquisitivo, proximoAniversario, ultimoAniversario } from '../../../shared/ferias.js';
 import CustomSelect from '../CustomSelect';
 import './index.css';
 
@@ -16,6 +17,9 @@ export default function Sidebar({ isOpen, onClose, onDataUpdated, professionals 
   const [professionId, setProfessionId] = useState('');
   const [shift, setShift] = useState('dia_todo');
   const [isSupervisor, setIsSupervisor] = useState(false);
+  const [dataAdmissao, setDataAdmissao] = useState('');
+  const [admissaoOriginal, setAdmissaoOriginal] = useState('');
+  const [saldoInicial, setSaldoInicial] = useState([]);
   const [editingId, setEditingId] = useState(null);
   const [loading, setLoading] = useState(false);
   const [feedback, setFeedback] = useState({ type: '', message: '' });
@@ -46,6 +50,9 @@ export default function Sidebar({ isOpen, onClose, onDataUpdated, professionals 
     setProfessionId(pro.professionId || '');
     setShift(pro.shift || 'dia_todo');
     setIsSupervisor(pro.isSupervisor || false);
+    setDataAdmissao(pro.dataAdmissao || '');
+    setAdmissaoOriginal(pro.dataAdmissao || '');
+    setSaldoInicial([]);
     setFeedback({ type: '', message: '' });
 
     setTimeout(() => {
@@ -65,6 +72,9 @@ export default function Sidebar({ isOpen, onClose, onDataUpdated, professionals 
     setProfessionId('');
     setShift('dia_todo');
     setIsSupervisor(false);
+    setDataAdmissao('');
+    setAdmissaoOriginal('');
+    setSaldoInicial([]);
     setFeedback({ type: '', message: '' });
   };
 
@@ -96,6 +106,13 @@ export default function Sidebar({ isOpen, onClose, onDataUpdated, professionals 
       return;
     }
 
+    const linhasSaldo = primeiroRegistro ? saldoInicial : [];
+    if (linhasSaldo.some(l => !/^\d{4}$/.test(l.year) || !(Number(l.days) >= 1))) {
+      setFeedback({ type: 'error', message: 'No saldo inicial de férias, cada linha precisa do ano (4 dígitos) e dos dias.' });
+      setLoading(false);
+      return;
+    }
+
     try {
       // Matrícula repetida e cargo inexistente são conferidos no servidor; a senha vira hash lá.
       await runOperation('profissional.salvar', {
@@ -107,7 +124,9 @@ export default function Sidebar({ isOpen, onClose, onDataUpdated, professionals 
         baseColor: color,
         professionId,
         shift,
-        isSupervisor
+        isSupervisor,
+        dataAdmissao,
+        ...(linhasSaldo.length ? { saldoInicialFerias: linhasSaldo.map(l => ({ year: l.year, days: Number(l.days) })) } : {})
       });
       const successMessage = editingId ? 'Profissional atualizado com sucesso!' : 'Novo profissional cadastrado!';
       cancelEdit();
@@ -186,6 +205,27 @@ export default function Sidebar({ isOpen, onClose, onDataUpdated, professionals 
     } finally {
       setLoadingProf(false);
     }
+  };
+
+  // Férias por tempo de serviço (ver shared/ferias.js): o primeiro registro da admissão
+  // organiza o saldo que a pessoa já tem; depois, a cada 12 meses, o sistema pergunta.
+  const hoje = hojeISO();
+  const admissaoValida = ehData(dataAdmissao);
+  const primeiroRegistro = admissaoValida && !ehData(admissaoOriginal);
+  const ultimoJaPassou = admissaoValida ? ultimoAniversario(dataAdmissao, hoje) : null;
+  const proEditado = professionals.find(p => p.id === editingId);
+  const contagemDesde = primeiroRegistro ? (ultimoJaPassou || dataAdmissao) : (proEditado?.feriasAniversarioAte || dataAdmissao);
+  const proximaEntrada = admissaoValida ? proximoAniversario(dataAdmissao, contagemDesde) : null;
+  const sugestoesAno = ultimoJaPassou
+    ? [anoSugerido(ultimoJaPassou), ultimoJaPassou.slice(0, 4)]
+    : (admissaoValida ? [dataAdmissao.slice(0, 4)] : []);
+
+  const adicionarLinhaSaldo = () => {
+    const usado = new Set(saldoInicial.map(l => l.year));
+    setSaldoInicial([...saldoInicial, { year: sugestoesAno.find(a => !usado.has(a)) || '', days: '30' }]);
+  };
+  const mudarLinhaSaldo = (i, campo, valor) => {
+    setSaldoInicial(saldoInicial.map((l, j) => (j === i ? { ...l, [campo]: valor } : l)));
   };
 
   const PRESET_COLORS = [
@@ -269,6 +309,41 @@ export default function Sidebar({ isOpen, onClose, onDataUpdated, professionals 
                 <label>{editingId ? 'Nova Senha (em branco mantém a atual)' : 'Senha de Acesso'}</label>
                 <input type="text" autoComplete="off" value={password} onChange={(e) => setPassword(e.target.value)} placeholder={editingId ? 'Deixe em branco para manter' : 'Mínimo de 6 caracteres'} required={!editingId} minLength={6} className="sidebar-input" />
                 
+                <label>Data de Admissão</label>
+                <input type="date" value={dataAdmissao} onChange={(e) => setDataAdmissao(e.target.value)} className="sidebar-input" />
+                {primeiroRegistro && (
+                  <div className="bank-card" style={{ padding: '0.8rem', marginBottom: '1rem' }}>
+                    <p style={{ margin: '0 0 0.6rem', fontSize: '0.85rem', color: '#e5e7eb' }}>
+                      <strong>Primeiro registro.</strong> As férias que {name.trim() || 'a pessoa'} já tem são de qual ano?
+                      Se forem de mais de um ano, uma linha para cada.
+                    </p>
+                    {saldoInicial.map((linha, i) => (
+                      <div key={i} style={{ display: 'flex', gap: '8px', marginBottom: '6px', alignItems: 'center' }}>
+                        <input type="text" inputMode="numeric" maxLength={4} placeholder="Ano" className="sidebar-input no-margin" style={{ flex: 1 }}
+                          value={linha.year} onChange={(e) => mudarLinhaSaldo(i, 'year', e.target.value.replace(/\D/g, ''))} />
+                        <input type="number" min="1" max="366" placeholder="Dias" className="sidebar-input no-margin" style={{ flex: 1 }}
+                          value={linha.days} onChange={(e) => mudarLinhaSaldo(i, 'days', e.target.value)} />
+                        <button type="button" className="btn-cancel" title="Tirar esta linha" style={{ width: 'auto', margin: 0, padding: '0.45rem 0.7rem' }}
+                          onClick={() => setSaldoInicial(saldoInicial.filter((_, j) => j !== i))}>✕</button>
+                      </div>
+                    ))}
+                    <button type="button" className="btn-cancel" style={{ margin: 0, padding: '0.45rem' }} onClick={adicionarLinhaSaldo}>
+                      + Ano de referência
+                    </button>
+                    <small style={{ display: 'block', marginTop: '0.6rem', color: '#9ca3af', fontSize: '0.75rem' }}>
+                      {ultimoJaPassou
+                        ? `O que já passou (até ${dataBR(ultimoJaPassou)}) fica como você lançar aqui. `
+                        : 'Ainda não completou 12 meses: pode deixar sem linhas. '}
+                      Depois, a cada 12 meses, o sistema pergunta antes de lançar +30 dias — a próxima vez em {dataBR(proximaEntrada)}.
+                    </small>
+                  </div>
+                )}
+                {admissaoValida && !primeiroRegistro && proximaEntrada && (
+                  <small style={{ display: 'block', margin: '-0.6rem 0 1rem', color: '#9ca3af', fontSize: '0.75rem' }}>
+                    Próxima entrada de férias: {dataBR(proximaEntrada)} — período {periodoAquisitivo(dataAdmissao, proximaEntrada).rotulo}, sugerido como {anoSugerido(proximaEntrada)}. O sistema pergunta antes de lançar.
+                  </small>
+                )}
+
                 <div className="custom-toggle-container" onClick={() => setIsSupervisor(!isSupervisor)}>
                   <div className="custom-toggle-track">
                     <div className={`custom-toggle-knob ${isSupervisor ? 'active' : ''}`}>

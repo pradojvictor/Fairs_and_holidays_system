@@ -19,7 +19,8 @@
   box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.15);
   z-index: 2000;
   transition: transform 0.4s cubic-bezier(0.32, 0.72, 0, 1);
-  transform: translateY(calc(100% - 70px));
+  /* Fechada, só a alça de 44px aparece no rodapé. */
+  transform: translateY(calc(100% - 44px));
 }
 
 .prof-list-wrapper.open {
@@ -27,7 +28,7 @@
 }
 
 .drawer-header {
-  height: 70px;
+  height: 44px;
   display: flex;
   flex-direction: column;
   justify-content: center;
@@ -39,10 +40,10 @@
 
 .drawer-handle-pill {
   width: 40px;
-  height: 5px;
+  height: 4px;
   background-color: #d1d5db;
   border-radius: 10px;
-  margin-bottom: 8px;
+  margin-bottom: 4px;
 }
 
 .drawer-title-row {
@@ -51,7 +52,7 @@
   gap: 10px;
   color: #111827;
   font-weight: bold;
-  font-size: 1.1rem;
+  font-size: 0.95rem;
 }
 
 .prof-list-content {

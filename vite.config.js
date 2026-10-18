@@ -14,6 +14,17 @@ function usarGistLocal(pasta) {
   globalThis.fetch = async (url, opcoes = {}) => {
     const endereco = String(url)
     if (!/^https:\/\/([a-z.]+\.)?(github\.com|githubusercontent\.com)\//.test(endereco)) return fetchReal(url, opcoes)
+    // Novidades do sistema (issues do GitHub): no modo local, vêm do issues.json da pasta, se
+    // existir — serve para ver como uma novidade fica antes de publicá-la. Sem o arquivo, lê as
+    // issues de verdade do repositório (público, só leitura).
+    if (endereco.startsWith('https://api.github.com/repos/')) {
+      const arquivo = join(pasta, 'issues.json')
+      if (existsSync(arquivo)) {
+        return new Response(await readFile(arquivo, 'utf8'), { status: 200, headers: { 'content-type': 'application/json' } })
+      }
+      if ((opcoes.method || 'GET') !== 'GET') throw new Error('[dados-locais] só leitura nas issues do GitHub')
+      return fetchReal(url, opcoes)
+    }
     if (!endereco.startsWith('https://api.github.com/gists/')) {
       throw new Error(`[dados-locais] chamada ao GitHub recusada: ${endereco}`)
     }
@@ -26,7 +37,7 @@ function usarGistLocal(pasta) {
     }
     const files = {}
     for (const nome of await readdir(pasta)) {
-      if (nome.endsWith('.json')) files[nome] = { filename: nome, content: await readFile(join(pasta, nome), 'utf8'), truncated: false }
+      if (nome.endsWith('.json') && nome !== 'issues.json') files[nome] = { filename: nome, content: await readFile(join(pasta, nome), 'utf8'), truncated: false }
     }
     return new Response(JSON.stringify({ files }), { status: 200, headers: { 'content-type': 'application/json' } })
   }

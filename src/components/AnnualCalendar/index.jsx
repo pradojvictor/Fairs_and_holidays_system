@@ -30,16 +30,17 @@ export default function AnnualCalendar({ professionals = [], events = [], onEven
     fetchHolidays();
   }, [currentYear]);
 
+  // Abre já no mês atual (e no seguinte, ao lado). Salto direto e síncrono em vez de rolagem
+  // animada: animação e requestAnimationFrame não rodam com a aba em segundo plano, e aí a
+  // escala abria em janeiro.
   useEffect(() => {
-    if (sliderRef.current && !isExpanded) {
-      const currentMonthIndex = new Date().getMonth();
-      const monthElement = sliderRef.current.children[currentMonthIndex];
-      if (monthElement) {
-        setTimeout(() => {
-          monthElement.scrollIntoView({ behavior: 'smooth', inline: 'start', block: 'nearest' });
-        }, 300);
-      }
-    }
+    const slider = sliderRef.current;
+    if (!slider || isExpanded) return;
+    const monthElement = slider.children[new Date().getMonth()];
+    if (!monthElement) return;
+    slider.style.scrollBehavior = 'auto';
+    slider.scrollLeft = monthElement.offsetLeft - slider.offsetLeft;
+    slider.style.scrollBehavior = '';
   }, [isExpanded]);
 
   const getDaysInMonth = (month, year) => new Date(year, month + 1, 0).getDate();
@@ -128,11 +129,14 @@ export default function AnnualCalendar({ professionals = [], events = [], onEven
                   })}
                 </div>
               </div>
+              {/* --n e --linha deixam o CSS decidir a altura: no modo de dois meses as linhas
+                  crescem até ocupar a tela; no "ano completo" ficam com 5px. */}
               <div
                 className="month-body"
                 style={{
+                  '--n': Math.max(1, professionals.length),
                   gridTemplateColumns: `repeat(${daysCount}, minmax(0, 1fr))`,
-                  gridTemplateRows: professionals.length > 0 ? `repeat(${professionals.length}, 5px)` : '5px'
+                  gridTemplateRows: `repeat(${Math.max(1, professionals.length)}, var(--linha, 5px))`
                 }}
               >
                 {daysArray.map(day => (

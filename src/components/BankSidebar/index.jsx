@@ -2,6 +2,7 @@
 import { useState } from 'react';
 import { runOperation } from '../../services/githubApi';
 import CustomSelect from '../CustomSelect';
+import { anoSugerido, dataBR, ehData, periodoAquisitivo, proximoAniversario } from '../../../shared/ferias.js';
 import './index.css';
 
 export default function BankSidebar({ isOpen, onClose, onDataUpdated, professionals = [], events = [] }) {
@@ -206,6 +207,19 @@ export default function BankSidebar({ isOpen, onClose, onDataUpdated, profession
               <div className="bank-empty-state"><p>👈 Selecione um funcionário.</p></div>
             ) : (
               <div className="bank-management-area">
+                {ehData(selectedPro.dataAdmissao) ? (() => {
+                  const proxima = proximoAniversario(selectedPro.dataAdmissao, selectedPro.feriasAniversarioAte || selectedPro.dataAdmissao);
+                  return (
+                    <div className="bank-card admissao-info">
+                      Admissão: <strong>{dataBR(selectedPro.dataAdmissao)}</strong><br />
+                      Próxima entrada de férias: <strong>{dataBR(proxima)}</strong> — período {periodoAquisitivo(selectedPro.dataAdmissao, proxima).rotulo}, sugerido como {anoSugerido(proxima)}. O sistema pergunta antes de lançar.
+                    </div>
+                  );
+                })() : (
+                  <div className="bank-card admissao-info sem-admissao">
+                    Sem data de admissão. Cadastre no Painel Administrativo para o sistema avisar quando as férias vencerem.
+                  </div>
+                )}
                 {feedback.message && (
                   <div className={`feedback-toast ${feedback.type}`} style={{ marginBottom: '1rem' }}>{feedback.message}</div>
                 )}
@@ -298,6 +312,8 @@ export default function BankSidebar({ isOpen, onClose, onDataUpdated, profession
                               <span className="log-badge">{log.type === 'entrada' || !log.type ? `+${log.days}` : `-${log.days}`}</span>
                               <span className="log-desc" title={log.type === 'entrada' || !log.type ? `Atribuição (${log.category || log.type})` : saidaText}>
                                 {log.year} • {log.type === 'entrada' || !log.type ? `Atribuição (${log.category || log.type})` : saidaText}
+                                {log.origem === 'aniversario' && log.periodo && ` • 12 meses: ${log.periodo}`}
+                                {log.origem === 'saldo-inicial' && ' • saldo inicial'}
                               </span>
                             </div>
                             <div className="log-item-meta">

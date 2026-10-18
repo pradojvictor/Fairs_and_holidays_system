@@ -1,12 +1,13 @@
 // O que cada papel recebe do GET /api/dados. Sempre uma lista de campos, nunca "tudo menos
 // a senha" (padrão 1.5): campo novo no cadastro não vaza por esquecimento.
+import { hojeISO, pendenciasFerias } from '../../shared/ferias.js';
 import { ehHashScrypt } from './senha.js';
 
 const lista = (v) => (Array.isArray(v) ? v : []);
 const escolher = (obj, campos) =>
   Object.fromEntries(campos.filter((c) => obj?.[c] !== undefined).map((c) => [c, obj[c]]));
 
-const PROFISSIONAL_ADMIN = ['id', 'name', 'matricula', 'matricula2', 'baseColor', 'professionId', 'shift', 'isSupervisor', 'bancoFolgas', 'bancoFerias'];
+const PROFISSIONAL_ADMIN = ['id', 'name', 'matricula', 'matricula2', 'baseColor', 'professionId', 'shift', 'isSupervisor', 'bancoFolgas', 'bancoFerias', 'dataAdmissao', 'feriasAniversarioAte'];
 const PROFISSIONAL_EQUIPE = ['id', 'name', 'baseColor', 'professionId', 'shift'];
 const EVENTO_ADMIN = ['id', 'professionalId', 'type', 'reason', 'startDate', 'endDate', 'loteYear'];
 const EVENTO_EQUIPE = ['id', 'professionalId', 'type', 'startDate', 'endDate'];
@@ -21,6 +22,8 @@ export function visaoAdmin(dados) {
     })),
     events: lista(dados.events).map((e) => escolher(e, EVENTO_ADMIN)),
     professions: lista(dados.professions).map((c) => escolher(c, CARGO)),
+    // Aniversários de admissão que já passaram e o operador ainda não resolveu (ver ferias.js).
+    pendenciasFerias: pendenciasFerias(dados.professionals, hojeISO()),
   };
 }
 

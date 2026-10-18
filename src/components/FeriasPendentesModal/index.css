@@ -1,0 +1,91 @@
+.event-modal-container.ferias-pendentes {
+  max-width: 560px;
+  max-height: 85vh;
+  overflow-y: auto;
+}
+
+.ferias-pendentes-intro,
+.ferias-pendentes-vazio {
+  margin: 0 0 1rem;
+  font-size: 0.9rem;
+  color: #d1d5db;
+}
+
+.ferias-pendentes-lista {
+  display: flex;
+  flex-direction: column;
+  gap: 0.8rem;
+}
+
+.ferias-pendente {
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  border-left: 4px solid #10b981;
+  border-radius: 8px;
+  padding: 0.8rem 1rem;
+  background-color: rgba(255, 255, 255, 0.05);
+}
+
+.ferias-pendente-topo {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  color: white;
+}
+
+.ferias-pendente-cor {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.ferias-pendente-periodo {
+  margin-left: auto;
+  font-size: 0.8rem;
+  font-weight: bold;
+  color: #10b981;
+  border: 1px solid #10b981;
+  border-radius: 10px;
+  padding: 0 0.5rem;
+}
+
+.ferias-pendente-info {
+  margin: 0.4rem 0 0.6rem;
+  font-size: 0.8rem;
+  line-height: 1.5;
+  color: #d1d5db;
+}
+
+.ferias-pendente-campos {
+  display: flex;
+  gap: 0.6rem;
+}
+
+.ferias-pendente-campos label {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  font-size: 0.75rem;
+  color: #9ca3af;
+}
+
+.ferias-pendente-acoes {
+  display: flex;
+  gap: 0.6rem;
+  margin-top: 0.6rem;
+}
+
+.ferias-pendente-acoes .btn-save,
+.ferias-pendente-acoes .btn-cancel {
+  flex: 1;
+  margin: 0;
+  padding: 0.5rem;
+}
+
+.ferias-pendente-mais {
+  display: block;
+  margin-top: 0.5rem;
+  font-size: 0.75rem;
+  color: #fbbf24;
+}

@@ -11,12 +11,16 @@ process.env.VERCEL = '1';
 delete process.env.COOKIE_SEGURO;
 
 // ---------- GitHub falso ----------
-const gist = { files: {}, leituras: 0, gravacoes: 0, fora: false, aoLer: null };
+const gist = { files: {}, leituras: 0, gravacoes: 0, fora: false, aoLer: null, issues: [], issuesFora: false, pedidosIssues: [] };
 
 const json = (status, corpo) => new Response(JSON.stringify(corpo), { status, headers: { 'content-type': 'application/json' } });
 
 globalThis.fetch = async (url, opcoes = {}) => {
   if (gist.fora) throw new TypeError('fetch failed: ECONNREFUSED');
+  if (String(url).startsWith('https://api.github.com/repos/')) {
+    gist.pedidosIssues.push(String(url));
+    return gist.issuesFora ? json(503, {}) : json(200, gist.issues);
+  }
   assert.equal(url, 'https://api.github.com/gists/gist-de-teste', 'a API só pode falar com o Gist configurado');
   if ((opcoes.method || 'GET') === 'GET') {
     gist.leituras += 1;
@@ -37,7 +41,10 @@ const rotaLogin = (await import('../api/login.js')).default;
 const rotaLogout = (await import('../api/logout.js')).default;
 const rotaDados = (await import('../api/dados.js')).default;
 const rotaOperacao = (await import('../api/operacao.js')).default;
+const rotaNotificacoes = (await import('../api/notificacoes.js')).default;
+const { limparCacheNovidades } = await import('../api/_lib/novidades.js');
 const { planejarMigracao } = await import('../scripts/migrar-senhas.mjs');
+const { aniversarioNoAno, hojeISO, ultimoAniversario } = await import('../shared/ferias.js');
 
 // ---------- dados de exemplo ----------
 const HASHES = {
@@ -79,6 +86,10 @@ beforeEach(() => {
   gist.gravacoes = 0;
   gist.fora = false;
   gist.aoLer = null;
+  gist.issues = [];
+  gist.issuesFora = false;
+  gist.pedidosIssues = [];
+  limparCacheNovidades();
 });
 
 // ---------- pedido e resposta no formato da Vercel ----------
@@ -412,4 +423,209 @@ test('migração: só a senha em claro vira hash, todo o resto fica igual, e rod
   const segunda = await planejarMigracao(novo);
   assert.deepEqual(segunda.novo, novo);
   assert.equal(segunda.resumo.convertidas.length, 0);
+});
+
+// ---------- férias por tempo de serviço ----------
+const daviSalvar = (extra) => ({
+  id: 'p_4', name: 'Davi Reis', matricula: '400', matricula2: '', senha: '', baseColor: '#795548',
+  professionId: 'cargo_2', shift: 'dia_todo', isSupervisor: false, ...extra,
+});
+
+test('admissão: no primeiro registro, a contagem parte do último aniversário e o saldo entra nos anos escolhidos', async () => {
+  const cookie = await entrarAdmin();
+  const res = await operar(cookie, 'profissional.salvar', daviSalvar({
+    dataAdmissao: '2020-02-23',
+    saldoInicialFerias: [{ year: '2025', days: 30 }, { year: '2026', days: 10 }],
+  }));
+  assert.equal(res.statusCode, 200, JSON.stringify(res.body));
+  const davi = lerDados().professionals[3];
+  assert.equal(davi.dataAdmissao, '2020-02-23');
+  assert.equal(davi.feriasAniversarioAte, ultimoAniversario('2020-02-23', hojeISO()));
+  assert.deepEqual(davi.bancoFerias.map((l) => [l.year, l.days, l.type, l.origem]), [['2025', 30, 'entrada', 'saldo-inicial'], ['2026', 10, 'entrada', 'saldo-inicial']]);
+
+  const { body } = await chamar(rotaDados, 'GET', { cookie });
+  assert.equal(body.professionals[3].dataAdmissao, '2020-02-23');
+  assert.deepEqual(body.pendenciasFerias.filter((p) => p.professionalId === 'p_4'), [], 'o que já passou foi organizado no primeiro registro');
+
+  // Depois do primeiro registro, o saldo inicial não entra de novo; corrigir a data não mexe na contagem.
+  const repetido = await operar(cookie, 'profissional.salvar', daviSalvar({ dataAdmissao: '2020-02-23', saldoInicialFerias: [{ year: '2026', days: 30 }] }));
+  assert.equal(repetido.statusCode, 400);
+  const corrigida = await operar(cookie, 'profissional.salvar', daviSalvar({ dataAdmissao: '2020-02-24' }));
+  assert.equal(corrigida.statusCode, 200);
+  assert.equal(lerDados().professionals[3].feriasAniversarioAte, davi.feriasAniversarioAte);
+  assert.equal(lerDados().professionals[3].bancoFerias.length, 2);
+});
+
+test('admissão: salvar o cadastro sem mexer na admissão não apaga nada', async () => {
+  const cookie = await entrarAdmin();
+  await operar(cookie, 'profissional.salvar', daviSalvar({ dataAdmissao: '2021-06-01' }));
+  const antes = lerDados().professionals[3];
+  const res = await operar(cookie, 'profissional.salvar', daviSalvar({}));
+  assert.equal(res.statusCode, 200);
+  assert.deepEqual(lerDados().professionals[3], antes);
+});
+
+test('aniversário vencido: o sistema lista, o operador lança no ano que escolher, em ordem, sem duplicar', async () => {
+  const ano = Number(hojeISO().slice(0, 4));
+  const dados = lerDados();
+  // Admitida em 10/03/2019; a última vez que alguém resolveu foi o aniversário de três anos atrás.
+  dados.professionals[0].dataAdmissao = '2019-03-10';
+  dados.professionals[0].feriasAniversarioAte = aniversarioNoAno('2019-03-10', ano - 3);
+  gist.files['data.json'] = JSON.stringify(dados, null, 2);
+
+  const cookie = await entrarAdmin();
+  const { body } = await chamar(rotaDados, 'GET', { cookie });
+  const daAna = body.pendenciasFerias.filter((p) => p.professionalId === 'p_1');
+  assert.ok(daAna.length >= 2, 'pelo menos dois aniversários a resolver');
+  assert.equal(daAna[0].aniversario, `${ano - 2}-03-10`);
+  assert.equal(daAna[0].anoSugerido, String(ano - 3));
+  assert.equal(daAna[0].dias, 30);
+
+  const foraDeOrdem = await operar(cookie, 'ferias.aniversario.resolver', { professionalId: 'p_1', aniversario: daAna[1].aniversario, acao: 'lancar', year: daAna[1].anoSugerido });
+  assert.equal(foraDeOrdem.statusCode, 409);
+  const anoDepois = await operar(cookie, 'ferias.aniversario.resolver', { professionalId: 'p_1', aniversario: daAna[0].aniversario, acao: 'lancar', year: String(ano) });
+  assert.equal(anoDepois.statusCode, 400);
+  const semAno = await operar(cookie, 'ferias.aniversario.resolver', { professionalId: 'p_1', aniversario: daAna[0].aniversario, acao: 'lancar' });
+  assert.equal(semAno.statusCode, 400);
+
+  const lancar = await operar(cookie, 'ferias.aniversario.resolver', { professionalId: 'p_1', aniversario: daAna[0].aniversario, acao: 'lancar', year: daAna[0].anoSugerido });
+  assert.equal(lancar.statusCode, 200, JSON.stringify(lancar.body));
+  let ana = lerDados().professionals[0];
+  const lote = ana.bancoFerias.at(-1);
+  assert.deepEqual([lote.type, lote.year, lote.days, lote.category, lote.origem, lote.aniversario], ['entrada', daAna[0].anoSugerido, 30, 'Individual', 'aniversario', daAna[0].aniversario]);
+  assert.match(lote.periodo, /^\d{2}\/03\/\d{4} a \d{2}\/03\/\d{4}$/);
+  assert.equal(ana.feriasAniversarioAte, daAna[0].aniversario);
+
+  const deNovo = await operar(cookie, 'ferias.aniversario.resolver', { professionalId: 'p_1', aniversario: daAna[0].aniversario, acao: 'lancar', year: daAna[0].anoSugerido });
+  assert.equal(deNovo.statusCode, 409, 'o mesmo aniversário não lança duas vezes');
+
+  const dispensar = await operar(cookie, 'ferias.aniversario.resolver', { professionalId: 'p_1', aniversario: daAna[1].aniversario, acao: 'dispensar' });
+  assert.equal(dispensar.statusCode, 200);
+  ana = lerDados().professionals[0];
+  assert.equal(ana.bancoFerias.length, 2, '"já lançado" não acrescenta dias');
+  assert.equal(ana.feriasAniversarioAte, daAna[1].aniversario);
+});
+
+test('colaborador e supervisor não recebem admissão nem pendências de férias', async () => {
+  const dados = lerDados();
+  dados.professionals[1].dataAdmissao = '2019-03-10';
+  gist.files['data.json'] = JSON.stringify(dados, null, 2);
+  const cookie = await entrar({ tipo: 'colaborador', matricula: '200', senha: 'bruno123' });
+  const { body } = await chamar(rotaDados, 'GET', { cookie });
+  assert.doesNotMatch(JSON.stringify(body), /dataAdmissao|feriasAniversarioAte|pendenciasFerias/);
+});
+
+// ---------- central de notificações ----------
+const somar = (iso, n) => new Date(Date.parse(`${iso}T00:00:00Z`) + n * 86_400_000).toISOString().slice(0, 10);
+const issue = (numero, extra) => ({
+  number: numero, title: `Novidade ${numero}`, body: '', created_at: '2026-10-18T12:00:00Z',
+  user: { login: 'pradojvictor' }, labels: [{ name: 'novidade' }], ...extra,
+});
+const notificacoes = async (cookie) => {
+  const res = await chamar(rotaNotificacoes, 'GET', { cookie });
+  assert.equal(res.statusCode, 200, JSON.stringify(res.body));
+  return res.body.notificacoes;
+};
+
+test('notificações: sem sessão 401; colaborador 403', async () => {
+  assert.equal((await chamar(rotaNotificacoes, 'GET')).statusCode, 401);
+  const colaborador = await entrar({ tipo: 'colaborador', matricula: '200', senha: 'bruno123' });
+  assert.equal((await chamar(rotaNotificacoes, 'GET', { cookie: colaborador })).statusCode, 403);
+});
+
+test('novidades: só issues com a etiqueta e do dono; o corpo vira resumo, parágrafos e itens', async () => {
+  gist.issues = [
+    issue(12, { title: '**Login mais seguro**', body: 'A senha agora é conferida no servidor.\n\n- Sessão de 8h: sai sozinha\n- Senha atual: pedida ao mudar o perfil\n\nO resto continua igual.' }),
+    issue(13, { user: { login: 'estranho' } }),
+    issue(14, { labels: [{ name: 'bug' }] }),
+    issue(15, { pull_request: { url: 'x' } }),
+  ];
+  const lista = await notificacoes(await entrarAdmin());
+  const sistema = lista.filter((n) => n.categoria === 'sistema');
+  assert.deepEqual(sistema.map((n) => n.id), ['novidade:issue-12']);
+  assert.equal(sistema[0].titulo, 'Login mais seguro');
+  assert.equal(sistema[0].resumo, 'A senha agora é conferida no servidor.');
+  assert.deepEqual(sistema[0].itens, [{ titulo: 'Sessão de 8h', texto: 'sai sozinha' }, { titulo: 'Senha atual', texto: 'pedida ao mudar o perfil' }]);
+  assert.deepEqual(sistema[0].paragrafos, ['O resto continua igual.']);
+  assert.equal('lida' in sistema[0], false, 'o servidor não diz o que foi lido: isso é do navegador');
+  assert.match(gist.pedidosIssues[0], /labels=novidade&state=all&creator=pradojvictor/);
+});
+
+test('GitHub fora: a central funciona, só sem as novidades', async () => {
+  gist.issuesFora = true;
+  const lista = await notificacoes(await entrarAdmin());
+  assert.equal(lista.filter((n) => n.categoria === 'sistema').length, 0);
+});
+
+test('férias e escala viram notificações com detalhes — e o motivo de atestado nunca aparece', async () => {
+  const hoje = hojeISO();
+  const ano = Number(hoje.slice(0, 4));
+  const dados = lerDados();
+  dados.professionals[0].dataAdmissao = '2019-03-10';
+  dados.professionals[0].feriasAniversarioAte = aniversarioNoAno('2019-03-10', ano - 2);
+  // Carla e Davi: mesmo cargo e turno, fora ao mesmo tempo daqui a 2 e 3 dias.
+  dados.events.push(
+    { id: 'evt_c', professionalId: 'p_3', type: 'atestado', reason: 'CID J11 sigiloso', startDate: somar(hoje, 2), endDate: somar(hoje, 3), loteYear: null },
+    { id: 'evt_d', professionalId: 'p_4', type: 'folga', reason: '', startDate: somar(hoje, 2), endDate: somar(hoje, 4), loteYear: null },
+  );
+  gist.files['data.json'] = JSON.stringify(dados, null, 2);
+
+  const lista = await notificacoes(await entrarAdmin());
+  assert.doesNotMatch(JSON.stringify(lista), /CID|sigiloso|senhaHash|matricula/);
+
+  const ferias = lista.find((n) => n.tipo === 'ferias-a-lancar');
+  assert.equal(ferias.categoria, 'ferias');
+  assert.match(ferias.titulo, /Ana Souza completou mais 12 meses/);
+  assert.ok(ferias.detalhes.some((d) => d.rotulo === 'Período aquisitivo'));
+  assert.equal(ferias.acao.tipo, 'lancar-ferias');
+
+  const ausencia = lista.find((n) => n.id === 'escala-inicio:evt_c');
+  assert.match(ausencia.titulo, /^Atestado de Carla Dias começa em/);
+  assert.equal(ausencia.detalhes.find((d) => d.rotulo === 'Mesmo cargo e turno fora no período').valor, 'Davi Reis');
+
+  const cobertura = lista.filter((n) => n.tipo === 'cobertura');
+  assert.equal(cobertura.length, 1, 'dois dias seguidos do mesmo grupo viram um alerta só');
+  assert.match(cobertura[0].titulo, /Cobertura: até 2 de Recepção \(Dia todo\) fora de /);
+  assert.equal(cobertura[0].detalhes.find((d) => d.rotulo === 'Dias afetados').valor, `${somar(hoje, 2).split('-').reverse().join('/')} a ${somar(hoje, 3).split('-').reverse().join('/')}`);
+});
+
+test('o "lido" não fica no servidor: sem rota para marcar, e um lidas antigo no Gist é ignorado e some', async () => {
+  gist.issues = [issue(20)];
+  // Como o Gist real tinha: um notificacoes.json do tempo em que o servidor guardava o lido.
+  gist.files['notificacoes.json'] = JSON.stringify({ lidas: { 'novidade:issue-20': '2026-10-18T10:00:00.000Z' }, historico: [] });
+  const cookie = await entrarAdmin();
+  const marcar = await chamar(rotaNotificacoes, 'POST', { cookie, body: { acao: 'ler-todas' } });
+  assert.equal(marcar.statusCode, 405);
+  const novidade = (await notificacoes(cookie)).find((n) => n.id === 'novidade:issue-20');
+  assert.ok(novidade, 'continua aparecendo, para outro computador ver');
+  assert.equal('lida' in novidade, false);
+
+  // A próxima gravação do histórico reescreve o arquivo sem o campo antigo.
+  const ano = Number(hojeISO().slice(0, 4));
+  const dados = lerDados();
+  dados.professionals[0].dataAdmissao = '2019-03-10';
+  dados.professionals[0].feriasAniversarioAte = aniversarioNoAno('2019-03-10', ano - 2);
+  gist.files['data.json'] = JSON.stringify(dados, null, 2);
+  const pendentes = (await notificacoes(cookie)).filter((n) => n.tipo === 'ferias-a-lancar').sort((a, b) => a.data.localeCompare(b.data));
+  await operar(cookie, 'ferias.aniversario.resolver', { professionalId: 'p_1', aniversario: pendentes[0].id.split(':')[2], acao: 'dispensar' });
+  const estado = JSON.parse(gist.files['notificacoes.json']);
+  assert.equal('lidas' in estado, false);
+  assert.equal(estado.historico.length, 1);
+});
+
+test('lançar férias deixa registro na central, para os outros computadores verem', async () => {
+  const ano = Number(hojeISO().slice(0, 4));
+  const dados = lerDados();
+  dados.professionals[0].dataAdmissao = '2019-03-10';
+  dados.professionals[0].feriasAniversarioAte = aniversarioNoAno('2019-03-10', ano - 2);
+  gist.files['data.json'] = JSON.stringify(dados, null, 2);
+  const cookie = await entrarAdmin();
+  // A lista vem da mais nova para a mais antiga; o servidor exige resolver a mais antiga primeiro.
+  const pendentes = (await notificacoes(cookie)).filter((n) => n.tipo === 'ferias-a-lancar').sort((a, b) => a.data.localeCompare(b.data));
+  const aniversario = pendentes[0].id.split(':')[2];
+  const res = await operar(cookie, 'ferias.aniversario.resolver', { professionalId: 'p_1', aniversario, acao: 'lancar', year: String(Number(aniversario.slice(0, 4)) - 1) });
+  assert.equal(res.statusCode, 200);
+  const registro = (await notificacoes(cookie)).find((n) => n.id === `ferias-lancada:p_1:${aniversario}`);
+  assert.ok(registro, 'o lançamento aparece na central');
+  assert.match(registro.titulo, /^Férias lançadas: Ana Souza \+30 dias/);
 });

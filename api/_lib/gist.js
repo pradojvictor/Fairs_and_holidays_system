@@ -74,19 +74,22 @@ export function lerSessoesJson(texto) {
   }
 }
 
-// Uma leitura devolve os dois arquivos: é a mesma chamada à API.
+// Uma leitura devolve todos os arquivos do Gist: é a mesma chamada à API. `arquivos` traz o
+// texto de cada um (os de estado, como notificacoes.json, são lidos por quem os usa).
 export async function lerGist() {
   const { gistId, arquivoDados } = config();
   const gist = await (await chamar(`${API}/${gistId}`)).json();
-  const arquivo = gist.files?.[arquivoDados];
-  if (!arquivo) throw new ErroConfiguracao(`Arquivo ${arquivoDados} não encontrado no Gist.`);
-  const textoDados = await conteudoDoArquivo(arquivo);
-  const arquivoSessoes = gist.files?.[ARQUIVO_SESSOES];
-  const textoSessoes = arquivoSessoes ? await conteudoDoArquivo(arquivoSessoes) : null;
+  const arquivos = {};
+  for (const [nome, arquivo] of Object.entries(gist.files || {})) {
+    arquivos[nome] = await conteudoDoArquivo(arquivo);
+  }
+  const textoDados = arquivos[arquivoDados];
+  if (textoDados === undefined) throw new ErroConfiguracao(`Arquivo ${arquivoDados} não encontrado no Gist.`);
   return {
     textoDados,
     dados: JSON.parse(textoDados),
-    sessoes: textoSessoes ? lerSessoesJson(textoSessoes) : [],
+    sessoes: arquivos[ARQUIVO_SESSOES] ? lerSessoesJson(arquivos[ARQUIVO_SESSOES]) : [],
+    arquivos,
   };
 }
 
@@ -96,6 +99,19 @@ export async function gravarArquivo(nome, conteudo) {
     method: 'PATCH',
     body: JSON.stringify({ files: { [nome]: { content: conteudo } } }),
   });
+}
+
+// Arquivos de estado (sessões, notificações): grava, relê e repete até `conferir` aceitar o
+// que ficou — o Gist não tem transação, e dois pedidos juntos podem gravar um por cima do outro.
+// `ler` tira da leitura o estado do arquivo; `transformar` devolve o objeto novo a gravar.
+export async function alterarArquivoConferindo(nome, ler, transformar, conferir, leituraInicial) {
+  let leitura = leituraInicial || await lerGist();
+  for (let tentativa = 0; tentativa < 3; tentativa++) {
+    await gravarArquivo(nome, JSON.stringify(transformar(ler(leitura))));
+    leitura = await lerGist();
+    if (conferir(ler(leitura))) return leitura;
+  }
+  throw new ErroDependencia(`Não foi possível gravar ${nome} no Gist.`);
 }
 
 // Lê, transforma e grava o data.json. Antes de gravar, relê: se o arquivo mudou no meio do

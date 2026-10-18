@@ -1,7 +1,7 @@
 .calendar-container {
   display: flex;
   flex-direction: column;
-  gap: 2rem;
+  gap: 0.6rem;
 }
 
 .calendar-drawer-header {
@@ -9,8 +9,8 @@
   justify-content: space-between;
   align-items: center;
   cursor: pointer;
-  margin-bottom: 1rem;
-  padding: 0.8rem 1.2rem;
+  margin-bottom: 0;
+  padding: 0.3rem 0.9rem;
   background-color: rgba(255, 255, 255, 0.1);
   border-radius: 6px;
   border: 1px solid rgba(255, 255, 255, 0.2);
@@ -24,11 +24,11 @@
 .calendar-drawer-title {
   margin: 0;
   color: white;
-  font-size: 1.2rem;
+  font-size: 1rem;
   text-transform: uppercase;
   text-align: center;
   strong{
-    font-size: 1.3rem;
+    font-size: 1.05rem;
     color: orange;
   }
 }
@@ -37,7 +37,8 @@
   background: rgba(0, 0, 0, 0.4);
   border: 1px solid rgba(255, 255, 255, 0.2);
   color: white;
-  padding: 0.5rem 1rem;
+  font-size: 0.8rem;
+  padding: 0.25rem 0.8rem;
   border-radius: 20px;
   font-weight: bold;
   cursor: pointer;
@@ -52,14 +53,14 @@
 
 .months-wrapper {
   display: flex;
-  gap: 1.5rem;
+  gap: 0.75rem;
   transition: all 0.3s ease;
 }
 
 .months-wrapper.slider {
   flex-wrap: nowrap;
   overflow-x: auto;
-  padding-bottom: 15px;
+  padding-bottom: 8px;
   scroll-snap-type: x mandatory;
   scroll-behavior: smooth;
   cursor: grab;
@@ -73,9 +74,38 @@
   scroll-behavior: auto;
 }
 
+/* Dois meses lado a lado, dividindo a largura toda. */
 .months-wrapper.slider .month-block {
-  flex: 0 0 420px;
+  flex: 0 0 calc((100% - 0.75rem) / 2);
+  box-sizing: border-box;
   scroll-snap-align: start;
+}
+
+/* E a altura que sobra na tela: cada profissional ganha uma linha entre 6px e 22px,
+   descontado o que fica em cima e embaixo da escala (cabeçalho, filtros, legenda, gaveta). */
+.months-wrapper.slider .month-body {
+  --linha: minmax(0, 1fr);
+  height: max(calc(var(--n) * 6px), min(calc(100vh - 340px), calc(var(--n) * 22px)));
+}
+
+.months-wrapper.slider .month-title {
+  font-size: 1rem;
+}
+
+.months-wrapper.slider .days-header-grid {
+  font-size: 0.78rem;
+}
+
+.months-wrapper.slider .event-line {
+  height: 60%;
+  min-height: 3px;
+  max-height: 10px;
+}
+
+@media (max-width: 900px) {
+  .months-wrapper.slider .month-block {
+    flex-basis: 100%;
+  }
 }
 
 .months-wrapper.slider::-webkit-scrollbar {
@@ -120,7 +150,7 @@
 
 .month-title {
   display: block;
-  margin-bottom: 0.5rem;
+  margin-bottom: 0.3rem;
   color: #374151;
   font-size: 0.9rem;
   font-weight: bold;
@@ -222,7 +252,7 @@
   margin: 0;
   color: var(--pk-gold, #c3a479);
   font-family: var(--serif-font, 'Playfair Display', serif);
-  font-size: 1.1rem;
+  font-size: 0.95rem;
   font-weight: 400;
 }
 

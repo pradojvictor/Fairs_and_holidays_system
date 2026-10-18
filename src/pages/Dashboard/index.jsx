@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { fetchGistData, runOperation } from '../../services/githubApi';
+import { fetchGistData, fetchNotifications, runOperation } from '../../services/githubApi';
 import Sidebar from '../../components/Sidebar';
 import AnnualCalendar from '../../components/AnnualCalendar';
 import EventModal from '../../components/EventModal';
@@ -12,6 +12,11 @@ import ProfessionalList from '../../components/ProfessionalList';
 import RestScreen from '../../components/RestScreen';
 import BankSidebar from '../../components/BankSidebar';
 import CustomSelect from '../../components/CustomSelect';
+import FeriasPendentesModal from '../../components/FeriasPendentesModal';
+import Sino from '../../components/Notificacoes/Sino';
+import CentralNotificacoes from '../../components/Notificacoes/Central';
+import DetalheNotificacao from '../../components/Notificacoes/Detalhe';
+import { aplicarLidas, lerLidas, marcarLidas, salvarLidas } from '../../components/Notificacoes/lidas';
 import './index.css';
 
 export default function Dashboard() {
@@ -41,6 +46,31 @@ export default function Dashboard() {
 
   const [isResting, setIsResting] = useState(false);
 
+  // Férias por tempo de serviço que o operador ainda precisa confirmar (calculadas no servidor).
+  // O aviso chega pelo sino; a janela de lançamento abre pela ação da notificação.
+  const [pendenciasFerias, setPendenciasFerias] = useState([]);
+  const [isFeriasModalOpen, setIsFeriasModalOpen] = useState(false);
+
+  // Central de notificações (api/notificacoes.js). O servidor manda a lista; o que já foi lido
+  // fica neste navegador (Notificacoes/lidas.js), por computador.
+  const [notificacoesServidor, setNotificacoesServidor] = useState([]);
+  const [lidas, setLidas] = useState(() => lerLidas());
+  const notificacoes = aplicarLidas(notificacoesServidor, lidas);
+  const [notificacaoAberta, setNotificacaoAberta] = useState(null);
+  const [centralAberta, setCentralAberta] = useState(false);
+  const [novasAoAbrirCentral, setNovasAoAbrirCentral] = useState([]);
+
+  // As notificações não seguram o painel: se falharem, o resto continua funcionando.
+  const loadNotificacoes = async () => {
+    try {
+      const resposta = await fetchNotifications();
+      setNotificacoesServidor(resposta.notificacoes || []);
+    } catch (err) {
+      if (err.status === 401) navigate('/login', { replace: true });
+      else console.error('Notificações indisponíveis:', err);
+    }
+  };
+
   const loadData = async () => {
     setIsLoading(true);
     try {
@@ -51,6 +81,8 @@ export default function Dashboard() {
       }
       setDbData({ professionals: data.professionals || [], events: data.events || [], professions: data.professions || [] });
       setAdminData({ username: data.perfil.username });
+      setPendenciasFerias(data.pendenciasFerias || []);
+      loadNotificacoes();
     } catch (err) {
       if (err.status === 401) {
         navigate('/login', { replace: true });
@@ -63,6 +95,44 @@ export default function Dashboard() {
   };
 
   useEffect(() => { loadData(); }, []);
+
+  const marcarComoLidas = (ids) => {
+    if (!ids.length) return;
+    const novas = marcarLidas(lidas, ids, new Set(notificacoesServidor.map(n => n.id)));
+    salvarLidas(novas);
+    setLidas(novas);
+  };
+
+  // Clicar numa notificação marca como lida (neste computador) e abre o detalhe.
+  const abrirNotificacao = (n) => {
+    setNotificacaoAberta(n);
+    if (!n.lida) marcarComoLidas([n.id]);
+  };
+
+  // "Ver todas" tira tudo da lista do sino e abre a central; as que eram novas seguem destacadas.
+  const verTodasNotificacoes = () => {
+    const novas = notificacoes.filter(n => !n.lida).map(n => n.id);
+    setNovasAoAbrirCentral(novas);
+    setCentralAberta(true);
+    marcarComoLidas(novas);
+  };
+
+  // Quem lançou (ou dispensou) as férias não precisa ser avisado do próprio lançamento: o
+  // registro entra como lido aqui e aparece como novo nos outros computadores.
+  const feriasResolvidas = (pendencia, acao) => {
+    marcarComoLidas([`${acao === 'lancar' ? 'ferias-lancada' : 'ferias-dispensada'}:${pendencia.professionalId}:${pendencia.aniversario}`]);
+  };
+
+  const agirNotificacao = (n) => {
+    setNotificacaoAberta(null);
+    setCentralAberta(false);
+    if (n.acao?.tipo === 'lancar-ferias') setIsFeriasModalOpen(true);
+    if (n.acao?.tipo === 'banco-ferias') setIsBankSidebarOpen(true);
+    if (n.acao?.tipo === 'ver-escala') {
+      setFilterProf(n.professionalId || '');
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+  };
 
   const handleShare = async () => {
     const publicUrl = `${window.location.origin}/calendario`;
@@ -165,12 +235,16 @@ export default function Dashboard() {
           <button className="btn-bank" onClick={() => setIsBankSidebarOpen(true)}>Banco de Férias</button>
           <button className="btn-share" onClick={handleShare}>Compartilhar Link</button>
           <button className="btn-new-event" onClick={handleOpenNewEvent}>Nova Ausência</button>
+
         </div>
 
         <div className="header-actions">
           <h2 className="dashboard-title">controle de férias e folgas</h2>
         </div>
-        <button className="btn-pause" onClick={() => setIsResting(true)}>Pausar Sistema</button>
+        <div className="header-right">
+          <Sino notificacoes={notificacoes} onAbrir={abrirNotificacao} onVerTodas={verTodasNotificacoes} />
+          <button className="btn-pause" onClick={() => setIsResting(true)}>Pausar Sistema</button>
+        </div>
       </header>
       <EventModal
         isOpen={isEventModalOpen}
@@ -246,6 +320,26 @@ export default function Dashboard() {
           {shareFeedback}
         </div>
       )}
+      <FeriasPendentesModal
+        isOpen={isFeriasModalOpen}
+        onClose={() => setIsFeriasModalOpen(false)}
+        pendencias={pendenciasFerias}
+        professionals={dbData.professionals}
+        onDataUpdated={loadData}
+        onResolvido={feriasResolvidas}
+      />
+      {centralAberta && (
+        <CentralNotificacoes
+          notificacoes={notificacoes.map(n => (novasAoAbrirCentral.includes(n.id) ? { ...n, lida: false } : n))}
+          onFechar={() => setCentralAberta(false)}
+          onAbrir={abrirNotificacao}
+        />
+      )}
+      <DetalheNotificacao
+        notificacao={notificacaoAberta}
+        onFechar={() => setNotificacaoAberta(null)}
+        onAcao={agirNotificacao}
+      />
       <RestScreen isActive={isResting} onWakeUp={() => setIsResting(false)} />
     </div>
   );

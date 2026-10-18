@@ -11,6 +11,7 @@
 // matrícula não se repete, cargo em uso não some, registro ligado a ausência não some.
 import { z } from 'zod';
 import { ErroPedido } from './http.js';
+import { DIAS_POR_PERIODO, ehData, hojeISO, pendenciasDoProfissional, ultimoAniversario } from '../../shared/ferias.js';
 import { estaBloqueado, ipDoPedido, limparConta, registrarErro } from './limitador.js';
 import { conferirSenha, gerarHash } from './senha.js';
 
@@ -58,6 +59,44 @@ const trocarProfissional = (dados, novo) => ({
 });
 
 const sessoesDoColaborador = (proId) => (s) => s.papel === 'colaborador' && s.usuario === proId;
+
+// Data de admissão no cadastro (ver ferias.js). Na primeira vez que ela é registrada, a contagem
+// começa no último aniversário que já passou, e o saldo que a pessoa já tem entra pelos lotes
+// que o operador escolhe (`saldoInicialFerias`: ano de referência + dias). Depois disso, mudar
+// a data só corrige a data; o saldo inicial não entra de novo.
+function aplicarAdmissao(atual, v) {
+  const saldo = v.saldoInicialFerias;
+  if (v.dataAdmissao === undefined || v.dataAdmissao === '') {
+    if (saldo.length) throw new ErroPedido(400, 'Informe a data de admissão para lançar o saldo inicial de férias.');
+    if (v.dataAdmissao === undefined) return atual;
+    const semAdmissao = { ...atual };
+    delete semAdmissao.dataAdmissao;
+    delete semAdmissao.feriasAniversarioAte;
+    return semAdmissao;
+  }
+
+  const hoje = hojeISO();
+  const limite = `${Number(hoje.slice(0, 4)) + 1}${hoje.slice(4)}`;
+  if (v.dataAdmissao > limite) throw new ErroPedido(400, 'A data de admissão não pode passar de um ano à frente.');
+
+  const novo = { ...atual, dataAdmissao: v.dataAdmissao };
+  if (ehData(atual.dataAdmissao)) {
+    if (saldo.length) throw new ErroPedido(400, 'O saldo inicial de férias só entra na primeira vez que a admissão é registrada. Use o Banco de Férias.');
+    return novo;
+  }
+
+  const ultimo = ultimoAniversario(v.dataAdmissao, hoje);
+  if (ultimo) novo.feriasAniversarioAte = ultimo;
+  else delete novo.feriasAniversarioAte;
+  if (saldo.length) {
+    const banco = [...lista(atual.bancoFerias)];
+    for (const lote of saldo) {
+      banco.push({ id: novoId('ferias', banco), type: 'entrada', year: lote.year, category: 'Individual', days: lote.days, createdAt: hojeBR(), targetDate: null, origem: 'saldo-inicial' });
+    }
+    novo.bancoFerias = banco;
+  }
+  return novo;
+}
 
 // Cada operação: `esquema` (zod), `preparar` opcional (o que é assíncrono: hash, conferir
 // senha) e `aplicar(dados, valores, contexto)`, que devolve { dados, encerrar? }.
@@ -156,6 +195,8 @@ export const OPERACOES = {
       professionId: id,
       shift: obrigatorio(40),
       isSupervisor: z.boolean(),
+      dataAdmissao: z.union([data, z.literal('')]).optional(),
+      saldoInicialFerias: z.array(z.object({ year: ano, days: dias }).strict()).max(6).optional().default([]),
     }).strict(),
     async preparar(v) {
       const nova = v.senha.trim();
@@ -187,12 +228,12 @@ export const OPERACOES = {
       };
 
       if (!v.id) {
-        const novo = { id: novoId('p', profissionais), ...campos, senhaHash };
+        const novo = aplicarAdmissao({ id: novoId('p', profissionais), ...campos, senhaHash }, v);
         return { dados: { ...dados, professionals: [...profissionais, novo] } };
       }
 
       const atual = acharProfissional(dados, v.id);
-      const editado = { ...atual, ...campos };
+      const editado = aplicarAdmissao({ ...atual, ...campos }, v);
       if (senhaHash) {
         editado.senhaHash = senhaHash;
         // Senha em claro de antes da migração só some quando há hash no lugar.
@@ -202,6 +243,65 @@ export const OPERACOES = {
         dados: trocarProfissional(dados, editado),
         encerrar: senhaHash ? sessoesDoColaborador(v.id) : undefined,
       };
+    },
+  },
+
+  // A cada 12 meses da admissão, o operador decide: lança os dias (no ano que escolher) ou
+  // dispensa, quando já lançou à mão. Os aniversários são resolvidos em ordem, do mais antigo
+  // ao mais novo, e quem resolve avança `feriasAniversarioAte` — dois cliques no mesmo
+  // aniversário não viram dois lançamentos.
+  'ferias.aniversario.resolver': {
+    esquema: z.object({
+      professionalId: id,
+      aniversario: data,
+      acao: z.enum(['lancar', 'dispensar']),
+      year: ano.optional(),
+      days: dias.optional(),
+    }).strict()
+      .refine((v) => v.acao !== 'lancar' || Boolean(v.year), { message: 'informe o ano de referência', path: ['year'] }),
+    aplicar(dados, v) {
+      const pro = acharProfissional(dados, v.professionalId);
+      const pendentes = pendenciasDoProfissional(pro, hojeISO());
+      if (!pendentes.length) throw new ErroPedido(409, 'Não há férias a lançar para este profissional.');
+      const proxima = pendentes[0];
+      if (proxima.aniversario !== v.aniversario) {
+        throw new ErroPedido(409, `Resolva antes o período que fechou em ${dataBR(proxima.aniversario)}.`);
+      }
+      if (v.acao === 'lancar' && Number(v.year) > Number(v.aniversario.slice(0, 4))) {
+        throw new ErroPedido(400, 'O ano de referência não pode ser depois do ano em que o período fechou.');
+      }
+
+      const novo = { ...pro, feriasAniversarioAte: v.aniversario };
+      const periodo = `${dataBR(proxima.periodo.inicio)} a ${dataBR(proxima.periodo.fim)}`;
+      // Para a central de notificações: guarda o nome do momento, não só o id (regra C12).
+      const registro = {
+        id: `${v.acao === 'lancar' ? 'ferias-lancada' : 'ferias-dispensada'}:${pro.id}:${v.aniversario}`,
+        tipo: v.acao === 'lancar' ? 'ferias-lancada' : 'ferias-dispensada',
+        categoria: 'ferias',
+        criadaEm: new Date().toISOString(),
+        professionalId: pro.id,
+        nome: pro.name,
+        aniversario: v.aniversario,
+        rotulo: proxima.periodo.rotulo,
+        periodo,
+        ...(v.acao === 'lancar' ? { year: v.year, days: v.days ?? DIAS_POR_PERIODO } : {}),
+      };
+      if (v.acao === 'lancar') {
+        const banco = lista(pro.bancoFerias);
+        novo.bancoFerias = [...banco, {
+          id: novoId('ferias', banco),
+          type: 'entrada',
+          year: v.year,
+          category: 'Individual',
+          days: v.days ?? DIAS_POR_PERIODO,
+          createdAt: hojeBR(),
+          targetDate: null,
+          origem: 'aniversario',
+          aniversario: v.aniversario,
+          periodo,
+        }];
+      }
+      return { dados: trocarProfissional(dados, novo), notificar: [registro] };
     },
   },
 

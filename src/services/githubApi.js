@@ -39,3 +39,7 @@ export const fetchGistData = () => request('GET', '/api/dados');
 
 // Toda escrita é uma operação nomeada; a lista está em api/_lib/operacoes.js.
 export const runOperation = (op, dados) => request('POST', '/api/operacao', { op, dados });
+
+// Central de notificações do admin (api/notificacoes.js). Devolve { notificacoes }; o que já
+// foi lido fica no navegador (components/Notificacoes/lidas.js).
+export const fetchNotifications = () => request('GET', '/api/notificacoes');

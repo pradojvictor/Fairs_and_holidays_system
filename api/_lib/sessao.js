@@ -7,7 +7,7 @@
 // mudança ficou, e repete se não ficou. Cada login vira uma revisão do Gist (com o hash,
 // nunca com o token).
 import { createHash, randomBytes } from 'node:crypto';
-import { ARQUIVO_SESSOES, ErroDependencia, gravarArquivo, lerGist } from './gist.js';
+import { ARQUIVO_SESSOES, alterarArquivoConferindo } from './gist.js';
 
 const DURACAO_MS = 8 * 60 * 60 * 1000;
 const MAX_POR_USUARIO = 5;
@@ -77,13 +77,13 @@ export function resolverSessao(req, { dados, sessoes }) {
 
 // Aplica `transformar` ao sessoes.json, grava e relê até `conferir` aceitar o que ficou.
 async function alterarSessoes(transformar, conferir, leituraInicial) {
-  let leitura = leituraInicial || await lerGist();
-  for (let tentativa = 0; tentativa < 3; tentativa++) {
-    await gravarArquivo(ARQUIVO_SESSOES, JSON.stringify({ sessoes: transformar(leitura.sessoes) }));
-    leitura = await lerGist();
-    if (conferir(leitura.sessoes)) return;
-  }
-  throw new ErroDependencia('Não foi possível gravar a sessão no Gist.');
+  await alterarArquivoConferindo(
+    ARQUIVO_SESSOES,
+    (leitura) => leitura.sessoes,
+    (lista) => ({ sessoes: transformar(lista) }),
+    conferir,
+    leituraInicial,
+  );
 }
 
 export async function abrirSessao(res, papel, usuario, leitura) {
