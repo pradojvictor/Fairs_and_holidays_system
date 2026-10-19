@@ -629,3 +629,16 @@ test('lançar férias deixa registro na central, para os outros computadores ver
   assert.ok(registro, 'o lançamento aparece na central');
   assert.match(registro.titulo, /^Férias lançadas: Ana Souza \+30 dias/);
 });
+
+test('atualização importante: issue com as etiquetas novidade e importante vem marcada', async () => {
+  gist.issues = [
+    issue(30, { title: 'Regra nova de férias', labels: [{ name: 'novidade' }, { name: 'importante' }] }),
+    issue(31, { title: 'Ajuste pequeno' }),
+  ];
+  const sistema = (await notificacoes(await entrarAdmin())).filter((n) => n.categoria === 'sistema');
+  const porId = Object.fromEntries(sistema.map((n) => [n.id, n]));
+  assert.equal(porId['novidade:issue-30'].importante, true);
+  assert.equal(porId['novidade:issue-30'].tipo, 'novidade-importante');
+  assert.equal(porId['novidade:issue-31'].importante, false);
+  assert.equal(porId['novidade:issue-31'].tipo, 'novidade');
+});

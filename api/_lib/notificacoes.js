@@ -1,5 +1,6 @@
 // Central de notificações do admin. Três categorias:
-// - sistema: novidades do sistema (issues do GitHub, ver novidades.js) → abrem num modal;
+// - sistema: novidades do sistema (issues do GitHub, ver novidades.js) → abrem num modal; as
+//            importantes também abrem sozinhas uma vez em cada computador;
 // - ferias:  períodos de 12 meses vencidos que o operador ainda não resolveu, e o registro do
 //            que ele lançou ou marcou como "já lançado" → abrem numa gaveta;
 // - escala:  ausências que começam nos próximos 7 dias (ou começaram nos últimos 7) e alertas
@@ -49,7 +50,8 @@ function deSistema(novidades) {
   return novidades.map((n) => ({
     id: n.id,
     categoria: 'sistema',
-    tipo: 'novidade',
+    tipo: n.importante ? 'novidade-importante' : 'novidade',
+    importante: Boolean(n.importante),
     data: n.data,
     quando: n.data,
     titulo: n.titulo,

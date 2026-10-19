@@ -10,6 +10,7 @@ function Cartao({ n, onAbrir }) {
     <button type="button" className={`central-cartao ${n.lida ? 'lida' : 'nova'}`} onClick={() => onAbrir(n)}>
       <div className="central-cartao-topo">
         <span className={`notif-chip ${n.categoria}`}>{nomeCategoria(n.categoria)}</span>
+        {n.importante && <span className="notif-selo-importante">Importante</span>}
         <span className="central-cartao-estado">{n.lida ? `Lida${n.lidaEm ? ` em ${dataBR(n.lidaEm.slice(0, 10))}` : ''}` : 'Nova'}</span>
         <span className="central-cartao-quando">{quandoRelativo(n.data)}</span>
       </div>

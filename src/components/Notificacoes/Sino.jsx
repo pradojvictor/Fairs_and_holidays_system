@@ -79,7 +79,10 @@ export default function Sino({ notificacoes = [], onAbrir, onVerTodas }) {
               {naoLidas.slice(0, MAX_NA_LISTA).map((n) => (
                 <li key={n.id}>
                   <button type="button" className="sino-item" onClick={() => abrir(n)}>
-                    <span className={`notif-chip ${n.categoria}`}>{nomeCategoria(n.categoria)}</span>
+                    <span className="sino-item-etiquetas">
+                      <span className={`notif-chip ${n.categoria}`}>{nomeCategoria(n.categoria)}</span>
+                      {n.importante && <span className="notif-selo-importante">Importante</span>}
+                    </span>
                     <span className="sino-item-titulo">{n.titulo}</span>
                     <span className="sino-item-resumo">{n.resumo}</span>
                     <span className="sino-item-quando">{quandoRelativo(n.data)}</span>

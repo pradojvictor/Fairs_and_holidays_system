@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { fetchGistData, fetchNotifications, runOperation } from '../../services/githubApi';
 import Sidebar from '../../components/Sidebar';
@@ -16,7 +16,7 @@ import FeriasPendentesModal from '../../components/FeriasPendentesModal';
 import Sino from '../../components/Notificacoes/Sino';
 import CentralNotificacoes from '../../components/Notificacoes/Central';
 import DetalheNotificacao from '../../components/Notificacoes/Detalhe';
-import { aplicarLidas, lerLidas, marcarLidas, salvarLidas } from '../../components/Notificacoes/lidas';
+import { aplicarLidas, importantesNaoVistas, lerLidas, marcarLidas, salvarLidas } from '../../components/Notificacoes/lidas';
 import './index.css';
 
 export default function Dashboard() {
@@ -60,11 +60,24 @@ export default function Dashboard() {
   const [centralAberta, setCentralAberta] = useState(false);
   const [novasAoAbrirCentral, setNovasAoAbrirCentral] = useState([]);
 
+  // Atualizações importantes que este computador ainda não viu: abrem sozinhas, uma de cada
+  // vez, na primeira carga do painel (ver Notificacoes/lidas.js).
+  const [filaImportantes, setFilaImportantes] = useState([]);
+  const [totalImportantes, setTotalImportantes] = useState(0);
+  const importantesVerificadas = useRef(false);
+
   // As notificações não seguram o painel: se falharem, o resto continua funcionando.
   const loadNotificacoes = async () => {
     try {
       const resposta = await fetchNotifications();
-      setNotificacoesServidor(resposta.notificacoes || []);
+      const lista = resposta.notificacoes || [];
+      setNotificacoesServidor(lista);
+      if (!importantesVerificadas.current) {
+        importantesVerificadas.current = true;
+        const fila = importantesNaoVistas(aplicarLidas(lista, lerLidas()));
+        setFilaImportantes(fila);
+        setTotalImportantes(fila.length);
+      }
     } catch (err) {
       if (err.status === 401) navigate('/login', { replace: true });
       else console.error('Notificações indisponíveis:', err);
@@ -115,6 +128,12 @@ export default function Dashboard() {
     setNovasAoAbrirCentral(novas);
     setCentralAberta(true);
     marcarComoLidas(novas);
+  };
+
+  // Fechar o pop-up (por "Entendi", X ou Esc) conta como visto neste computador.
+  const fecharImportante = () => {
+    marcarComoLidas([filaImportantes[0].id]);
+    setFilaImportantes(filaImportantes.slice(1));
   };
 
   // Quem lançou (ou dispensou) as férias não precisa ser avisado do próprio lançamento: o
@@ -340,6 +359,13 @@ export default function Dashboard() {
         onFechar={() => setNotificacaoAberta(null)}
         onAcao={agirNotificacao}
       />
+      {!notificacaoAberta && filaImportantes.length > 0 && (
+        <DetalheNotificacao
+          notificacao={filaImportantes[0]}
+          progresso={{ atual: totalImportantes - filaImportantes.length + 1, total: totalImportantes }}
+          onFechar={fecharImportante}
+        />
+      )}
       <RestScreen isActive={isResting} onWakeUp={() => setIsResting(false)} />
     </div>
   );

@@ -13,16 +13,19 @@ function useEsc(onFechar) {
   }, [onFechar]);
 }
 
-function Novidade({ n, onFechar }) {
+// `progresso` ({ atual, total }) vem quando são atualizações importantes abrindo em sequência.
+function Novidade({ n, onFechar, progresso }) {
   useEsc(onFechar);
+  const temProxima = progresso && progresso.atual < progresso.total;
   return (
     <div className="notif-modal-overlay" onClick={onFechar}>
-      <div className="notif-modal" role="dialog" aria-modal="true" aria-label={n.titulo} onClick={(e) => e.stopPropagation()}>
+      <div className={`notif-modal ${n.importante ? 'importante' : ''}`} role="dialog" aria-modal="true" aria-label={n.titulo} onClick={(e) => e.stopPropagation()}>
         <div className="notif-modal-topo">
-          <span className="notif-chip sistema">Novidade do sistema</span>
-          <span className="notif-data">{dataBR(n.data)}</span>
+          <span className="notif-chip sistema">{n.importante ? 'Atualização importante' : 'Novidade do sistema'}</span>
+          {progresso && progresso.total > 1 && <span className="notif-data">{progresso.atual} de {progresso.total}</span>}
           <button type="button" className="btn-close-modal" onClick={onFechar} title="Fechar">&times;</button>
         </div>
+        <p className="notif-modal-data">Atualização de {dataBR(n.data)}</p>
         <h2>{n.titulo}</h2>
         {n.resumo && <p className="notif-modal-resumo">{n.resumo}</p>}
         {n.paragrafos?.map((p, i) => <p key={i} className="notif-modal-paragrafo">{p}</p>)}
@@ -36,7 +39,9 @@ function Novidade({ n, onFechar }) {
             ))}
           </ul>
         )}
-        <button type="button" className="btn-save" onClick={onFechar}>Entendi</button>
+        <button type="button" className="btn-save" onClick={onFechar}>
+          {temProxima ? `Entendi — próxima (${progresso.atual + 1} de ${progresso.total})` : 'Entendi'}
+        </button>
       </div>
     </div>
   );
@@ -79,9 +84,9 @@ function Gaveta({ n, onFechar, onAcao }) {
   );
 }
 
-export default function Detalhe({ notificacao, onFechar, onAcao }) {
+export default function Detalhe({ notificacao, onFechar, onAcao, progresso }) {
   if (!notificacao) return null;
   return notificacao.categoria === 'sistema'
-    ? <Novidade n={notificacao} onFechar={onFechar} />
+    ? <Novidade n={notificacao} onFechar={onFechar} progresso={progresso} />
     : <Gaveta n={notificacao} onFechar={onFechar} onAcao={onAcao} />;
 }

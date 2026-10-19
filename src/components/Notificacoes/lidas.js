@@ -39,3 +39,11 @@ export function marcarLidas(lidas, ids, idsAtuais, agora = new Date()) {
 export function aplicarLidas(notificacoes, lidas) {
   return notificacoes.map((n) => ({ ...n, lida: Boolean(lidas[n.id]), lidaEm: lidas[n.id] || null }));
 }
+
+// Atualizações importantes que este computador ainda não viu, da mais antiga para a mais nova:
+// abrem sozinhas, uma de cada vez, quando o painel carrega.
+export function importantesNaoVistas(notificacoes) {
+  return notificacoes
+    .filter((n) => n.categoria === 'sistema' && n.importante && !n.lida)
+    .sort((a, b) => a.data.localeCompare(b.data));
+}

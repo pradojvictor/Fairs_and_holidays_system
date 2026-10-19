@@ -1,7 +1,7 @@
 // O "lido" das notificações, guardado no navegador (src/components/Notificacoes/lidas.js).
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
-import { aplicarLidas, lerLidas, marcarLidas, salvarLidas } from '../src/components/Notificacoes/lidas.js';
+import { aplicarLidas, importantesNaoVistas, lerLidas, marcarLidas, salvarLidas } from '../src/components/Notificacoes/lidas.js';
 
 const agora = new Date('2026-10-18T12:00:00Z');
 
@@ -44,4 +44,15 @@ test('com localStorage, o que foi salvo volta igual', () => {
   } finally {
     globalThis.localStorage = original;
   }
+});
+
+test('importantes não vistas: só sistema + importante + não lida, da mais antiga para a mais nova', () => {
+  const lista = aplicarLidas([
+    { id: 'nova-importante', categoria: 'sistema', importante: true, data: '2026-10-19' },
+    { id: 'velha-importante', categoria: 'sistema', importante: true, data: '2026-09-01' },
+    { id: 'ja-vista', categoria: 'sistema', importante: true, data: '2026-10-01' },
+    { id: 'comum', categoria: 'sistema', importante: false, data: '2026-10-19' },
+    { id: 'ferias', categoria: 'ferias', importante: true, data: '2026-10-19' },
+  ], { 'ja-vista': '2026-10-02T00:00:00.000Z' });
+  assert.deepEqual(importantesNaoVistas(lista).map((n) => n.id), ['velha-importante', 'nova-importante']);
 });
