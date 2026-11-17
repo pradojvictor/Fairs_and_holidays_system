@@ -33,6 +33,43 @@
   }
 }
 
+/* Setas do "ano completo": ano anterior e próximo ano. */
+.calendar-ano-nav {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  vertical-align: middle;
+}
+
+.btn-ano {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  padding: 0 0 2px;
+  border-radius: 50%;
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  background: rgba(0, 0, 0, 0.4);
+  color: white;
+  font-size: 1.05rem;
+  font-weight: bold;
+  line-height: 1;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.btn-ano:hover:not(:disabled) {
+  background-color: orange;
+  color: black;
+  border-color: orange;
+}
+
+.btn-ano:disabled {
+  opacity: 0.3;
+  cursor: default;
+}
+
 .btn-toggle-calendar {
   background: rgba(0, 0, 0, 0.4);
   border: 1px solid rgba(255, 255, 255, 0.2);
@@ -90,6 +127,15 @@
 
 .months-wrapper.slider .month-title {
   font-size: 1rem;
+}
+
+/* Na faixa contínua, janeiro marca a virada do ano. */
+.months-wrapper.slider .month-block.inicio-ano {
+  border-left: 3px solid orange;
+}
+
+.months-wrapper.slider .month-block.inicio-ano .month-ano {
+  color: #c2410c;
 }
 
 .months-wrapper.slider .days-header-grid {
