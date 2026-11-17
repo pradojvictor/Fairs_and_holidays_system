@@ -9,8 +9,18 @@
 import { createHash, randomBytes } from 'node:crypto';
 import { ARQUIVO_SESSOES, alterarArquivoConferindo } from './gist.js';
 
-const DURACAO_MS = 8 * 60 * 60 * 1000;
-const MAX_POR_USUARIO = 5;
+const HORA_MS = 60 * 60 * 1000;
+const DIA_MS = 24 * HORA_MS;
+// Sem "manter conectado": cookie de sessão (morre ao fechar o navegador) e 8h no servidor.
+const DURACAO_MS = 8 * HORA_MS;
+// Com "manter conectado": vence depois de 30 dias sem uso. Cada dia de uso empurra o prazo,
+// mas nunca além de 90 dias do login — um cookie copiado não vale para sempre.
+const DURACAO_LEMBRAR_MS = 30 * DIA_MS;
+const TETO_LEMBRAR_MS = 90 * DIA_MS;
+// A renovação grava no Gist; no máximo uma vez por dia por sessão.
+const RENOVAR_DEPOIS_MS = DIA_MS;
+// Com sessões longas, cada pessoa acumula uma por navegador (computador, celular...).
+const MAX_POR_USUARIO = 10;
 const FORMATO_TOKEN = /^[A-Za-z0-9_-]{43}$/;
 
 // COOKIE_SEGURO=nao só para `vercel dev` em http://localhost no Safari, que recusa cookie
@@ -25,16 +35,17 @@ function nomeCookie() {
 
 const hashDoToken = (token) => createHash('sha256').update(token).digest('hex');
 
-function montarCookie(valor, apagar = false) {
-  // Sem Max-Age: o cookie morre ao fechar o navegador. O prazo de 8h vale no servidor.
+// Sem `maxAgeSegundos`, o cookie morre ao fechar o navegador. Com ele, o navegador guarda o
+// cookie até a mesma data em que a sessão vence no servidor — quem manda é sempre o servidor.
+function montarCookie(valor, maxAgeSegundos) {
   const partes = [`${nomeCookie()}=${valor}`, 'Path=/', 'HttpOnly', 'SameSite=Strict'];
   if (cookieSeguro()) partes.push('Secure');
-  if (apagar) partes.push('Max-Age=0');
+  if (maxAgeSegundos !== undefined) partes.push(`Max-Age=${Math.max(0, Math.floor(maxAgeSegundos))}`);
   return partes.join('; ');
 }
 
 export function apagarCookie(res) {
-  res.setHeader('Set-Cookie', montarCookie('', true));
+  res.setHeader('Set-Cookie', montarCookie('', 0));
 }
 
 function tokenDoPedido(req) {
@@ -65,12 +76,12 @@ export function resolverSessao(req, { dados, sessoes }) {
   if (!sessao || !(Date.parse(sessao.expiraEm) > Date.now())) return null;
 
   if (sessao.papel === 'admin') {
-    return dados.auth ? { hash, papel: 'admin', usuario: 'admin' } : null;
+    return dados.auth ? { hash, registro: sessao, papel: 'admin', usuario: 'admin' } : null;
   }
   if (sessao.papel === 'colaborador') {
     const profissional = (dados.professionals || []).find((p) => p.id === sessao.usuario);
     if (!profissional) return null;
-    return { hash, papel: 'colaborador', usuario: profissional.id, profissional, supervisor: profissional.isSupervisor === true };
+    return { hash, registro: sessao, papel: 'colaborador', usuario: profissional.id, profissional, supervisor: profissional.isSupervisor === true };
   }
   return null;
 }
@@ -86,20 +97,22 @@ async function alterarSessoes(transformar, conferir, leituraInicial) {
   );
 }
 
-export async function abrirSessao(res, papel, usuario, leitura) {
+export async function abrirSessao(res, papel, usuario, leitura, lembrar = false) {
   const token = randomBytes(32).toString('base64url');
   const hash = hashDoToken(token);
   const agora = Date.now();
+  const duracao = lembrar ? DURACAO_LEMBRAR_MS : DURACAO_MS;
   const nova = {
     hash,
     papel,
     usuario,
     criadaEm: new Date(agora).toISOString(),
-    expiraEm: new Date(agora + DURACAO_MS).toISOString(),
+    expiraEm: new Date(agora + duracao).toISOString(),
+    ...(lembrar ? { lembrar: true } : {}),
   };
   await alterarSessoes(
     (lista) => {
-      // Expurgo no caminho: sessão vencida sai, e cada pessoa fica com no máximo 5 abertas.
+      // Expurgo no caminho: sessão vencida sai, e cada pessoa fica com no máximo 10 abertas.
       const vivas = lista.filter((s) => Date.parse(s.expiraEm) > agora && s.hash !== hash);
       const minhas = vivas
         .filter((s) => s.papel === papel && s.usuario === usuario)
@@ -110,7 +123,42 @@ export async function abrirSessao(res, papel, usuario, leitura) {
     (lista) => lista.some((s) => s.hash === hash),
     leitura,
   );
-  res.setHeader('Set-Cookie', montarCookie(token));
+  res.setHeader('Set-Cookie', montarCookie(token, lembrar ? duracao / 1000 : undefined));
+}
+
+// Prazo deslizante de "manter conectado": a cada dia de uso, a sessão volta a vencer em 30
+// dias, até o teto de 90 dias do login. Só grava se passou um dia da última renovação, para
+// não virar uma revisão do Gist a cada clique. Falhar aqui não derruba o pedido: a sessão
+// continua valendo até o prazo que já tinha, e a próxima visita tenta de novo.
+export async function renovarSessao(req, res, sessao, leitura) {
+  const registro = sessao?.registro;
+  if (!registro?.lembrar) return;
+  const token = tokenDoPedido(req);
+  if (!token) return;
+  const agora = Date.now();
+  const ultima = Date.parse(registro.renovadaEm || registro.criadaEm);
+  if (agora - ultima < RENOVAR_DEPOIS_MS) return;
+  const teto = Date.parse(registro.criadaEm) + TETO_LEMBRAR_MS;
+  const novoPrazo = Math.min(agora + DURACAO_LEMBRAR_MS, teto);
+  if (!(novoPrazo > Date.parse(registro.expiraEm))) return;
+
+  const expiraEm = new Date(novoPrazo).toISOString();
+  const renovadaEm = new Date(agora).toISOString();
+  try {
+    await alterarSessoes(
+      // Só mexe na sessão se ela ainda existir: um logout no meio do caminho vence.
+      (lista) => lista.map((s) => (s.hash === sessao.hash ? { ...s, expiraEm, renovadaEm } : s)),
+      (lista) => {
+        const atual = lista.find((s) => s.hash === sessao.hash);
+        return !atual || atual.expiraEm === expiraEm;
+      },
+      leitura,
+    );
+  } catch (erro) {
+    console.error('Renovação da sessão falhou:', erro?.message || erro);
+    return;
+  }
+  res.setHeader('Set-Cookie', montarCookie(token, (novoPrazo - agora) / 1000));
 }
 
 // Encerra as sessões que `filtro` escolher (logout, troca de senha, exclusão de conta).

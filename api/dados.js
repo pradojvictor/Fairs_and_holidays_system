@@ -3,7 +3,7 @@
 // A escrita saiu daqui: o PATCH que trocava o arquivo inteiro virou /api/operacao.
 import { lerGist } from './_lib/gist.js';
 import { ErroPedido, rota } from './_lib/http.js';
-import { resolverSessao, temCookieDeSessao } from './_lib/sessao.js';
+import { renovarSessao, resolverSessao, temCookieDeSessao } from './_lib/sessao.js';
 import { visaoAdmin, visaoColaborador } from './_lib/visoes.js';
 
 const SEM_SESSAO = 'Sessão encerrada. Entre de novo.';
@@ -14,6 +14,8 @@ export default rota({
     const leitura = await lerGist();
     const sessao = resolverSessao(req, leitura);
     if (!sessao) throw new ErroPedido(401, SEM_SESSAO);
+    // "Manter conectado": quem usa o sistema não é mandado ao login (no máximo uma gravação por dia).
+    await renovarSessao(req, res, sessao, leitura);
     const visao = sessao.papel === 'admin' ? visaoAdmin(leitura.dados) : visaoColaborador(leitura.dados, sessao);
     return res.status(200).json(visao);
   },

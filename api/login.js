@@ -8,8 +8,8 @@ import { conferirSenha } from './_lib/senha.js';
 import { abrirSessao } from './_lib/sessao.js';
 
 const esquema = z.discriminatedUnion('tipo', [
-  z.object({ tipo: z.literal('admin'), usuario: z.string().min(1).max(100), senha: z.string().min(1).max(200) }).strict(),
-  z.object({ tipo: z.literal('colaborador'), matricula: z.string().trim().min(1).max(40), senha: z.string().min(1).max(200) }).strict(),
+  z.object({ tipo: z.literal('admin'), usuario: z.string().min(1).max(100), senha: z.string().min(1).max(200), lembrar: z.boolean().optional() }).strict(),
+  z.object({ tipo: z.literal('colaborador'), matricula: z.string().trim().min(1).max(40), senha: z.string().min(1).max(200), lembrar: z.boolean().optional() }).strict(),
 ]);
 
 // Uma frase só para conta inexistente e senha errada (padrão 1.1).
@@ -56,7 +56,7 @@ export default rota({
       throw new ErroPedido(401, RECUSA);
     }
     limparConta(chaveConta);
-    await abrirSessao(res, entrada.tipo, conta, leitura);
+    await abrirSessao(res, entrada.tipo, conta, leitura, entrada.lembrar === true);
     return res.status(200).json({ papel: entrada.tipo });
   },
 });

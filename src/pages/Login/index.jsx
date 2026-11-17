@@ -1,6 +1,6 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { login } from '../../services/githubApi';
+import { fetchGistData, login } from '../../services/githubApi';
 import './index.css';
 
 export default function Login() {
@@ -9,14 +9,24 @@ export default function Login() {
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const [isExiting, setIsExiting] = useState(false); 
+  const [lembrar, setLembrar] = useState(true);
   const navigate = useNavigate();
+
+  // Quem marcou "manter conectado" e abre esta página já com sessão de admin vai direto ao painel.
+  useEffect(() => {
+    let ativo = true;
+    fetchGistData()
+      .then((d) => { if (ativo && d.perfil?.papel === 'admin') navigate('/', { replace: true }); })
+      .catch(() => {});
+    return () => { ativo = false; };
+  }, [navigate]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
     setLoading(true);
     try {
-      await login({ tipo: 'admin', usuario: username, senha: password });
+      await login({ tipo: 'admin', usuario: username, senha: password, lembrar });
       setIsExiting(true);
       setTimeout(() => {
         navigate('/');
@@ -55,6 +65,13 @@ export default function Login() {
             placeholder="Digite sua senha"
           />
         </div>
+        <label className="admin-lembrar">
+          <input type="checkbox" checked={lembrar} onChange={(e) => setLembrar(e.target.checked)} />
+          <span>
+            Manter conectado neste computador
+            <small>Desmarque se o computador for compartilhado.</small>
+          </span>
+        </label>
         <button type="submit" disabled={loading} className="admin-btn-login">
           {loading ? (isExiting ? 'Entrando...' : 'Validando...') : 'Entrar no Sistema'}
         </button>

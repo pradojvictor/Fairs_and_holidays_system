@@ -168,6 +168,128 @@ test('login do admin: cookie HttpOnly + Secure + SameSite=Strict, e o Gist guard
   assert.equal(gist.files['data.json'], JSON.stringify(BASE, null, 2), 'login não toca o data.json');
 });
 
+// ---------- manter conectado ----------
+const DIA = 24 * 60 * 60 * 1000;
+const iso = (ms) => new Date(ms).toISOString();
+const maxAge = (setCookie) => Number(/Max-Age=(\d+)/.exec(setCookie || '')?.[1]);
+const perto = (valor, esperado, folga, msg) => assert.ok(Math.abs(valor - esperado) <= folga, `${msg}: ${valor} vs ${esperado}`);
+// Mexe nos prazos da sessão direto no Gist falso, para simular dias passando.
+function envelhecerSessao(mudar) {
+  gist.files['sessoes.json'] = JSON.stringify({ sessoes: lerSessoes().map(mudar) });
+}
+
+test('sem "manter conectado": cookie some ao fechar o navegador e a sessão vale 8h', async () => {
+  const res = await chamar(rotaLogin, 'POST', { body: { tipo: 'admin', usuario: 'admin', senha: 'senha-do-admin', lembrar: false } });
+  assert.equal(res.statusCode, 200);
+  assert.doesNotMatch(res.headers['set-cookie'], /Max-Age/);
+  const [sessao] = lerSessoes();
+  assert.equal(sessao.lembrar, undefined);
+  perto(Date.parse(sessao.expiraEm) - Date.now(), 8 * 60 * 60 * 1000, 5000, 'prazo de 8h');
+});
+
+test('com "manter conectado": cookie persistente e sessão de 30 dias, nos dois logins', async () => {
+  for (const corpo of [
+    { tipo: 'admin', usuario: 'admin', senha: 'senha-do-admin', lembrar: true },
+    { tipo: 'colaborador', matricula: '100', senha: 'ana123', lembrar: true },
+  ]) {
+    const res = await chamar(rotaLogin, 'POST', { body: corpo });
+    assert.equal(res.statusCode, 200);
+    assert.match(res.headers['set-cookie'], /^__Host-sessao=[A-Za-z0-9_-]{43}; Path=\/; HttpOnly; SameSite=Strict; Secure; Max-Age=\d+$/);
+    perto(maxAge(res.headers['set-cookie']), 30 * 86400, 5, 'Max-Age de 30 dias');
+    const sessao = lerSessoes().find((s) => s.papel === corpo.tipo);
+    assert.equal(sessao.lembrar, true);
+    perto(Date.parse(sessao.expiraEm) - Date.now(), 30 * DIA, 5000, 'prazo de 30 dias');
+  }
+  const ruim = await chamar(rotaLogin, 'POST', { body: { tipo: 'admin', usuario: 'admin', senha: 'senha-do-admin', lembrar: 'sim' } });
+  assert.equal(ruim.statusCode, 400);
+});
+
+test('"manter conectado" renova no máximo uma vez por dia, sem passar de 90 dias do login', async () => {
+  const cookie = await entrar({ tipo: 'admin', usuario: 'admin', senha: 'senha-do-admin', lembrar: true });
+
+  // Logo depois do login: nada a renovar, nenhuma gravação.
+  let gravacoes = gist.gravacoes;
+  let res = await chamar(rotaDados, 'GET', { cookie });
+  assert.equal(res.statusCode, 200);
+  assert.equal(gist.gravacoes, gravacoes);
+  assert.equal(res.headers['set-cookie'], undefined);
+
+  // Dez dias depois: o prazo volta a 30 dias a partir de agora, e o cookie acompanha.
+  const agora = Date.now();
+  envelhecerSessao((s) => ({ ...s, criadaEm: iso(agora - 10 * DIA), expiraEm: iso(agora + 20 * DIA) }));
+  res = await chamar(rotaDados, 'GET', { cookie });
+  assert.equal(res.statusCode, 200);
+  assert.equal(gist.gravacoes, gravacoes + 1);
+  let [sessao] = lerSessoes();
+  perto(Date.parse(sessao.expiraEm) - Date.now(), 30 * DIA, 5000, 'renovada para 30 dias');
+  assert.ok(sessao.renovadaEm);
+  perto(maxAge(res.headers['set-cookie']), 30 * 86400, 5, 'cookie renovado');
+  assert.equal(res.headers['set-cookie'].split(';')[0], cookie, 'o token não muda na renovação');
+
+  // De novo no mesmo dia: não grava.
+  gravacoes = gist.gravacoes;
+  res = await chamar(rotaDados, 'GET', { cookie });
+  assert.equal(gist.gravacoes, gravacoes);
+  assert.equal(res.headers['set-cookie'], undefined);
+
+  // Perto dos 90 dias: renova só até o teto.
+  envelhecerSessao((s) => ({ ...s, criadaEm: iso(agora - 89 * DIA), renovadaEm: iso(agora - 2 * DIA), expiraEm: iso(agora + 12 * 60 * 60 * 1000) }));
+  res = await chamar(rotaDados, 'GET', { cookie });
+  [sessao] = lerSessoes();
+  perto(Date.parse(sessao.expiraEm), agora + DIA, 5000, 'parou no teto de 90 dias');
+  perto(maxAge(res.headers['set-cookie']), 86400, 5, 'cookie até o teto');
+
+  // No teto: não há o que renovar; passou dele, pede a senha de novo.
+  gravacoes = gist.gravacoes;
+  envelhecerSessao((s) => ({ ...s, renovadaEm: iso(agora - 2 * DIA) }));
+  res = await chamar(rotaDados, 'GET', { cookie });
+  assert.equal(res.statusCode, 200);
+  assert.equal(gist.gravacoes, gravacoes, 'no teto não grava');
+  envelhecerSessao((s) => ({ ...s, criadaEm: iso(agora - 91 * DIA), expiraEm: iso(agora - 1000) }));
+  res = await chamar(rotaDados, 'GET', { cookie });
+  assert.equal(res.statusCode, 401);
+});
+
+test('sessão sem "manter conectado" nunca é renovada', async () => {
+  const cookie = await entrarAdmin();
+  const agora = Date.now();
+  envelhecerSessao((s) => ({ ...s, criadaEm: iso(agora - 7 * 60 * 60 * 1000), expiraEm: iso(agora + 60 * 60 * 1000) }));
+  const gravacoes = gist.gravacoes;
+  const res = await chamar(rotaDados, 'GET', { cookie });
+  assert.equal(res.statusCode, 200);
+  assert.equal(gist.gravacoes, gravacoes);
+  assert.equal(res.headers['set-cookie'], undefined);
+});
+
+test('se a renovação falhar, o pedido segue e a sessão continua com o prazo que tinha', async () => {
+  const cookie = await entrar({ tipo: 'colaborador', matricula: '100', senha: 'ana123', lembrar: true });
+  const agora = Date.now();
+  const expiraEm = iso(agora + 5 * DIA);
+  envelhecerSessao((s) => ({ ...s, criadaEm: iso(agora - 25 * DIA), expiraEm }));
+  const inicio = gist.leituras;
+  gist.aoLer = (n) => { if (n === inicio + 1) gist.fora = true; }; // a leitura passa; a gravação, não
+  const original = console.error;
+  console.error = () => {};
+  try {
+    const res = await chamar(rotaDados, 'GET', { cookie });
+    assert.equal(res.statusCode, 200);
+    assert.equal(res.headers['set-cookie'], undefined);
+  } finally {
+    console.error = original;
+    gist.fora = false;
+    gist.aoLer = null;
+  }
+  assert.equal(lerSessoes()[0].expiraEm, expiraEm);
+});
+
+test('logout com "manter conectado" apaga o cookie persistente e a sessão', async () => {
+  const cookie = await entrar({ tipo: 'admin', usuario: 'admin', senha: 'senha-do-admin', lembrar: true });
+  const sair = await chamar(rotaLogout, 'POST', { cookie, body: {} });
+  assert.match(sair.headers['set-cookie'], /Max-Age=0$/);
+  assert.equal(lerSessoes().length, 0);
+  assert.equal((await chamar(rotaDados, 'GET', { cookie })).statusCode, 401);
+});
+
 test('senha errada e conta inexistente: a mesma resposta', async () => {
   const errada = await chamar(rotaLogin, 'POST', { body: { tipo: 'colaborador', matricula: '100', senha: 'nao-e-essa' } });
   const inexistente = await chamar(rotaLogin, 'POST', { body: { tipo: 'colaborador', matricula: '987654', senha: 'qualquer' } });

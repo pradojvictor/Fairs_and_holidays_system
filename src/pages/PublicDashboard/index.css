@@ -269,6 +269,25 @@
   text-align: center;
 }
 
+.login-lembrar {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  font-size: 0.9rem;
+  color: #e5e7eb;
+  cursor: pointer;
+  user-select: none;
+}
+
+.login-lembrar input {
+  width: 16px;
+  height: 16px;
+  margin: 0;
+  accent-color: var(--pk-gold, #c3a479);
+  cursor: pointer;
+}
+
 .login-error {
   color: #ef4444;
   font-size: 0.85rem;

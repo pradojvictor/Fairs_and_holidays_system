@@ -15,6 +15,7 @@ export default function PublicDashboard() {
   const [selectedDay, setSelectedDay] = useState(new Date().getDate());
   const [isExpanded, setIsExpanded] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [lembrar, setLembrar] = useState(true);
 
   // A sessão mora num cookie HttpOnly: quem diz se ela existe, e o que ela pode ver, é o
   // servidor. Colaborador recebe só a própria escala; supervisor, a da equipe.
@@ -41,7 +42,7 @@ export default function PublicDashboard() {
     setIsSubmitting(true);
     setLoginError('');
     try {
-      await login({ tipo: 'colaborador', matricula: inputMatricula.trim(), senha: inputPassword });
+      await login({ tipo: 'colaborador', matricula: inputMatricula.trim(), senha: inputPassword, lembrar });
       await loadSession();
       setInputPassword('');
     } catch (err) {
@@ -174,6 +175,10 @@ export default function PublicDashboard() {
               required
               className="login-input"
             />
+            <label className="login-lembrar">
+              <input type="checkbox" checked={lembrar} onChange={(e) => setLembrar(e.target.checked)} />
+              <span>Manter conectado neste aparelho</span>
+            </label>
             {loginError && <p className="login-error">{loginError}</p>}
             <button type="submit" className="login-btn" disabled={isSubmitting}>
               {isSubmitting ? 'Entrando...' : 'Acessar Escala'}

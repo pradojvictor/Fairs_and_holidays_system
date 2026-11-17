@@ -97,6 +97,34 @@
   box-shadow: none; 
 }
 
+.admin-lembrar {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    color: white;
+    font-size: 0.9rem;
+    font-weight: 600;
+    cursor: pointer;
+    user-select: none;
+}
+
+.admin-lembrar input {
+    width: 16px;
+    height: 16px;
+    margin: 2px 0 0;
+    accent-color: orange;
+    cursor: pointer;
+    flex-shrink: 0;
+}
+
+.admin-lembrar small {
+    display: block;
+    margin-top: 3px;
+    color: #9ca3af;
+    font-size: 0.78rem;
+    font-weight: 400;
+}
+
 .admin-btn-login {
     background-color: white;
     color: black;
