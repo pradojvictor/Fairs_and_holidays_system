@@ -14,14 +14,14 @@
 // computador depois de publicada (o "já vi" fica no navegador, como o "lido").
 //
 // O texto vai para a tela como texto puro (padrão 1.8): nenhum HTML vindo do GitHub é
-// interpretado. A lista fica 10 minutos em cache; se o GitHub não responder, o painel segue
-// funcionando, só sem novidades novas.
+// interpretado. A lista fica 2 minutos em cache (uma issue nova aparece em até 2 minutos); se o
+// GitHub não responder, o painel segue funcionando, só sem novidades novas.
 
 const REPO = process.env.NOVIDADES_REPO || 'pradojvictor/Fairs_and_holidays_system';
 const AUTOR = process.env.NOVIDADES_AUTOR || 'pradojvictor';
 const ETIQUETA = 'novidade';
 const ETIQUETA_IMPORTANTE = 'importante';
-const CACHE_MS = 10 * 60 * 1000;
+const CACHE_MS = 2 * 60 * 1000;
 const NOVA_TENTATIVA_MS = 60 * 1000;
 
 let cache = { valeAte: 0, lista: [] };

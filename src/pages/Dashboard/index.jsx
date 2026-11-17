@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useEffectEvent, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { fetchGistData, fetchNotifications, runOperation } from '../../services/githubApi';
 import Sidebar from '../../components/Sidebar';
@@ -16,7 +16,7 @@ import FeriasPendentesModal from '../../components/FeriasPendentesModal';
 import Sino from '../../components/Notificacoes/Sino';
 import CentralNotificacoes from '../../components/Notificacoes/Central';
 import DetalheNotificacao from '../../components/Notificacoes/Detalhe';
-import { aplicarLidas, importantesNaoVistas, lerLidas, marcarLidas, salvarLidas } from '../../components/Notificacoes/lidas';
+import { aplicarLidas, importantesNaoVistas, juntarImportantes, lerLidas, marcarLidas, salvarLidas } from '../../components/Notificacoes/lidas';
 import './index.css';
 
 export default function Dashboard() {
@@ -61,23 +61,22 @@ export default function Dashboard() {
   const [novasAoAbrirCentral, setNovasAoAbrirCentral] = useState([]);
 
   // Atualizações importantes que este computador ainda não viu: abrem sozinhas, uma de cada
-  // vez, na primeira carga do painel (ver Notificacoes/lidas.js).
-  const [filaImportantes, setFilaImportantes] = useState([]);
-  const [totalImportantes, setTotalImportantes] = useState(0);
-  const importantesVerificadas = useRef(false);
+  // vez — na carga do painel ou quando chegam com ele aberto (ver Notificacoes/lidas.js).
+  const [importantes, setImportantes] = useState({ fila: [], total: 0 });
+  const filaImportantes = importantes.fila;
+  const ultimaBuscaNotificacoes = useRef(0);
 
   // As notificações não seguram o painel: se falharem, o resto continua funcionando.
   const loadNotificacoes = async () => {
+    ultimaBuscaNotificacoes.current = Date.now();
     try {
       const resposta = await fetchNotifications();
       const lista = resposta.notificacoes || [];
-      setNotificacoesServidor(lista);
-      if (!importantesVerificadas.current) {
-        importantesVerificadas.current = true;
-        const fila = importantesNaoVistas(aplicarLidas(lista, lerLidas()));
-        setFilaImportantes(fila);
-        setTotalImportantes(fila.length);
-      }
+      // Mesma lista de antes: não redesenha o painel à toa a cada busca.
+      setNotificacoesServidor((atual) => (JSON.stringify(atual) === JSON.stringify(lista) ? atual : lista));
+      // O "lido" desta aba (memória) e o do navegador (outras abas, ou antes de recarregar).
+      const naoVistas = importantesNaoVistas(aplicarLidas(lista, { ...lerLidas(), ...lidas }));
+      setImportantes((atual) => juntarImportantes(atual, naoVistas));
     } catch (err) {
       if (err.status === 401) navigate('/login', { replace: true });
       else console.error('Notificações indisponíveis:', err);
@@ -109,6 +108,25 @@ export default function Dashboard() {
 
   useEffect(() => { loadData(); }, []);
 
+  // Com o painel aberto, as notificações são buscadas de novo a cada 2 minutos (só com a aba à
+  // vista) e ao voltar para a aba: uma atualização importante publicada agora abre o pop-up
+  // sem precisar recarregar. A rota só lê, nada é gravado no Gist.
+  const atualizarNotificacoes = useEffectEvent(() => { loadNotificacoes(); });
+  useEffect(() => {
+    const aVista = () => document.visibilityState === 'visible';
+    const intervalo = setInterval(() => { if (aVista()) atualizarNotificacoes(); }, 2 * 60 * 1000);
+    const aoVoltar = () => {
+      if (aVista() && Date.now() - ultimaBuscaNotificacoes.current >= 60 * 1000) atualizarNotificacoes();
+    };
+    document.addEventListener('visibilitychange', aoVoltar);
+    window.addEventListener('focus', aoVoltar);
+    return () => {
+      clearInterval(intervalo);
+      document.removeEventListener('visibilitychange', aoVoltar);
+      window.removeEventListener('focus', aoVoltar);
+    };
+  }, []);
+
   const marcarComoLidas = (ids) => {
     if (!ids.length) return;
     const novas = marcarLidas(lidas, ids, new Set(notificacoesServidor.map(n => n.id)));
@@ -133,7 +151,7 @@ export default function Dashboard() {
   // Fechar o pop-up (por "Entendi", X ou Esc) conta como visto neste computador.
   const fecharImportante = () => {
     marcarComoLidas([filaImportantes[0].id]);
-    setFilaImportantes(filaImportantes.slice(1));
+    setImportantes((atual) => ({ ...atual, fila: atual.fila.slice(1) }));
   };
 
   // Quem lançou (ou dispensou) as férias não precisa ser avisado do próprio lançamento: o
@@ -362,7 +380,7 @@ export default function Dashboard() {
       {!notificacaoAberta && filaImportantes.length > 0 && (
         <DetalheNotificacao
           notificacao={filaImportantes[0]}
-          progresso={{ atual: totalImportantes - filaImportantes.length + 1, total: totalImportantes }}
+          progresso={{ atual: importantes.total - filaImportantes.length + 1, total: importantes.total }}
           onFechar={fecharImportante}
         />
       )}

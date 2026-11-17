@@ -1,7 +1,7 @@
 // O "lido" das notificações, guardado no navegador (src/components/Notificacoes/lidas.js).
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
-import { aplicarLidas, importantesNaoVistas, lerLidas, marcarLidas, salvarLidas } from '../src/components/Notificacoes/lidas.js';
+import { aplicarLidas, importantesNaoVistas, juntarImportantes, lerLidas, marcarLidas, salvarLidas } from '../src/components/Notificacoes/lidas.js';
 
 const agora = new Date('2026-10-18T12:00:00Z');
 
@@ -55,4 +55,26 @@ test('importantes não vistas: só sistema + importante + não lida, da mais ant
     { id: 'ferias', categoria: 'ferias', importante: true, data: '2026-10-19' },
   ], { 'ja-vista': '2026-10-02T00:00:00.000Z' });
   assert.deepEqual(importantesNaoVistas(lista).map((n) => n.id), ['velha-importante', 'nova-importante']);
+});
+
+test('importante que chega com o painel aberto entra na fila, sem repetir a que já está nela', () => {
+  const a = { id: 'a', data: '2026-10-01' };
+  const b = { id: 'b', data: '2026-11-17' };
+  const c = { id: 'c', data: '2026-11-18' };
+  const vazio = { fila: [], total: 0 };
+
+  // Carga do painel: uma não vista abre como "1 de 1".
+  let estado = juntarImportantes(vazio, [a]);
+  assert.deepEqual(estado, { fila: [a], total: 1 });
+
+  // Nada novo na busca seguinte: o mesmo estado (o React não redesenha).
+  assert.equal(juntarImportantes(estado, [a]), estado);
+
+  // Chega outra enquanto a primeira está aberta: vira "1 de 2".
+  estado = juntarImportantes(estado, [a, b]);
+  assert.deepEqual(estado, { fila: [a, b], total: 2 });
+
+  // Fila esvaziada (as duas fechadas): a próxima começa uma sequência nova, "1 de 1".
+  estado = juntarImportantes({ fila: [], total: 2 }, [c]);
+  assert.deepEqual(estado, { fila: [c], total: 1 });
 });

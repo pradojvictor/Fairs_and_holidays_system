@@ -41,9 +41,22 @@ export function aplicarLidas(notificacoes, lidas) {
 }
 
 // Atualizações importantes que este computador ainda não viu, da mais antiga para a mais nova:
-// abrem sozinhas, uma de cada vez, quando o painel carrega.
+// abrem sozinhas, uma de cada vez — quando o painel carrega ou quando chegam com ele aberto.
 export function importantesNaoVistas(notificacoes) {
   return notificacoes
     .filter((n) => n.categoria === 'sistema' && n.importante && !n.lida)
     .sort((a, b) => a.data.localeCompare(b.data));
+}
+
+// Põe na fila do pop-up as importantes que ainda não estão nela. `total` conta a sequência
+// em andamento ("1 de 2"); com a fila vazia, começa uma sequência nova. Sem nada novo,
+// devolve o mesmo estado, para o React não desenhar a tela de novo.
+export function juntarImportantes(estado, naoVistas) {
+  const naFila = new Set(estado.fila.map((n) => n.id));
+  const extras = naoVistas.filter((n) => !naFila.has(n.id));
+  if (!extras.length) return estado;
+  return {
+    fila: [...estado.fila, ...extras],
+    total: estado.fila.length ? estado.total + extras.length : extras.length,
+  };
 }
