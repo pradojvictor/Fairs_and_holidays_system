@@ -405,6 +405,9 @@ export const OPERACOES = {
         dados: { ...dados, auth },
         // Troca de senha derruba as outras sessões do admin; a de quem trocou continua.
         encerrar: senhaHash ? (s) => s.papel === 'admin' && s.hash !== sessao.hash : undefined,
+        // E apaga o PIN de todos os computadores: quem sabia a senha antiga e criou um PIN perde
+        // o acesso junto (ver aparelho.js).
+        revogarPins: Boolean(senhaHash),
       };
     },
   },

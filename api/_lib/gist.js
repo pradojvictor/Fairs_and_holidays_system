@@ -7,11 +7,13 @@
 //   Esses campos não mudam de nome nem de formato.
 // - sessoes.json: as sessões abertas, só com o hash do token (ver sessao.js). Fica separado
 //   para que login e logout nunca reescrevam o data.json.
+// - aparelhos.json: os computadores do painel (nome e PIN), só com hashes (ver aparelho.js).
 //
 // O PATCH do Gist só altera os arquivos citados no corpo: gravar um não toca o outro.
 
 const API = 'https://api.github.com/gists';
 export const ARQUIVO_SESSOES = 'sessoes.json';
+export const ARQUIVO_APARELHOS = 'aparelhos.json';
 
 // GitHub fora do ar ou limitando: 503, com o nome da dependência (regra C4 da auditoria).
 export class ErroDependencia extends Error {}

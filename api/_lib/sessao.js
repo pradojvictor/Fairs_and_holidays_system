@@ -8,6 +8,7 @@
 // nunca com o token).
 import { createHash, randomBytes } from 'node:crypto';
 import { ARQUIVO_SESSOES, alterarArquivoConferindo } from './gist.js';
+import { anexarCookie } from './http.js';
 
 const HORA_MS = 60 * 60 * 1000;
 const DIA_MS = 24 * HORA_MS;
@@ -73,7 +74,7 @@ function montarCookie(valor, maxAgeSegundos) {
 }
 
 export function apagarCookie(res) {
-  res.setHeader('Set-Cookie', montarCookie('', 0));
+  anexarCookie(res, montarCookie('', 0));
 }
 
 function tokenDoPedido(req) {
@@ -125,7 +126,7 @@ async function alterarSessoes(transformar, conferir, leituraInicial) {
   );
 }
 
-export async function abrirSessao(res, papel, usuario, leitura, { lembrar = false, aparelho = '' } = {}) {
+export async function abrirSessao(res, papel, usuario, leitura, { lembrar = false, aparelho = '', aparelhoId = '' } = {}) {
   const token = randomBytes(32).toString('base64url');
   const hash = hashDoToken(token);
   const agora = Date.now();
@@ -138,6 +139,7 @@ export async function abrirSessao(res, papel, usuario, leitura, { lembrar = fals
     expiraEm: new Date(agora + duracao).toISOString(),
     ...(lembrar ? { lembrar: true } : {}),
     ...(aparelho ? { aparelho } : {}),
+    ...(aparelhoId ? { aparelhoId } : {}),
   };
   await alterarSessoes(
     (lista) => {
@@ -152,7 +154,7 @@ export async function abrirSessao(res, papel, usuario, leitura, { lembrar = fals
     (lista) => lista.some((s) => s.hash === hash),
     leitura,
   );
-  res.setHeader('Set-Cookie', montarCookie(token, lembrar ? duracao / 1000 : undefined));
+  anexarCookie(res, montarCookie(token, lembrar ? duracao / 1000 : undefined));
 }
 
 // Prazo deslizante de "manter conectado": a cada dia de uso, a sessão volta a vencer em 30
@@ -187,7 +189,7 @@ export async function renovarSessao(req, res, sessao, leitura) {
     console.error('Renovação da sessão falhou:', erro?.message || erro);
     return;
   }
-  res.setHeader('Set-Cookie', montarCookie(token, (novoPrazo - agora) / 1000));
+  anexarCookie(res, montarCookie(token, (novoPrazo - agora) / 1000));
 }
 
 // Encerra as sessões que `filtro` escolher (logout, troca de senha, exclusão de conta).

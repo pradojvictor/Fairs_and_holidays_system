@@ -1,9 +1,12 @@
 // Aba "Sessões ativas": em quais computadores e celulares o sistema está aberto, por pessoa,
 // com o botão para derrubar um deles — o computador perdido, ou o de quem saiu sem clicar em
 // "Sair do Sistema". Encerrar vale na hora: quem estiver lá precisa da senha para entrar de novo.
+// Embaixo, os computadores do painel: nome e PIN (ver Computadores.jsx).
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { endSessions, fetchSessions } from '../../services/githubApi';
+import { fetchSessions, sessionAction } from '../../services/githubApi';
+import BotaoConfirmar from './BotaoConfirmar';
+import Computadores from './Computadores';
 import '../Notificacoes/index.css';
 import './index.css';
 
@@ -30,29 +33,14 @@ function agruparPorPessoa(sessoes) {
   return [...grupos.values()];
 }
 
-// Botão em dois toques: o primeiro pede confirmação, o segundo encerra.
-function BotaoEncerrar({ rotulo, confirmar, ocupado, onConfirmar }) {
-  const [armado, setArmado] = useState(false);
-  useEffect(() => {
-    if (!armado) return undefined;
-    const t = setTimeout(() => setArmado(false), 4000);
-    return () => clearTimeout(t);
-  }, [armado]);
-  return (
-    <button
-      type="button"
-      className={`sessoes-btn-encerrar ${armado ? 'armado' : ''}`}
-      disabled={ocupado}
-      onClick={() => (armado ? onConfirmar() : setArmado(true))}
-    >
-      {armado ? confirmar : rotulo}
-    </button>
-  );
-}
+// Nome do aparelho na lista: o nome que o admin deu ao computador, se tiver, e o navegador.
+const rotuloAparelho = (s) => [s.computador, s.aparelho || (s.computador ? '' : 'Aparelho não identificado')].filter(Boolean).join(' · ');
 
 export default function SessoesAtivas({ onFechar }) {
   const navigate = useNavigate();
   const [sessoes, setSessoes] = useState(null);
+  const [aparelhos, setAparelhos] = useState([]);
+  const [digitosPin, setDigitosPin] = useState(6);
   const [erro, setErro] = useState('');
   const [aviso, setAviso] = useState('');
   const [ocupado, setOcupado] = useState(false);
@@ -61,7 +49,13 @@ export default function SessoesAtivas({ onFechar }) {
   useEffect(() => {
     let ativo = true;
     fetchSessions()
-      .then((r) => { if (ativo) { setSessoes(r.sessoes || []); setErro(''); } })
+      .then((r) => {
+        if (!ativo) return;
+        setSessoes(r.sessoes || []);
+        setAparelhos(r.aparelhos || []);
+        setDigitosPin(r.digitosPin || 6);
+        setErro('');
+      })
       .catch((e) => {
         if (!ativo) return;
         if (e.status === 401) navigate('/login', { replace: true });
@@ -76,18 +70,28 @@ export default function SessoesAtivas({ onFechar }) {
     return () => document.removeEventListener('keydown', tecla);
   }, [onFechar]);
 
-  const encerrar = async (alvo, mensagem) => {
+  // Toda ação da aba passa por aqui. Devolve { ok, erro }: o formulário do PIN mostra o erro
+  // ao lado dos campos (erroLocal); o resto aparece no aviso do topo.
+  const agir = async (corpo, mensagem, { erroLocal = false } = {}) => {
     setOcupado(true);
     setAviso('');
     try {
-      const r = await endSessions(alvo);
-      setAviso(mensagem(r.encerradas));
+      const r = await sessionAction(corpo);
+      setAviso(mensagem(r || {}));
+      setVersao((v) => v + 1);
+      return { ok: true };
     } catch (e) {
-      if (e.status === 401) return navigate('/login', { replace: true });
-      setAviso(e.message);
+      if (e.status === 401) {
+        navigate('/login', { replace: true });
+        return { ok: false, erro: e.message };
+      }
+      if (!erroLocal) {
+        setAviso(e.message);
+        setVersao((v) => v + 1);
+      }
+      return { ok: false, erro: e.message };
     } finally {
       setOcupado(false);
-      setVersao((v) => v + 1);
     }
   };
 
@@ -134,13 +138,13 @@ export default function SessoesAtivas({ onFechar }) {
                     <small>{g.papel === 'admin' ? 'Painel administrativo' : 'Portal do colaborador'}</small>
                   </h3>
                   {outras.length > 1 && (
-                    <BotaoEncerrar
+                    <BotaoConfirmar
                       rotulo={g.papel === 'admin' ? 'Encerrar as outras' : 'Encerrar todas'}
                       confirmar={`Confirmar: encerrar ${outras.length}`}
                       ocupado={ocupado}
-                      onConfirmar={() => encerrar(
-                        { alvo: 'pessoa', papel: g.papel, usuario: g.usuario },
-                        (n) => `${n} ${n === 1 ? 'sessão encerrada' : 'sessões encerradas'} de ${g.pessoa}.`,
+                      onConfirmar={() => agir(
+                        { acao: 'encerrar-pessoa', papel: g.papel, usuario: g.usuario },
+                        ({ encerradas: n = 0 }) => `${n} ${n === 1 ? 'sessão encerrada' : 'sessões encerradas'} de ${g.pessoa}.`,
                       )}
                     />
                   )}
@@ -151,7 +155,7 @@ export default function SessoesAtivas({ onFechar }) {
                     <li key={s.id} className={`sessoes-item ${s.atual ? 'atual' : ''}`}>
                       <div className="sessoes-item-info">
                         <strong>
-                          {s.aparelho || 'Aparelho não identificado'}
+                          {rotuloAparelho(s)}
                           {s.atual && <span className="sessoes-selo">Este computador</span>}
                         </strong>
                         <span>
@@ -168,13 +172,13 @@ export default function SessoesAtivas({ onFechar }) {
                       {s.atual ? (
                         <span className="sessoes-dica">Para sair daqui, use "Sair do Sistema".</span>
                       ) : (
-                        <BotaoEncerrar
+                        <BotaoConfirmar
                           rotulo="Encerrar"
                           confirmar="Confirmar"
                           ocupado={ocupado}
-                          onConfirmar={() => encerrar(
-                            { alvo: 'sessao', id: s.id },
-                            () => `Sessão encerrada: ${s.aparelho || 'aparelho não identificado'} de ${g.pessoa}.`,
+                          onConfirmar={() => agir(
+                            { acao: 'encerrar', id: s.id },
+                            () => `Sessão encerrada: ${rotuloAparelho(s)} de ${g.pessoa}.`,
                           )}
                         />
                       )}
@@ -184,6 +188,8 @@ export default function SessoesAtivas({ onFechar }) {
               </section>
             );
           })}
+
+          {sessoes && <Computadores aparelhos={aparelhos} digitosPin={digitosPin} ocupado={ocupado} agir={agir} />}
         </div>
       </div>
     </div>

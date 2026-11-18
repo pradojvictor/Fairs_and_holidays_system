@@ -116,15 +116,22 @@ async function chamar(rota, method, opcoes) {
   res.status = (c) => { res.statusCode = c; return res; };
   res.json = (b) => { res.body = b; return res; };
   res.setHeader = (k, v) => { res.headers[k.toLowerCase()] = v; };
+  res.getHeader = (k) => res.headers[k.toLowerCase()];
   res.end = () => res;
   await rota(pedido(method, opcoes), res);
   return res;
 }
 
+// O login do admin manda dois cookies (sessão e computador); estes pegam um deles.
+const cookiesDa = (res) => [].concat(res.headers['set-cookie'] ?? []);
+const cookieSessao = (res) => cookiesDa(res).find((c) => c.startsWith('__Host-sessao='));
+const cookieAparelho = (res) => cookiesDa(res).find((c) => c.startsWith('__Host-aparelho='));
+const parDe = (setCookie) => setCookie?.split(';')[0];
+
 async function entrar(credenciais, ip) {
   const res = await chamar(rotaLogin, 'POST', { body: credenciais, ip });
   assert.equal(res.statusCode, 200, `login deveria entrar: ${JSON.stringify(res.body)}`);
-  return res.headers['set-cookie'].split(';')[0];
+  return cookieSessao(res).split(';')[0];
 }
 const entrarAdmin = () => entrar({ tipo: 'admin', usuario: 'admin', senha: 'senha-do-admin' });
 const operar = (cookie, op, dados) => chamar(rotaOperacao, 'POST', { cookie, body: { op, dados } });
@@ -160,7 +167,7 @@ test('POST /api/operacao sem sessão: 401, nada gravado', async () => {
 test('login do admin: cookie HttpOnly + Secure + SameSite=Strict, e o Gist guarda só o hash', async () => {
   const res = await chamar(rotaLogin, 'POST', { body: { tipo: 'admin', usuario: 'admin', senha: 'senha-do-admin' } });
   assert.equal(res.statusCode, 200);
-  const cookie = res.headers['set-cookie'];
+  const cookie = cookieSessao(res);
   assert.match(cookie, /^__Host-sessao=[A-Za-z0-9_-]{43}; Path=\/; HttpOnly; SameSite=Strict; Secure$/);
   const token = cookie.split(';')[0].split('=')[1];
   const sessoes = lerSessoes();
@@ -183,7 +190,7 @@ function envelhecerSessao(mudar) {
 test('sem "manter conectado": cookie some ao fechar o navegador e a sessão vale 8h', async () => {
   const res = await chamar(rotaLogin, 'POST', { body: { tipo: 'admin', usuario: 'admin', senha: 'senha-do-admin', lembrar: false } });
   assert.equal(res.statusCode, 200);
-  assert.doesNotMatch(res.headers['set-cookie'], /Max-Age/);
+  assert.doesNotMatch(cookieSessao(res), /Max-Age/);
   const [sessao] = lerSessoes();
   assert.equal(sessao.lembrar, undefined);
   perto(Date.parse(sessao.expiraEm) - Date.now(), 8 * 60 * 60 * 1000, 5000, 'prazo de 8h');
@@ -196,8 +203,8 @@ test('com "manter conectado": cookie persistente e sessão de 30 dias, nos dois 
   ]) {
     const res = await chamar(rotaLogin, 'POST', { body: corpo });
     assert.equal(res.statusCode, 200);
-    assert.match(res.headers['set-cookie'], /^__Host-sessao=[A-Za-z0-9_-]{43}; Path=\/; HttpOnly; SameSite=Strict; Secure; Max-Age=\d+$/);
-    perto(maxAge(res.headers['set-cookie']), 30 * 86400, 5, 'Max-Age de 30 dias');
+    assert.match(cookieSessao(res), /^__Host-sessao=[A-Za-z0-9_-]{43}; Path=\/; HttpOnly; SameSite=Strict; Secure; Max-Age=\d+$/);
+    perto(maxAge(cookieSessao(res)), 30 * 86400, 5, 'Max-Age de 30 dias');
     const sessao = lerSessoes().find((s) => s.papel === corpo.tipo);
     assert.equal(sessao.lembrar, true);
     perto(Date.parse(sessao.expiraEm) - Date.now(), 30 * DIA, 5000, 'prazo de 30 dias');
@@ -214,7 +221,7 @@ test('"manter conectado" renova no máximo uma vez por dia, sem passar de 90 dia
   let res = await chamar(rotaDados, 'GET', { cookie });
   assert.equal(res.statusCode, 200);
   assert.equal(gist.gravacoes, gravacoes);
-  assert.equal(res.headers['set-cookie'], undefined);
+  assert.equal(cookieSessao(res), undefined);
 
   // Dez dias depois: o prazo volta a 30 dias a partir de agora, e o cookie acompanha.
   const agora = Date.now();
@@ -225,21 +232,21 @@ test('"manter conectado" renova no máximo uma vez por dia, sem passar de 90 dia
   let [sessao] = lerSessoes();
   perto(Date.parse(sessao.expiraEm) - Date.now(), 30 * DIA, 5000, 'renovada para 30 dias');
   assert.ok(sessao.renovadaEm);
-  perto(maxAge(res.headers['set-cookie']), 30 * 86400, 5, 'cookie renovado');
-  assert.equal(res.headers['set-cookie'].split(';')[0], cookie, 'o token não muda na renovação');
+  perto(maxAge(cookieSessao(res)), 30 * 86400, 5, 'cookie renovado');
+  assert.equal(cookieSessao(res).split(';')[0], cookie, 'o token não muda na renovação');
 
   // De novo no mesmo dia: não grava.
   gravacoes = gist.gravacoes;
   res = await chamar(rotaDados, 'GET', { cookie });
   assert.equal(gist.gravacoes, gravacoes);
-  assert.equal(res.headers['set-cookie'], undefined);
+  assert.equal(cookieSessao(res), undefined);
 
   // Perto dos 90 dias: renova só até o teto.
   envelhecerSessao((s) => ({ ...s, criadaEm: iso(agora - 89 * DIA), renovadaEm: iso(agora - 2 * DIA), expiraEm: iso(agora + 12 * 60 * 60 * 1000) }));
   res = await chamar(rotaDados, 'GET', { cookie });
   [sessao] = lerSessoes();
   perto(Date.parse(sessao.expiraEm), agora + DIA, 5000, 'parou no teto de 90 dias');
-  perto(maxAge(res.headers['set-cookie']), 86400, 5, 'cookie até o teto');
+  perto(maxAge(cookieSessao(res)), 86400, 5, 'cookie até o teto');
 
   // No teto: não há o que renovar; passou dele, pede a senha de novo.
   gravacoes = gist.gravacoes;
@@ -260,7 +267,7 @@ test('sessão sem "manter conectado" nunca é renovada', async () => {
   const res = await chamar(rotaDados, 'GET', { cookie });
   assert.equal(res.statusCode, 200);
   assert.equal(gist.gravacoes, gravacoes);
-  assert.equal(res.headers['set-cookie'], undefined);
+  assert.equal(cookieSessao(res), undefined);
 });
 
 test('se a renovação falhar, o pedido segue e a sessão continua com o prazo que tinha', async () => {
@@ -275,7 +282,7 @@ test('se a renovação falhar, o pedido segue e a sessão continua com o prazo q
   try {
     const res = await chamar(rotaDados, 'GET', { cookie });
     assert.equal(res.statusCode, 200);
-    assert.equal(res.headers['set-cookie'], undefined);
+    assert.equal(cookieSessao(res), undefined);
   } finally {
     console.error = original;
     gist.fora = false;
@@ -301,7 +308,7 @@ const UA = {
 async function entrarNo(credenciais, userAgent) {
   const res = await chamar(rotaLogin, 'POST', { body: { ...credenciais, lembrar: true }, userAgent });
   assert.equal(res.statusCode, 200, `login deveria entrar: ${JSON.stringify(res.body)}`);
-  return res.headers['set-cookie'].split(';')[0];
+  return cookieSessao(res).split(';')[0];
 }
 const ADMIN = { tipo: 'admin', usuario: 'admin', senha: 'senha-do-admin' };
 const ANA = { tipo: 'colaborador', matricula: '100', senha: 'ana123' };
@@ -310,11 +317,11 @@ const encerrar = (cookie, body) => chamar(rotaSessoes, 'POST', { cookie, body })
 
 test('sessões ativas: sem sessão 401 (sem ler o Gist); colaborador 403', async () => {
   assert.equal((await listarSessoes()).statusCode, 401);
-  assert.equal((await encerrar(undefined, { alvo: 'sessao', id: '0'.repeat(16) })).statusCode, 401);
+  assert.equal((await encerrar(undefined, { acao: 'encerrar', id: '0'.repeat(16) })).statusCode, 401);
   assert.equal(gist.leituras, 0);
   const ana = await entrarNo(ANA, UA.iphone);
   assert.equal((await listarSessoes(ana)).statusCode, 403);
-  assert.equal((await encerrar(ana, { alvo: 'pessoa', papel: 'admin', usuario: 'admin' })).statusCode, 403);
+  assert.equal((await encerrar(ana, { acao: 'encerrar-pessoa', papel: 'admin', usuario: 'admin' })).statusCode, 403);
 });
 
 test('sessões ativas: quem, em que aparelho e qual é este computador — sem hash nem token', async () => {
@@ -336,6 +343,9 @@ test('sessões ativas: quem, em que aparelho e qual é este computador — sem h
   for (const cookie of [aqui, outro, ana]) assert.doesNotMatch(texto, new RegExp(cookie.split('=')[1]));
   for (const s of lerSessoes()) assert.doesNotMatch(texto, new RegExp(s.hash));
   assert.doesNotMatch(gist.files['sessoes.json'], /Mozilla|10\.0\./, 'nem o user-agent inteiro nem IP no Gist');
+  assert.doesNotMatch(gist.files['aparelhos.json'], /Mozilla|10\.0\./);
+  assert.ok(res.body.aparelhos.length >= 1, 'os computadores do admin vêm junto');
+  for (const a of JSON.parse(gist.files['aparelhos.json']).aparelhos) assert.doesNotMatch(texto, new RegExp(a.hash));
 });
 
 test('encerrar derruba só aquele computador, na hora; o daqui não se encerra por ali', async () => {
@@ -345,16 +355,16 @@ test('encerrar derruba só aquele computador, na hora; o daqui não se encerra p
   const doOutro = lista.find((s) => !s.atual);
   const daqui = lista.find((s) => s.atual);
 
-  const res = await encerrar(aqui, { alvo: 'sessao', id: doOutro.id });
+  const res = await encerrar(aqui, { acao: 'encerrar', id: doOutro.id });
   assert.equal(res.statusCode, 200);
   assert.equal(res.body.encerradas, 1);
   assert.equal((await chamar(rotaDados, 'GET', { cookie: outro })).statusCode, 401, 'o outro computador cai');
   assert.equal((await chamar(rotaDados, 'GET', { cookie: aqui })).statusCode, 200, 'este segue');
 
-  assert.equal((await encerrar(aqui, { alvo: 'sessao', id: daqui.id })).statusCode, 400);
-  assert.equal((await encerrar(aqui, { alvo: 'sessao', id: doOutro.id })).statusCode, 404, 'já encerrada');
-  assert.equal((await encerrar(aqui, { alvo: 'sessao', id: 'nao-e-um-id' })).statusCode, 400);
-  assert.equal((await encerrar(aqui, { alvo: 'tudo' })).statusCode, 400);
+  assert.equal((await encerrar(aqui, { acao: 'encerrar', id: daqui.id })).statusCode, 400);
+  assert.equal((await encerrar(aqui, { acao: 'encerrar', id: doOutro.id })).statusCode, 404, 'já encerrada');
+  assert.equal((await encerrar(aqui, { acao: 'encerrar', id: 'nao-e-um-id' })).statusCode, 400);
+  assert.equal((await encerrar(aqui, { acao: 'tudo' })).statusCode, 400);
   assert.equal(gist.files['data.json'], JSON.stringify(BASE, null, 2), 'encerrar sessão não toca o data.json');
 });
 
@@ -364,16 +374,170 @@ test('encerrar todas de uma pessoa: celular e computador da colaboradora caem; o
   const celular = await entrarNo(ANA, UA.iphone);
   const computador = await entrarNo(ANA, UA.windows);
 
-  let res = await encerrar(aqui, { alvo: 'pessoa', papel: 'colaborador', usuario: 'p_1' });
+  let res = await encerrar(aqui, { acao: 'encerrar-pessoa', papel: 'colaborador', usuario: 'p_1' });
   assert.equal(res.body.encerradas, 2);
   for (const cookie of [celular, computador]) assert.equal((await chamar(rotaDados, 'GET', { cookie })).statusCode, 401);
 
   // "Todas as do admin" pelo próprio admin: as outras caem, a deste computador não.
-  res = await encerrar(aqui, { alvo: 'pessoa', papel: 'admin', usuario: 'admin' });
+  res = await encerrar(aqui, { acao: 'encerrar-pessoa', papel: 'admin', usuario: 'admin' });
   assert.equal(res.body.encerradas, 1);
   assert.equal((await chamar(rotaDados, 'GET', { cookie: outroAdmin })).statusCode, 401);
   assert.equal((await chamar(rotaDados, 'GET', { cookie: aqui })).statusCode, 200);
   assert.deepEqual((await listarSessoes(aqui)).body.sessoes.map((s) => s.atual), [true]);
+});
+
+// ---------- computador do painel: nome e PIN ----------
+const PIN = '482915';
+const aparelhos = () => (gist.files['aparelhos.json'] ? JSON.parse(gist.files['aparelhos.json']).aparelhos : []);
+const statusPin = (cookie) => chamar(rotaLogin, 'GET', { cookie });
+const sessoesAcao = (cookie, body) => chamar(rotaSessoes, 'POST', { cookie, body });
+
+// Login do admin com senha num computador (com o cookie dele, se já tiver um).
+async function entrarNoComputador({ aparelho, userAgent = UA.windows, lembrar } = {}) {
+  const res = await chamar(rotaLogin, 'POST', { body: { ...ADMIN, ...(lembrar ? { lembrar: true } : {}) }, cookie: aparelho, userAgent });
+  assert.equal(res.statusCode, 200, JSON.stringify(res.body));
+  return { sessao: parDe(cookieSessao(res)), aparelho: parDe(cookieAparelho(res)) };
+}
+const juntos = (...cookies) => cookies.filter(Boolean).join('; ');
+async function criarPin(c, pin = PIN, senhaAtual = 'senha-do-admin') {
+  return sessoesAcao(juntos(c.sessao, c.aparelho), { acao: 'definir-pin', senhaAtual, pin });
+}
+const entrarComPin = (aparelho, pin, extra = {}) => chamar(rotaLogin, 'POST', { body: { tipo: 'pin', pin, ...extra }, cookie: aparelho });
+
+test('senha completa do admin valida o computador: cookie próprio de 1 ano; no Gist, só o hash', async () => {
+  const res = await chamar(rotaLogin, 'POST', { body: ADMIN, userAgent: UA.windows });
+  const cookie = cookieAparelho(res);
+  assert.match(cookie, /^__Host-aparelho=[A-Za-z0-9_-]{43}; Path=\/; HttpOnly; SameSite=Strict; Secure; Max-Age=31536000$/);
+  assert.match(cookieSessao(res), /^__Host-sessao=/, 'o cookie da sessão vai junto, sem ser apagado');
+  const [registro] = aparelhos();
+  assert.equal(aparelhos().length, 1);
+  assert.equal(registro.descricao, 'Chrome · Windows');
+  assert.ok(registro.senhaEm);
+  assert.doesNotMatch(gist.files['aparelhos.json'], new RegExp(parDe(cookie).split('=')[1]), 'o token do computador não vai para o Gist');
+  const [sessao] = lerSessoes();
+  assert.equal(sessao.aparelhoId, registro.hash.slice(0, 16), 'a sessão sabe de que computador veio');
+
+  // Entrar de novo no mesmo computador não cria outro registro.
+  await entrarNoComputador({ aparelho: parDe(cookie) });
+  assert.equal(aparelhos().length, 1);
+
+  // O portal do colaborador não valida computador.
+  const ana = await chamar(rotaLogin, 'POST', { body: ANA, userAgent: UA.iphone });
+  assert.equal(cookieAparelho(ana), undefined);
+  assert.equal(aparelhos().length, 1);
+});
+
+test('PIN: pede a senha do admin; PIN fraco recebe a mesma frase; no Gist, só o hash', async () => {
+  const c = await entrarNoComputador();
+  assert.deepEqual((await statusPin(c.aparelho)).body, { pin: false });
+
+  assert.equal((await criarPin(c, PIN, 'senha-errada')).statusCode, 403);
+  const frases = new Set();
+  for (const fraco of ['111111', '121212', '123456', '654321', '123123', '12345', 'abcdef']) {
+    const res = await criarPin(c, fraco);
+    assert.equal(res.statusCode, 400, fraco);
+    frases.add(res.body.error);
+  }
+  assert.equal(frases.size, 1, 'a recusa não diz o motivo (§5-C6)');
+
+  assert.equal((await criarPin(c)).statusCode, 200);
+  const [registro] = aparelhos();
+  assert.match(registro.pinHash, /^scrypt\$/);
+  assert.doesNotMatch(gist.files['aparelhos.json'], new RegExp(PIN));
+  assert.deepEqual((await statusPin(c.aparelho)).body, { pin: true, nome: '' });
+  assert.deepEqual((await statusPin()).body, { pin: false }, 'sem o cookie do computador, nada');
+});
+
+test('entrar com PIN: só no computador validado; respeita o "manter conectado"', async () => {
+  const c = await entrarNoComputador();
+  await criarPin(c);
+
+  // Pela internet (sem o cookie deste computador), o PIN não serve.
+  assert.equal((await entrarComPin(undefined, PIN)).statusCode, 401);
+  const outro = await entrarNoComputador({ userAgent: UA.mac });
+  assert.equal((await entrarComPin(outro.aparelho, PIN)).statusCode, 401, 'o PIN é deste computador, não do admin em qualquer lugar');
+
+  let res = await entrarComPin(c.aparelho, PIN);
+  assert.equal(res.statusCode, 200);
+  assert.doesNotMatch(cookieSessao(res), /Max-Age/, 'sem "manter conectado": até fechar o navegador');
+  const dados = await chamar(rotaDados, 'GET', { cookie: parDe(cookieSessao(res)) });
+  assert.equal(dados.body.perfil.papel, 'admin');
+
+  res = await entrarComPin(c.aparelho, PIN, { lembrar: true });
+  assert.match(cookieSessao(res), /Max-Age=2592000$/, 'com "manter conectado": 30 dias, como na senha');
+});
+
+test('5 PINs errados apagam o PIN daquele computador; a senha volta a ser o caminho', async () => {
+  const c = await entrarNoComputador();
+  await criarPin(c);
+  for (let i = 1; i <= 4; i++) {
+    const res = await entrarComPin(c.aparelho, '000000'.slice(0, 5) + i);
+    assert.equal(res.statusCode, 401);
+    assert.match(res.body.error, new RegExp(`Mais ${5 - i === 1 ? '1 erro' : `${5 - i} erros`}`));
+  }
+  const quinto = await entrarComPin(c.aparelho, '999990');
+  assert.equal(quinto.statusCode, 401);
+  assert.match(quinto.body.error, /apagado/);
+  assert.equal(aparelhos()[0].pinHash, undefined);
+  assert.ok(aparelhos()[0].pinBloqueadoEm);
+  assert.notEqual((await entrarComPin(c.aparelho, PIN)).statusCode, 200, 'nem o PIN certo entra mais');
+  assert.deepEqual((await statusPin(c.aparelho)).body, { pin: false });
+
+  // Com a senha de novo, um PIN novo vale na hora.
+  const denovo = await entrarNoComputador({ aparelho: c.aparelho });
+  assert.equal((await criarPin({ ...denovo, aparelho: c.aparelho }, '730419')).statusCode, 200);
+  assert.equal((await entrarComPin(c.aparelho, '730419')).statusCode, 200);
+});
+
+test('PIN vencido (90 dias sem a senha neste computador) não entra', async () => {
+  const c = await entrarNoComputador();
+  await criarPin(c);
+  const lista = aparelhos().map((a) => ({ ...a, senhaEm: new Date(Date.now() - 91 * DIA).toISOString() }));
+  gist.files['aparelhos.json'] = JSON.stringify({ aparelhos: lista });
+  assert.equal((await entrarComPin(c.aparelho, PIN)).statusCode, 401);
+  assert.deepEqual((await statusPin(c.aparelho)).body, { pin: false });
+});
+
+test('troca da senha do admin apaga todos os PINs; o nome dos computadores fica', async () => {
+  const c = await entrarNoComputador();
+  await sessoesAcao(juntos(c.sessao, c.aparelho), { acao: 'nomear', aparelho: 'este', nome: 'Recepção' });
+  await criarPin(c);
+  const res = await operar(c.sessao, 'admin.perfil', { username: 'admin', senhaAtual: 'senha-do-admin', novaSenha: 'senha-nova-123' });
+  assert.equal(res.statusCode, 200);
+  assert.equal(aparelhos()[0].pinHash, undefined);
+  assert.equal(aparelhos()[0].nome, 'Recepção');
+  assert.equal((await entrarComPin(c.aparelho, PIN)).statusCode, 401);
+});
+
+test('aba Sessões: dar nome, remover PIN e esquecer o computador (as sessões dele caem)', async () => {
+  const aqui = await entrarNoComputador({ userAgent: UA.windows });
+  const recepcao = await entrarNoComputador({ userAgent: UA.mac });
+  const recepcao2 = await entrarNoComputador({ aparelho: recepcao.aparelho, userAgent: UA.mac });
+  await criarPin(recepcao);
+
+  let lista = (await listarSessoes(juntos(aqui.sessao, aqui.aparelho))).body;
+  assert.equal(lista.aparelhos.length, 2);
+  assert.equal(lista.aparelhos[0].atual, true, 'este computador vem primeiro');
+  const daRecepcao = lista.aparelhos.find((a) => !a.atual);
+  assert.equal(daRecepcao.pin, true);
+  assert.equal(daRecepcao.descricao, 'Safari · Mac');
+
+  assert.equal((await sessoesAcao(aqui.sessao, { acao: 'nomear', aparelho: daRecepcao.id, nome: 'Recepção' })).statusCode, 200);
+  lista = (await listarSessoes(juntos(aqui.sessao, aqui.aparelho))).body;
+  assert.equal(lista.aparelhos.find((a) => a.id === daRecepcao.id).nome, 'Recepção');
+  assert.equal(lista.sessoes.filter((s) => s.computador === 'Recepção').length, 2, 'as sessões mostram o nome do computador');
+  assert.deepEqual((await statusPin(recepcao.aparelho)).body, { pin: true, nome: 'Recepção' });
+
+  assert.equal((await sessoesAcao(aqui.sessao, { acao: 'remover-pin', aparelho: daRecepcao.id })).statusCode, 200);
+  assert.equal((await entrarComPin(recepcao.aparelho, PIN)).statusCode, 401);
+
+  const res = await sessoesAcao(aqui.sessao, { acao: 'esquecer', aparelho: daRecepcao.id });
+  assert.equal(res.body.encerradas, 2);
+  for (const cookie of [recepcao.sessao, recepcao2.sessao]) assert.equal((await chamar(rotaDados, 'GET', { cookie })).statusCode, 401);
+  assert.equal((await chamar(rotaDados, 'GET', { cookie: aqui.sessao })).statusCode, 200);
+  assert.equal(aparelhos().length, 1);
+  assert.equal((await sessoesAcao(aqui.sessao, { acao: 'esquecer', aparelho: daRecepcao.id })).statusCode, 404);
+  assert.equal(gist.files['data.json'], JSON.stringify(BASE, null, 2), 'nada disso toca o data.json');
 });
 
 test('senha errada e conta inexistente: a mesma resposta', async () => {

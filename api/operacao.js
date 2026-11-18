@@ -6,6 +6,7 @@ import { ErroPedido, corpoJson, rota, validar } from './_lib/http.js';
 import { ARQUIVO_NOTIFICACOES, lerEstadoNotificacoes, registrarHistorico } from './_lib/notificacoes.js';
 import { OPERACOES } from './_lib/operacoes.js';
 import { encerrarSessoes, resolverSessao, temCookieDeSessao } from './_lib/sessao.js';
+import { revogarTodosOsPins } from './_lib/aparelho.js';
 
 const SEM_SESSAO = 'Sessão encerrada. Entre de novo.';
 
@@ -39,6 +40,9 @@ export default rota({
     // sessões antigas valeriam até vencer (8h).
     if (efeito.encerrar) {
       await encerrarSessoes(efeito.encerrar).catch((erro) => console.error('Encerrar sessões:', erro));
+    }
+    if (efeito.revogarPins) {
+      await revogarTodosOsPins(leitura).catch((erro) => console.error('Apagar os PINs:', erro));
     }
     // Registro na central de notificações (ex.: férias lançadas). Os dados já estão gravados;
     // se o registro falhar, fica no log e a operação não volta atrás.

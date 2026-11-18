@@ -44,7 +44,11 @@ export const runOperation = (op, dados) => request('POST', '/api/operacao', { op
 // foi lido fica no navegador (components/Notificacoes/lidas.js).
 export const fetchNotifications = () => request('GET', '/api/notificacoes');
 
-// Aba "Sessões ativas" (api/sessoes.js): onde o sistema está aberto, e encerrar um computador
-// ({ alvo: 'sessao', id }) ou todos os de uma pessoa ({ alvo: 'pessoa', papel, usuario }).
+// Aba "Sessões ativas" (api/sessoes.js): onde o sistema está aberto e os computadores do painel.
+// Cada ação é { acao, ... }: encerrar, encerrar-pessoa, nomear, esquecer, definir-pin, remover-pin.
 export const fetchSessions = () => request('GET', '/api/sessoes');
-export const endSessions = (alvo) => request('POST', '/api/sessoes', alvo);
+export const sessionAction = (corpo) => request('POST', '/api/sessoes', corpo);
+
+// Este computador aceita PIN? Devolve { pin, nome }. Só responde "sim" com o cookie do
+// computador, que só existe onde o admin já entrou com a senha.
+export const loginStatus = () => request('GET', '/api/login');

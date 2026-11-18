@@ -174,3 +174,147 @@
     white-space: normal;
   }
 }
+
+/* Computadores do painel (Computadores.jsx). */
+.sessoes-grupo.computadores {
+  border-color: rgba(255, 165, 0, 0.25);
+}
+
+.sessoes-grupo.computadores h3 small {
+  max-width: 560px;
+  line-height: 1.35;
+}
+
+.sessoes-item.coluna {
+  flex-direction: column;
+  align-items: stretch;
+  gap: 0.5rem;
+}
+
+.computador-topo {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 1rem;
+}
+
+.computador-botoes {
+  display: flex;
+  gap: 0.4rem;
+  flex-shrink: 0;
+}
+
+.computador-pin {
+  font-size: 0.76rem;
+  color: #9ca3af;
+}
+
+.computador-pin.ativo {
+  color: #86efac;
+}
+
+.computador-pin.aviso {
+  color: #fcd34d;
+}
+
+.computador-acoes {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  align-items: flex-start;
+}
+
+.computador-form {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  align-items: center;
+  width: 100%;
+}
+
+.computador-form.coluna {
+  flex-direction: column;
+  align-items: stretch;
+  max-width: 420px;
+  padding: 0.6rem;
+  border-radius: 6px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.computador-linha {
+  display: flex;
+  gap: 0.4rem;
+}
+
+.computador-linha > * {
+  flex: 1;
+}
+
+.computador-explica {
+  margin: 0;
+  color: #9ca3af;
+  font-size: 0.76rem;
+  line-height: 1.4;
+}
+
+.computador-input {
+  min-width: 0;
+  flex: 1;
+  padding: 0.4rem 0.6rem;
+  border-radius: 6px;
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  background: rgba(0, 0, 0, 0.35);
+  color: white;
+  font-size: 0.85rem;
+}
+
+.computador-input:focus {
+  outline: none;
+  border-color: orange;
+}
+
+.computador-input.pin {
+  letter-spacing: 0.3em;
+  text-align: center;
+}
+
+.computador-btn {
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  color: white;
+  font-size: 0.8rem;
+  padding: 0.3rem 0.8rem;
+  border-radius: 6px;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.computador-btn:hover:not(:disabled) {
+  border-color: orange;
+  color: orange;
+}
+
+.computador-btn.primario {
+  background: orange;
+  border-color: orange;
+  color: black;
+  font-weight: bold;
+}
+
+.computador-btn.primario:hover:not(:disabled) {
+  background: #ffb733;
+  color: black;
+}
+
+.computador-erro {
+  margin: 0;
+  color: #fca5a5;
+  font-size: 0.8rem;
+}
+
+@media (max-width: 600px) {
+  .computador-topo {
+    flex-direction: column;
+  }
+}

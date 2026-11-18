@@ -10,6 +10,14 @@ export class ErroPedido extends Error {
 
 const LIMITE_CORPO = 20_000;
 
+// Acrescenta um Set-Cookie sem apagar os que a resposta já tem (o login do admin manda dois:
+// o da sessão e o do computador). Um cookie só continua indo como texto, não como lista.
+export function anexarCookie(res, cookie) {
+  const atual = res.getHeader?.('Set-Cookie');
+  const lista = [...(atual === undefined ? [] : [].concat(atual)), cookie];
+  res.setHeader('Set-Cookie', lista.length === 1 ? lista[0] : lista);
+}
+
 // Escrita só de páginas da mesma origem e só em JSON. O cookie já é SameSite=Strict; isto
 // fecha o resto (formulário de outro site não manda application/json sem preflight).
 function conferirPedidoDeEscrita(req) {
