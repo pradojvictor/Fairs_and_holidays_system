@@ -3,7 +3,7 @@
 //   GET  /api/sessoes → { sessoes: [...] }
 //   POST /api/sessoes → { alvo: 'sessao', id } encerra uma sessão;
 //                       { alvo: 'pessoa', papel, usuario } encerra todas as de alguém.
-// A sessão deste computador não se encerra por aqui: para isso existe o "Sair".
+// A sessão deste computador não se encerra por aqui: para isso existe o "Sair do Sistema".
 import { z } from 'zod';
 import { lerGist } from './_lib/gist.js';
 import { ErroPedido, corpoJson, rota, validar } from './_lib/http.js';
@@ -69,7 +69,7 @@ export default rota({
       const alvo = vivas.find((s) => idDaSessao(s) === pedido.id);
       if (!alvo) throw new ErroPedido(404, 'Esta sessão já não está aberta.');
       if (alvo.hash === sessao.hash) {
-        throw new ErroPedido(400, 'Esta é a sessão deste computador. Para sair dele, use "Sair".');
+        throw new ErroPedido(400, 'Esta é a sessão deste computador. Para sair dele, use "Sair do Sistema", no Painel Administrativo.');
       }
       filtro = (s) => s.hash === alvo.hash;
     } else {

@@ -1,6 +1,6 @@
 // Aba "Sessões ativas": em quais computadores e celulares o sistema está aberto, por pessoa,
 // com o botão para derrubar um deles — o computador perdido, ou o de quem saiu sem clicar em
-// "Sair". Encerrar vale na hora: quem estiver lá precisa da senha para entrar de novo.
+// "Sair do Sistema". Encerrar vale na hora: quem estiver lá precisa da senha para entrar de novo.
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { endSessions, fetchSessions } from '../../services/githubApi';
@@ -166,7 +166,7 @@ export default function SessoesAtivas({ onFechar }) {
                         </span>
                       </div>
                       {s.atual ? (
-                        <span className="sessoes-dica">Para sair daqui, use "Sair".</span>
+                        <span className="sessoes-dica">Para sair daqui, use "Sair do Sistema".</span>
                       ) : (
                         <BotaoEncerrar
                           rotulo="Encerrar"
