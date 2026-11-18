@@ -1,4 +1,4 @@
-import { useState, useEffect, useEffectEvent, useRef } from 'react';
+import { useCallback, useState, useEffect, useEffectEvent, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { fetchGistData, fetchNotifications, runOperation } from '../../services/githubApi';
 import Sidebar from '../../components/Sidebar';
@@ -13,6 +13,7 @@ import RestScreen from '../../components/RestScreen';
 import BankSidebar from '../../components/BankSidebar';
 import CustomSelect from '../../components/CustomSelect';
 import FeriasPendentesModal from '../../components/FeriasPendentesModal';
+import SessoesAtivas from '../../components/SessoesAtivas';
 import Sino from '../../components/Notificacoes/Sino';
 import CentralNotificacoes from '../../components/Notificacoes/Central';
 import DetalheNotificacao from '../../components/Notificacoes/Detalhe';
@@ -38,6 +39,8 @@ export default function Dashboard() {
   const [eventToEdit, setEventToEdit] = useState(null);
 
   const [isAdminProfileOpen, setIsAdminProfileOpen] = useState(false);
+  const [isSessoesOpen, setIsSessoesOpen] = useState(false);
+  const fecharSessoes = useCallback(() => setIsSessoesOpen(false), []);
   const [adminData, setAdminData] = useState({ username: 'Administrador' });
 
   const [eventToDelete, setEventToDelete] = useState(null);
@@ -249,7 +252,10 @@ export default function Dashboard() {
         onDataUpdated={loadData}
         adminName={adminData.username}
         onOpenProfile={() => setIsAdminProfileOpen(true)}
+        onOpenSessions={() => setIsSessoesOpen(true)}
       />
+
+      {isSessoesOpen && <SessoesAtivas onFechar={fecharSessoes} />}
 
       <BankSidebar
         isOpen={isBankSidebarOpen}

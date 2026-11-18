@@ -1,0 +1,176 @@
+/* Aba "Sessões ativas": mesmo vidro da central de notificações (Notificacoes/index.css). */
+.sessoes-painel {
+  inset: 6vh 50% auto 50%;
+  width: min(760px, 94vw);
+  max-height: 88vh;
+  transform: translateX(-50%);
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+}
+
+.sessoes-topo-acoes {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.sessoes-btn-atualizar {
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  color: white;
+  font-size: 0.8rem;
+  padding: 0.3rem 0.8rem;
+  border-radius: 20px;
+  cursor: pointer;
+}
+
+.sessoes-btn-atualizar:hover:not(:disabled) {
+  border-color: orange;
+  color: orange;
+}
+
+.sessoes-aviso {
+  margin: 0 1.25rem 0.5rem;
+  padding: 0.5rem 0.75rem;
+  border-radius: 6px;
+  background: rgba(255, 165, 0, 0.12);
+  border: 1px solid rgba(255, 165, 0, 0.35);
+  color: #fcd9a5;
+  font-size: 0.85rem;
+}
+
+.sessoes-erro {
+  color: #fca5a5;
+  font-size: 0.9rem;
+}
+
+.sessoes-resumo {
+  margin: 0 0 0.75rem;
+  color: #9ca3af;
+  font-size: 0.85rem;
+}
+
+.sessoes-grupo {
+  margin-bottom: 1rem;
+  padding: 0.75rem;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.04);
+}
+
+.sessoes-grupo-topo {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 1rem;
+  margin-bottom: 0.5rem;
+}
+
+.sessoes-grupo-topo h3 {
+  margin: 0;
+  font-size: 1rem;
+  display: flex;
+  flex-direction: column;
+}
+
+.sessoes-grupo-topo h3 small {
+  color: #9ca3af;
+  font-size: 0.75rem;
+  font-weight: normal;
+}
+
+.sessoes-lista {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+.sessoes-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 1rem;
+  padding: 0.55rem 0.7rem;
+  border-radius: 6px;
+  background: rgba(0, 0, 0, 0.25);
+  border-left: 3px solid rgba(255, 255, 255, 0.15);
+}
+
+.sessoes-item.atual {
+  border-left-color: orange;
+}
+
+.sessoes-item-info {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  min-width: 0;
+  font-size: 0.82rem;
+  color: #d1d5db;
+}
+
+.sessoes-item-info strong {
+  color: white;
+  font-size: 0.92rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.sessoes-prazo {
+  color: #9ca3af;
+  font-size: 0.76rem;
+}
+
+.sessoes-selo {
+  font-size: 0.68rem;
+  font-weight: bold;
+  color: black;
+  background: orange;
+  padding: 0.05rem 0.45rem;
+  border-radius: 10px;
+}
+
+.sessoes-dica {
+  color: #9ca3af;
+  font-size: 0.75rem;
+  white-space: nowrap;
+}
+
+.sessoes-btn-encerrar {
+  flex-shrink: 0;
+  background: transparent;
+  border: 1px solid #ef4444;
+  color: #fca5a5;
+  font-size: 0.8rem;
+  font-weight: bold;
+  padding: 0.3rem 0.8rem;
+  border-radius: 6px;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all 0.2s;
+}
+
+.sessoes-btn-encerrar:hover:not(:disabled),
+.sessoes-btn-encerrar.armado {
+  background: #ef4444;
+  color: white;
+}
+
+.sessoes-btn-encerrar:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+
+@media (max-width: 600px) {
+  .sessoes-item {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+  .sessoes-dica {
+    white-space: normal;
+  }
+}

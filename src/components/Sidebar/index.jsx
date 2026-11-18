@@ -6,7 +6,7 @@ import { anoSugerido, dataBR, ehData, hojeISO, periodoAquisitivo, proximoAnivers
 import CustomSelect from '../CustomSelect';
 import './index.css';
 
-export default function Sidebar({ isOpen, onClose, onDataUpdated, professionals = [], professions = [], adminName, onOpenProfile }) {
+export default function Sidebar({ isOpen, onClose, onDataUpdated, professionals = [], professions = [], adminName, onOpenProfile, onOpenSessions }) {
   const navigate = useNavigate();
   const formTopRef = useRef(null);
   const [name, setName] = useState('');
@@ -275,12 +275,20 @@ export default function Sidebar({ isOpen, onClose, onDataUpdated, professionals 
           <h2>Painel Administrativo</h2>
           <div className="sidebar-header-actions">
             <p>Logado como: <strong>{adminName || 'admin'}</strong></p>
+            <div className="sidebar-header-botoes">
+            <button type="button" onClick={onOpenSessions} title="Onde o sistema está aberto, e encerrar um computador" className="btn-edit-profile">
+              <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+                <path d="M4 5.5A1.5 1.5 0 0 1 5.5 4h13A1.5 1.5 0 0 1 20 5.5v9a1.5 1.5 0 0 1-1.5 1.5h-5v2h2.25a.75.75 0 0 1 0 1.5h-7.5a.75.75 0 0 1 0-1.5H10.5v-2h-5A1.5 1.5 0 0 1 4 14.5zm1.5 0v9h13v-9z" />
+              </svg>
+              Sessões
+            </button>
             <button onClick={onOpenProfile} title="Editar Perfil" className="btn-edit-profile">
               <svg clipRule="evenodd" fillRule="evenodd" strokeLinejoin="round" strokeMiterlimit={2} viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
                 <path d="m19 20.25c0-.402-.356-.75-.75-.75-2.561 0-11.939 0-14.5 0-.394 0-.75.348-.75.75s.356.75.75.75h14.5c.394 0 .75-.348.75-.75zm-12.023-7.083c-1.334 3.916-1.48 4.232-1.48 4.587 0 .527.46.749.749.749.352 0 .668-.137 4.574-1.493zm1.06-1.061 3.846 3.846 8.824-8.814c.195-.195.293-.451.293-.707 0-.255-.098-.511-.293-.706-.692-.691-1.742-1.741-2.435-2.432-.195-.195-.451-.293-.707-.293-.254 0-.51.098-.706.293z" fillRule="nonzero" />
               </svg>
               Editar
             </button>
+            </div>
           </div>
         </div>
 

@@ -1,0 +1,191 @@
+// Aba "Sessões ativas": em quais computadores e celulares o sistema está aberto, por pessoa,
+// com o botão para derrubar um deles — o computador perdido, ou o de quem saiu sem clicar em
+// "Sair". Encerrar vale na hora: quem estiver lá precisa da senha para entrar de novo.
+import { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { endSessions, fetchSessions } from '../../services/githubApi';
+import '../Notificacoes/index.css';
+import './index.css';
+
+const fuso = { timeZone: 'America/Fortaleza' };
+const diaDe = (iso) => new Date(iso).toLocaleDateString('pt-BR', fuso);
+const horaDe = (iso) => new Date(iso).toLocaleTimeString('pt-BR', { ...fuso, hour: '2-digit', minute: '2-digit' });
+
+function quando(iso) {
+  const hoje = diaDe(new Date().toISOString());
+  const ontem = diaDe(new Date(Date.now() - 86_400_000).toISOString());
+  const dia = diaDe(iso);
+  if (dia === hoje) return `hoje, ${horaDe(iso)}`;
+  if (dia === ontem) return `ontem, ${horaDe(iso)}`;
+  return `${dia.slice(0, 5)}, ${horaDe(iso)}`;
+}
+
+function agruparPorPessoa(sessoes) {
+  const grupos = new Map();
+  for (const s of sessoes) {
+    const chave = `${s.papel}:${s.usuario}`;
+    if (!grupos.has(chave)) grupos.set(chave, { chave, papel: s.papel, usuario: s.usuario, pessoa: s.pessoa, sessoes: [] });
+    grupos.get(chave).sessoes.push(s);
+  }
+  return [...grupos.values()];
+}
+
+// Botão em dois toques: o primeiro pede confirmação, o segundo encerra.
+function BotaoEncerrar({ rotulo, confirmar, ocupado, onConfirmar }) {
+  const [armado, setArmado] = useState(false);
+  useEffect(() => {
+    if (!armado) return undefined;
+    const t = setTimeout(() => setArmado(false), 4000);
+    return () => clearTimeout(t);
+  }, [armado]);
+  return (
+    <button
+      type="button"
+      className={`sessoes-btn-encerrar ${armado ? 'armado' : ''}`}
+      disabled={ocupado}
+      onClick={() => (armado ? onConfirmar() : setArmado(true))}
+    >
+      {armado ? confirmar : rotulo}
+    </button>
+  );
+}
+
+export default function SessoesAtivas({ onFechar }) {
+  const navigate = useNavigate();
+  const [sessoes, setSessoes] = useState(null);
+  const [erro, setErro] = useState('');
+  const [aviso, setAviso] = useState('');
+  const [ocupado, setOcupado] = useState(false);
+  const [versao, setVersao] = useState(0);
+
+  useEffect(() => {
+    let ativo = true;
+    fetchSessions()
+      .then((r) => { if (ativo) { setSessoes(r.sessoes || []); setErro(''); } })
+      .catch((e) => {
+        if (!ativo) return;
+        if (e.status === 401) navigate('/login', { replace: true });
+        else setErro(e.message);
+      });
+    return () => { ativo = false; };
+  }, [versao, navigate]);
+
+  useEffect(() => {
+    const tecla = (e) => { if (e.key === 'Escape') onFechar(); };
+    document.addEventListener('keydown', tecla);
+    return () => document.removeEventListener('keydown', tecla);
+  }, [onFechar]);
+
+  const encerrar = async (alvo, mensagem) => {
+    setOcupado(true);
+    setAviso('');
+    try {
+      const r = await endSessions(alvo);
+      setAviso(mensagem(r.encerradas));
+    } catch (e) {
+      if (e.status === 401) return navigate('/login', { replace: true });
+      setAviso(e.message);
+    } finally {
+      setOcupado(false);
+      setVersao((v) => v + 1);
+    }
+  };
+
+  const grupos = sessoes ? agruparPorPessoa(sessoes) : [];
+  const total = sessoes?.length || 0;
+
+  return (
+    <div className="central-overlay" role="dialog" aria-modal="true" aria-label="Sessões ativas" onClick={onFechar}>
+      <div className="central-painel sessoes-painel" onClick={(e) => e.stopPropagation()}>
+        <div className="central-topo">
+          <div>
+            <h2>Sessões ativas</h2>
+            <p>
+              Onde o sistema está aberto agora. Encerrar desconecta aquele computador na hora: quem estiver
+              lá vai precisar da senha para entrar de novo.
+            </p>
+          </div>
+          <div className="sessoes-topo-acoes">
+            <button type="button" className="sessoes-btn-atualizar" disabled={ocupado} onClick={() => { setAviso(''); setVersao((v) => v + 1); }}>
+              Atualizar
+            </button>
+            <button type="button" className="btn-close-modal" onClick={onFechar} title="Fechar">&times;</button>
+          </div>
+        </div>
+
+        {aviso && <p className="sessoes-aviso" role="status">{aviso}</p>}
+
+        <div className="central-conteudo">
+          {erro && <p className="sessoes-erro">{erro}</p>}
+          {!erro && !sessoes && <p className="central-vazio">Carregando…</p>}
+          {sessoes && (
+            <p className="sessoes-resumo">
+              {total === 1 ? '1 sessão aberta' : `${total} sessões abertas`} · {grupos.length === 1 ? '1 pessoa' : `${grupos.length} pessoas`}
+            </p>
+          )}
+
+          {grupos.map((g) => {
+            const outras = g.sessoes.filter((s) => !s.atual);
+            return (
+              <section key={g.chave} className="sessoes-grupo">
+                <div className="sessoes-grupo-topo">
+                  <h3>
+                    {g.pessoa}
+                    <small>{g.papel === 'admin' ? 'Painel administrativo' : 'Portal do colaborador'}</small>
+                  </h3>
+                  {outras.length > 1 && (
+                    <BotaoEncerrar
+                      rotulo={g.papel === 'admin' ? 'Encerrar as outras' : 'Encerrar todas'}
+                      confirmar={`Confirmar: encerrar ${outras.length}`}
+                      ocupado={ocupado}
+                      onConfirmar={() => encerrar(
+                        { alvo: 'pessoa', papel: g.papel, usuario: g.usuario },
+                        (n) => `${n} ${n === 1 ? 'sessão encerrada' : 'sessões encerradas'} de ${g.pessoa}.`,
+                      )}
+                    />
+                  )}
+                </div>
+
+                <ul className="sessoes-lista">
+                  {g.sessoes.map((s) => (
+                    <li key={s.id} className={`sessoes-item ${s.atual ? 'atual' : ''}`}>
+                      <div className="sessoes-item-info">
+                        <strong>
+                          {s.aparelho || 'Aparelho não identificado'}
+                          {s.atual && <span className="sessoes-selo">Este computador</span>}
+                        </strong>
+                        <span>
+                          Entrou {quando(s.entrouEm)}
+                          {s.usoEm !== s.entrouEm && <> · usado {quando(s.usoEm)}</>}
+                        </span>
+                        {/* Com "manter conectado" o prazo anda a cada dia de uso; sem, são 8h do login. */}
+                        <span className="sessoes-prazo">
+                          {s.lembrar
+                            ? `Manter conectado · cai ${quando(s.expiraEm)} se não for usado`
+                            : `Até fechar o navegador · cai ${quando(s.expiraEm)}`}
+                        </span>
+                      </div>
+                      {s.atual ? (
+                        <span className="sessoes-dica">Para sair daqui, use "Sair".</span>
+                      ) : (
+                        <BotaoEncerrar
+                          rotulo="Encerrar"
+                          confirmar="Confirmar"
+                          ocupado={ocupado}
+                          onConfirmar={() => encerrar(
+                            { alvo: 'sessao', id: s.id },
+                            () => `Sessão encerrada: ${s.aparelho || 'aparelho não identificado'} de ${g.pessoa}.`,
+                          )}
+                        />
+                      )}
+                    </li>
+                  ))}
+                </ul>
+              </section>
+            );
+          })}
+        </div>
+      </div>
+    </div>
+  );
+}

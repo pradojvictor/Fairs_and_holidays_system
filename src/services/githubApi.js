@@ -43,3 +43,8 @@ export const runOperation = (op, dados) => request('POST', '/api/operacao', { op
 // Central de notificações do admin (api/notificacoes.js). Devolve { notificacoes }; o que já
 // foi lido fica no navegador (components/Notificacoes/lidas.js).
 export const fetchNotifications = () => request('GET', '/api/notificacoes');
+
+// Aba "Sessões ativas" (api/sessoes.js): onde o sistema está aberto, e encerrar um computador
+// ({ alvo: 'sessao', id }) ou todos os de uma pessoa ({ alvo: 'pessoa', papel, usuario }).
+export const fetchSessions = () => request('GET', '/api/sessoes');
+export const endSessions = (alvo) => request('POST', '/api/sessoes', alvo);

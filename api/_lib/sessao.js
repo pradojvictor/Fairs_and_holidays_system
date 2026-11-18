@@ -35,6 +35,34 @@ function nomeCookie() {
 
 const hashDoToken = (token) => createHash('sha256').update(token).digest('hex');
 
+// O id que a aba "Sessões ativas" mostra e usa para encerrar: o começo do SHA-256 guardado.
+// Não é segredo (o Gist já guarda o hash inteiro) e não leva ao token.
+export const idDaSessao = (registro) => String(registro?.hash || '').slice(0, 16);
+
+// "Chrome · Windows": o bastante para o dono reconhecer o computador na lista. Só isso é
+// guardado — nem o user-agent inteiro, nem o IP: o Gist guarda histórico para sempre, e IP é
+// dado pessoal.
+export function descreverAparelho(userAgent) {
+  const ua = String(userAgent || '').slice(0, 500);
+  const navegador = /Edg(A|iOS)?\//.test(ua) ? 'Edge'
+    : /OPR\/|Opera/.test(ua) ? 'Opera'
+      : /SamsungBrowser/.test(ua) ? 'Samsung Internet'
+        : /Firefox\/|FxiOS/.test(ua) ? 'Firefox'
+          : /Chrome\/|CriOS/.test(ua) ? 'Chrome'
+            : /Safari\//.test(ua) ? 'Safari' : '';
+  const sistema = /iPhone/.test(ua) ? 'iPhone'
+    : /iPad/.test(ua) ? 'iPad'
+      : /Android/.test(ua) ? 'Android'
+        : /Windows/.test(ua) ? 'Windows'
+          : /Macintosh|Mac OS X/.test(ua) ? 'Mac'
+            : /CrOS/.test(ua) ? 'Chromebook'
+              : /Linux/.test(ua) ? 'Linux' : '';
+  return [navegador, sistema].filter(Boolean).join(' · ');
+}
+
+// Sessões que ainda valem (as vencidas só esperam o próximo expurgo).
+export const sessoesVivas = (sessoes, agora = Date.now()) => sessoes.filter((s) => Date.parse(s.expiraEm) > agora);
+
 // Sem `maxAgeSegundos`, o cookie morre ao fechar o navegador. Com ele, o navegador guarda o
 // cookie até a mesma data em que a sessão vence no servidor — quem manda é sempre o servidor.
 function montarCookie(valor, maxAgeSegundos) {
@@ -97,7 +125,7 @@ async function alterarSessoes(transformar, conferir, leituraInicial) {
   );
 }
 
-export async function abrirSessao(res, papel, usuario, leitura, lembrar = false) {
+export async function abrirSessao(res, papel, usuario, leitura, { lembrar = false, aparelho = '' } = {}) {
   const token = randomBytes(32).toString('base64url');
   const hash = hashDoToken(token);
   const agora = Date.now();
@@ -109,6 +137,7 @@ export async function abrirSessao(res, papel, usuario, leitura, lembrar = false)
     criadaEm: new Date(agora).toISOString(),
     expiraEm: new Date(agora + duracao).toISOString(),
     ...(lembrar ? { lembrar: true } : {}),
+    ...(aparelho ? { aparelho } : {}),
   };
   await alterarSessoes(
     (lista) => {

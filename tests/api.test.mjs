@@ -42,6 +42,7 @@ const rotaLogout = (await import('../api/logout.js')).default;
 const rotaDados = (await import('../api/dados.js')).default;
 const rotaOperacao = (await import('../api/operacao.js')).default;
 const rotaNotificacoes = (await import('../api/notificacoes.js')).default;
+const rotaSessoes = (await import('../api/sessoes.js')).default;
 const { limparCacheNovidades } = await import('../api/_lib/novidades.js');
 const { planejarMigracao } = await import('../scripts/migrar-senhas.mjs');
 const { aniversarioNoAno, hojeISO, ultimoAniversario } = await import('../shared/ferias.js');
@@ -94,7 +95,7 @@ beforeEach(() => {
 
 // ---------- pedido e resposta no formato da Vercel ----------
 let ultimoIp = 0;
-function pedido(method, { body, cookie, ip, origin, contentType = 'application/json' } = {}) {
+function pedido(method, { body, cookie, ip, origin, userAgent, contentType = 'application/json' } = {}) {
   return {
     method,
     body,
@@ -103,6 +104,7 @@ function pedido(method, { body, cookie, ip, origin, contentType = 'application/j
       'x-real-ip': ip || `10.0.${Math.floor(++ultimoIp / 250)}.${ultimoIp % 250}`,
       ...(cookie ? { cookie } : {}),
       ...(origin ? { origin } : {}),
+      ...(userAgent ? { 'user-agent': userAgent } : {}),
       ...(method !== 'GET' ? { 'content-type': contentType } : {}),
     },
     socket: { remoteAddress: '127.0.0.1' },
@@ -288,6 +290,90 @@ test('logout com "manter conectado" apaga o cookie persistente e a sessão', asy
   assert.match(sair.headers['set-cookie'], /Max-Age=0$/);
   assert.equal(lerSessoes().length, 0);
   assert.equal((await chamar(rotaDados, 'GET', { cookie })).statusCode, 401);
+});
+
+// ---------- sessões ativas ----------
+const UA = {
+  windows: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36',
+  mac: 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.1 Safari/605.1.15',
+  iphone: 'Mozilla/5.0 (iPhone; CPU iPhone OS 18_1 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.1 Mobile/15E148 Safari/604.1',
+};
+async function entrarNo(credenciais, userAgent) {
+  const res = await chamar(rotaLogin, 'POST', { body: { ...credenciais, lembrar: true }, userAgent });
+  assert.equal(res.statusCode, 200, `login deveria entrar: ${JSON.stringify(res.body)}`);
+  return res.headers['set-cookie'].split(';')[0];
+}
+const ADMIN = { tipo: 'admin', usuario: 'admin', senha: 'senha-do-admin' };
+const ANA = { tipo: 'colaborador', matricula: '100', senha: 'ana123' };
+const listarSessoes = (cookie) => chamar(rotaSessoes, 'GET', { cookie });
+const encerrar = (cookie, body) => chamar(rotaSessoes, 'POST', { cookie, body });
+
+test('sessões ativas: sem sessão 401 (sem ler o Gist); colaborador 403', async () => {
+  assert.equal((await listarSessoes()).statusCode, 401);
+  assert.equal((await encerrar(undefined, { alvo: 'sessao', id: '0'.repeat(16) })).statusCode, 401);
+  assert.equal(gist.leituras, 0);
+  const ana = await entrarNo(ANA, UA.iphone);
+  assert.equal((await listarSessoes(ana)).statusCode, 403);
+  assert.equal((await encerrar(ana, { alvo: 'pessoa', papel: 'admin', usuario: 'admin' })).statusCode, 403);
+});
+
+test('sessões ativas: quem, em que aparelho e qual é este computador — sem hash nem token', async () => {
+  const aqui = await entrarNo(ADMIN, UA.windows);
+  const outro = await entrarNo(ADMIN, UA.mac);
+  const ana = await entrarNo(ANA, UA.iphone);
+  const res = await listarSessoes(aqui);
+  assert.equal(res.statusCode, 200);
+  const lista = res.body.sessoes;
+  assert.equal(lista.length, 3);
+  assert.equal(lista[0].atual, true, 'a deste computador vem primeiro');
+  assert.equal(lista[0].aparelho, 'Chrome · Windows');
+  assert.deepEqual(lista.map((s) => s.aparelho).sort(), ['Chrome · Windows', 'Safari · Mac', 'Safari · iPhone']);
+  assert.equal(lista.find((s) => s.papel === 'colaborador').pessoa, 'Ana Souza');
+  assert.equal(lista.filter((s) => s.atual).length, 1);
+  assert.ok(lista.every((s) => /^[0-9a-f]{16}$/.test(s.id) && s.lembrar === true));
+  // O Gist guarda só a descrição do aparelho; a resposta não traz hash inteiro nem token.
+  const texto = JSON.stringify(res.body);
+  for (const cookie of [aqui, outro, ana]) assert.doesNotMatch(texto, new RegExp(cookie.split('=')[1]));
+  for (const s of lerSessoes()) assert.doesNotMatch(texto, new RegExp(s.hash));
+  assert.doesNotMatch(gist.files['sessoes.json'], /Mozilla|10\.0\./, 'nem o user-agent inteiro nem IP no Gist');
+});
+
+test('encerrar derruba só aquele computador, na hora; o daqui não se encerra por ali', async () => {
+  const aqui = await entrarNo(ADMIN, UA.windows);
+  const outro = await entrarNo(ADMIN, UA.mac);
+  const lista = (await listarSessoes(aqui)).body.sessoes;
+  const doOutro = lista.find((s) => !s.atual);
+  const daqui = lista.find((s) => s.atual);
+
+  const res = await encerrar(aqui, { alvo: 'sessao', id: doOutro.id });
+  assert.equal(res.statusCode, 200);
+  assert.equal(res.body.encerradas, 1);
+  assert.equal((await chamar(rotaDados, 'GET', { cookie: outro })).statusCode, 401, 'o outro computador cai');
+  assert.equal((await chamar(rotaDados, 'GET', { cookie: aqui })).statusCode, 200, 'este segue');
+
+  assert.equal((await encerrar(aqui, { alvo: 'sessao', id: daqui.id })).statusCode, 400);
+  assert.equal((await encerrar(aqui, { alvo: 'sessao', id: doOutro.id })).statusCode, 404, 'já encerrada');
+  assert.equal((await encerrar(aqui, { alvo: 'sessao', id: 'nao-e-um-id' })).statusCode, 400);
+  assert.equal((await encerrar(aqui, { alvo: 'tudo' })).statusCode, 400);
+  assert.equal(gist.files['data.json'], JSON.stringify(BASE, null, 2), 'encerrar sessão não toca o data.json');
+});
+
+test('encerrar todas de uma pessoa: celular e computador da colaboradora caem; o admin daqui fica', async () => {
+  const aqui = await entrarNo(ADMIN, UA.windows);
+  const outroAdmin = await entrarNo(ADMIN, UA.mac);
+  const celular = await entrarNo(ANA, UA.iphone);
+  const computador = await entrarNo(ANA, UA.windows);
+
+  let res = await encerrar(aqui, { alvo: 'pessoa', papel: 'colaborador', usuario: 'p_1' });
+  assert.equal(res.body.encerradas, 2);
+  for (const cookie of [celular, computador]) assert.equal((await chamar(rotaDados, 'GET', { cookie })).statusCode, 401);
+
+  // "Todas as do admin" pelo próprio admin: as outras caem, a deste computador não.
+  res = await encerrar(aqui, { alvo: 'pessoa', papel: 'admin', usuario: 'admin' });
+  assert.equal(res.body.encerradas, 1);
+  assert.equal((await chamar(rotaDados, 'GET', { cookie: outroAdmin })).statusCode, 401);
+  assert.equal((await chamar(rotaDados, 'GET', { cookie: aqui })).statusCode, 200);
+  assert.deepEqual((await listarSessoes(aqui)).body.sessoes.map((s) => s.atual), [true]);
 });
 
 test('senha errada e conta inexistente: a mesma resposta', async () => {

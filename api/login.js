@@ -5,7 +5,7 @@ import { lerGist } from './_lib/gist.js';
 import { ErroPedido, corpoJson, rota, validar } from './_lib/http.js';
 import { estaBloqueado, ipDoPedido, limparConta, registrarErro } from './_lib/limitador.js';
 import { conferirSenha } from './_lib/senha.js';
-import { abrirSessao } from './_lib/sessao.js';
+import { abrirSessao, descreverAparelho } from './_lib/sessao.js';
 
 const esquema = z.discriminatedUnion('tipo', [
   z.object({ tipo: z.literal('admin'), usuario: z.string().min(1).max(100), senha: z.string().min(1).max(200), lembrar: z.boolean().optional() }).strict(),
@@ -56,7 +56,10 @@ export default rota({
       throw new ErroPedido(401, RECUSA);
     }
     limparConta(chaveConta);
-    await abrirSessao(res, entrada.tipo, conta, leitura, entrada.lembrar === true);
+    await abrirSessao(res, entrada.tipo, conta, leitura, {
+      lembrar: entrada.lembrar === true,
+      aparelho: descreverAparelho(req.headers?.['user-agent']),
+    });
     return res.status(200).json({ papel: entrada.tipo });
   },
 });
