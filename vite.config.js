@@ -134,6 +134,12 @@ export default defineConfig({
     react(),
     VitePWA({
       registerType: 'autoUpdate',
+      // O registro é do próprio app (src/pwa/atualizacao.js), para recarregar ou avisar quando
+      // um deploy chega — o script do plugin só registrava e deixava a tela antiga no ar.
+      injectRegister: false,
+      // Sem o registro do plugin, ele não liga estes dois sozinho: a versão nova assume assim que
+      // termina de baixar, e o app decide se recarrega ou avisa.
+      workbox: { skipWaiting: true, clientsClaim: true },
       includeAssets: ['favicon.ico', 'apple-touch-icon.png'],
       manifest: {
         name: 'Calendário de Ausências da Equipe',

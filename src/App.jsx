@@ -3,11 +3,13 @@ import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import Login from './pages/Login';
 import Dashboard from './pages/Dashboard';
 import PublicDashboard from './pages/PublicDashboard';
+import VersaoNova from './components/VersaoNova';
 
 
 function App() {
   return (
     <BrowserRouter>
+      <VersaoNova />
       <Routes>
         <Route path="/login" element={<Login />} />
 
